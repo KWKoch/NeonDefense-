@@ -460,9 +460,11 @@ const newP=()=>{
   Object.defineProperty(o,'sel',{get(){ return pw(o).sel; },set(v){ pw(o).sel=v; },enumerable:false});
   return o;
 };
+/* storage: portal providers may replace window.NDStore (e.g. CrazyGames data module); default = guarded localStorage */
+const NDStore=window.NDStore||{get(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } },set(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }};
 let P=newP();
 try{
-  const s=localStorage.getItem(SKEY);
+  const s=NDStore.get(SKEY);
   if(s){
     const o=JSON.parse(s); P.lv=o.lv||{};
     if(o.inv) for(const t in P.inv) if(Array.isArray(o.inv[t])) for(let i=0;i<4;i++) P.inv[t][i]=Math.max(0,+o.inv[t][i]||0);
@@ -470,11 +472,11 @@ try{
     if(o.prog){ for(const k in o.prog){ const q=o.prog[k]||{}; P.prog[k]={best:+q.best||0,sel:+q.sel||1,perf:q.perf||{},eclr:q.eclr||{}}; } P.own=Object.assign({belt:true},o.own); if(WORLDS.some(w=>w.id===o.world)) P.world=o.world; }
     else P.prog.belt={best:+o.best||0,sel:+o.sel||1,perf:{},eclr:{}};
   } else {
-    const old=localStorage.getItem('rave-rampart-v4');
+    const old=NDStore.get('rave-rampart-v4');
     if(old){ const o=JSON.parse(old); P.prog.belt={best:+o.best||0,sel:+o.sel||1,perf:{},eclr:{}}; }
   }
 }catch(e){}
-function save(){ try{ localStorage.setItem(SKEY,JSON.stringify(P)); }catch(e){} try{ if(window.RRcloud&&RRcloud.enabled) RRcloud.push(); }catch(e){} }
+function save(){ NDStore.set(SKEY,JSON.stringify(P)); try{ if(window.RRcloud&&RRcloud.enabled) RRcloud.push(); }catch(e){} }
 const L=id=>P.lv[id]||0;
 
 /* ================= helpers ================= */
@@ -1381,7 +1383,7 @@ function startLevel(n,world,elite){
   G.waveT=0; G.shake=0; G.armed=null; G.ghost.show=false; G.placing=false; G.autoT=0.5;
   G.stock=0; G.mineT=0; G.fieldCd=0;
   T.x=W/2; T.cool=0; T.recoil=0; T.target=null; input.active=false;
-  G.state='playing'; overlay.hidden=true; $('shop').hidden=true; hudKey=''; toolKey=''; thumbKey='';
+  Ads.gameplayStart(); G.state='playing'; overlay.hidden=true; $('shop').hidden=true; hudKey=''; toolKey=''; thumbKey='';
   $('pauseBtn').textContent='Pause';
   showView('game'); setMode(G.mode);
   Music.start(); Music.setBpm(122+Math.min(14,Math.floor(n/4)*1.2));
@@ -1397,7 +1399,7 @@ function dropsHtml(got){
 }
 function enLine(){ enTick(); return '<div class="stat1" title="Energy"><span style="color:var(--yellow)">'+ico('bolt',16)+P.en+'/'+EN_MAX+'</span></div>'; }
 function win(){
-  G.state='won'; G.armed=null;
+  Ads.gameplayStop(); G.state='won'; G.armed=null;
   const pr=pw(P), el=G.elite, replay=el?!!pr.eclr[G.n]:G.n<=pr.best, frac=G.hp/G.maxHp, perfect=frac>=0.999, hadPerf=!!pr.perf[G.n];
   const got=awardCards(dropCount(G.n,frac,replay,el),G.n,(isBoss(G.n)?(replay?1:2):0)+(el&&!replay?1:0),el);
   if(el) pr.eclr[G.n]=true;
@@ -1414,7 +1416,7 @@ function win(){
 }
 function gameOver(){
   if(G.state!=='playing') return;
-  G.state='over'; G.armed=null;
+  Ads.gameplayStop(); G.state='over'; G.armed=null;
   const pr=pw(P), done=Math.max(0,G.wave-1), rep=G.elite?!!pr.eclr[G.n]:G.n<=pr.best, full=dropCount(G.n,1,rep,G.elite);
   const cnt=Math.max(done>=3?1:0,Math.round(full*0.5*done/G.NW));
   const got=awardCards(cnt,G.n,0,G.elite); save();
@@ -1427,18 +1429,18 @@ function gameOver(){
 function focusFirst(){ const b=overlay.querySelector('button.big')||overlay.querySelector('button'); if(b) b.focus({preventScroll:true}); }
 function togglePause(){
   if(G.state==='playing'){
-    G.state='paused'; G.armed=null; Music.pause(); $('pauseBtn').textContent='Resume';
+    Ads.gameplayStop(); G.state='paused'; G.armed=null; Music.pause(); $('pauseBtn').textContent='Resume';
     overlay.innerHTML='<h1>Paused</h1><div class="obtns"><button class="btn big" data-o="resume" type="button">Resume</button><button class="btn" data-o="quit" type="button">Quit to armory</button></div><p class="note">Quitting forfeits this run.</p>';
     overlay.hidden=false; focusFirst();
-  } else if(G.state==='paused'){ G.state='playing'; Music.resume(); overlay.hidden=true; $('pauseBtn').textContent='Pause'; }
+  } else if(G.state==='paused'){ Ads.gameplayStart(); G.state='playing'; Music.resume(); overlay.hidden=true; $('pauseBtn').textContent='Pause'; }
 }
 overlay.addEventListener('click',e=>{
   const b=e.target.closest('[data-o]'); if(!b) return; const o=b.dataset.o;
   if(o==='resume') togglePause();
   else if(o==='quit'){ Music.resume(); save(); toArmory(); }
-  else if(o==='armory'){ if(G.state==='won'||G.state==='over') Ads.interstitial('next','level_end_home',toArmory); else toArmory(); }
-  else if(o==='next') Ads.interstitial('next','level_end_next',()=>tryStart(Math.min(G.n+1,LEVELS),G.elite));
-  else if(o==='retry') Ads.interstitial('next','level_end_retry',()=>tryStart(G.n,G.elite));
+  else if(o==='armory'){ if(Ads.homeAds&&(G.state==='won'||G.state==='over')) Ads.interstitial('level_end_home',toArmory); else toArmory(); }
+  else if(o==='next') Ads.interstitial('level_end_next',()=>tryStart(Math.min(G.n+1,LEVELS),G.elite));
+  else if(o==='retry') Ads.interstitial('level_end_retry',()=>tryStart(G.n,G.elite));
 });
 function toArmory(){ setTimeout(wantReward,0);
   UI.nav='battle'; G.state='armory'; overlay.hidden=true; $('shop').hidden=true; Music.setIntensity(0); Music.setBpm(122);
@@ -1453,7 +1455,7 @@ function grantAdEnergy(){ enTick(); if(P.en<EN_MAX){ P.en=Math.min(EN_MAX,P.en+E
 Ads.onPause=()=>{ Music.pause(); };
 Ads.onResume=()=>{ Music.resume(); last=performance.now(); };
 Ads.onChange=()=>{ if(!armoryEl.hidden) renderArmory(); };
-function wantReward(){ if(Ads.enabled&&!Ads.rewardReady&&P.en<EN_MAX) Ads.requestReward('energy_refill',grantAdEnergy); }
+function wantReward(){ if(P.en<EN_MAX) Ads.prepareReward(); }
 function enTick(){
   const now=Date.now();
   if(P.en>=EN_MAX){ P.en=EN_MAX; P.enT=now; return; }
@@ -1530,7 +1532,7 @@ function battleHtml(){
     +(lockElite?'<div class="pvlock">'+ico('lock',30)+'<span>Clear level '+n+' with no base damage to unlock Elite</span></div>':'')+'</div>'
     +'<button class="chev r" data-act="next" type="button" aria-label="Next level" '+(n>=maxSel?'disabled':'')+'>'+ico('chev',30)+'</button></div>'
     +'<div class="facts"><span title="Waves">'+ico('wave',18)+waveCount(n)+'</span><span title="Cards per clear">'+ico('cards',18)+'~'+cnt+'</span>'+(el?'<span style="color:var(--red)" title="Elite costs double energy">'+ico('bolt',18)+'x2</span>':'')+'</div>'
-    +'<button class="btn big go" data-act="deploy" type="button" data-lock="'+(lockElite?1:0)+'">Battle</button>'+(P.en<(el?EN_COST*2:EN_COST)&&(!Ads.enabled||Ads.rewardReady)?'<button class="mini" data-act="ad" type="button">Watch ad: +'+EN_AD+' energy</button>':'')+'</div>';
+    +'<button class="btn big go" data-act="deploy" type="button" data-lock="'+(lockElite?1:0)+'">Battle</button>'+(P.en<(el?EN_COST*2:EN_COST)&&Ads.rewardAvailable()?'<button class="mini" data-act="ad" type="button">Watch ad: +'+EN_AD+' energy</button>':'')+'</div>';
   return h;
 }
 function accountHtml(){
@@ -1700,7 +1702,7 @@ armoryEl.addEventListener('click',e=>{
   else if(a==='reset'){ confirmReset=true; renderArmory(); }
   else if(a==='cancel'){ confirmReset=false; renderArmory(); }
   else if(a==='reset2'){ P=newP(); UI.elite=false; confirmReset=false; save(); renderArmory(); }
-  else if(a==='ad'){ if(Ads.enabled){ Ads.showReward(); } else grantAdEnergy(); }
+  else if(a==='ad'){ Ads.showReward(grantAdEnergy); }
 });
 
 /* ================= upgrade cards (pick 1 of 3, reset every level) ================= */
@@ -1937,11 +1939,11 @@ function frame(now){
 }
 P.sel=clamp(P.sel,1,Math.min(P.best+1,LEVELS));
 setMode('auto');
-renderArmory(); showView('armory'); wantReward();
+renderArmory(); showView('armory'); wantReward(); Ads.loadingDone();
 requestAnimationFrame(frame);
 
 /* test hook for headless checks */
-window.__rr={G:G,get P(){return P;},set P(v){P=v;},newP:newP,startLevel:startLevel,update:update,UPS:UPS,waveCount:waveCount,levelPool:levelPool,hpScale:hpScale,tune:(a,b,c,d,m,k,bk,wh,pm,lk,c0,cg)=>{if(lk!==undefined)LATEK=lk;if(pm!==undefined)PICKM=pm;if(wh!==undefined)WAVEHP=wh;if(k!==undefined)HPK=k;if(m!==undefined)MOBN=m;if(c0!==undefined)CDROP0=c0;if(cg!==undefined)CDROPG=cg;HPG=a;POOL0=b;POOLG=c;if(d!==undefined)HPA=d;},bst:bst,pickCard:pickCard,CARDS:CARDS,offerCards:offerCards,hasTool:hasTool,fireMortar:fireMortar,canMortar:canMortar,T:T,wcount:wcount,canBuy:canBuy,buyUp:buyUp,cardNeed:cardNeed,bandOf:bandOf,avail:avail,awardCards:awardCards,dropCount:dropCount,fuse:fuse,useEnergy:useEnergy,enTick:enTick,tryStart:tryStart};
+window.__rr={G:G,get P(){return P;},set P(v){P=v;},newP:newP,startLevel:startLevel,update:update,UPS:UPS,waveCount:waveCount,levelPool:levelPool,hpScale:hpScale,tune:(a,b,c,d,m,k,bk,wh,pm,lk,c0,cg)=>{if(lk!==undefined)LATEK=lk;if(pm!==undefined)PICKM=pm;if(wh!==undefined)WAVEHP=wh;if(k!==undefined)HPK=k;if(m!==undefined)MOBN=m;if(c0!==undefined)CDROP0=c0;if(cg!==undefined)CDROPG=cg;HPG=a;POOL0=b;POOLG=c;if(d!==undefined)HPA=d;},bst:bst,pickCard:pickCard,CARDS:CARDS,offerCards:offerCards,hasTool:hasTool,fireMortar:fireMortar,canMortar:canMortar,T:T,wcount:wcount,canBuy:canBuy,buyUp:buyUp,cardNeed:cardNeed,bandOf:bandOf,avail:avail,awardCards:awardCards,dropCount:dropCount,fuse:fuse,useEnergy:useEnergy,enTick:enTick,tryStart:tryStart,win:win,gameOver:gameOver};
 })();
 </script>
 
