@@ -467,7 +467,7 @@ try{
     if(old){ const o=JSON.parse(old); P.prog.belt={best:+o.best||0,sel:+o.sel||1,perf:{},eclr:{}}; }
   }
 }catch(e){}
-function save(){ try{ localStorage.setItem(SKEY,JSON.stringify(P)); }catch(e){} }
+function save(){ try{ localStorage.setItem(SKEY,JSON.stringify(P)); }catch(e){} try{ if(window.RRcloud&&RRcloud.enabled) RRcloud.push(); }catch(e){} }
 const L=id=>P.lv[id]||0;
 
 /* ================= helpers ================= */
@@ -1491,6 +1491,7 @@ function fillEnergy(){
   if(d){ const lk=d.dataset.lock==='1'; d.disabled=lk||P.en<cost; d.innerHTML=lk?ico('lock',18)+'Locked':(P.en<cost?ico('bolt',18)+fmtT(nx):'Battle '+ico('bolt',18)+cost); }
 }
 setInterval(()=>{ if(!armoryEl.hidden) fillEnergy(); },1000);
+addEventListener('rrcloud',()=>{ if(!armoryEl.hidden&&UI.nav==='arsenal') renderArmory(); });
 function invHtml(){
   let h='<section class="inv"><div class="ct"><span class="cn" style="color:var(--fg)">Upgrade cards</span></div>'
     +'<div class="note">Cards are universal. Pick any weapon\'s upgrade and spend the matching type. Rarity sets how deep an upgrade can go; a higher rarity can stand in for a lower one. Tap a stack of 3 or more to fuse it into the next rarity.</div><div class="invg">';
@@ -1519,8 +1520,16 @@ function battleHtml(){
     +'<button class="btn big go" data-act="deploy" type="button" data-lock="'+(lockElite?1:0)+'">Battle</button>'+(P.en<(el?EN_COST*2:EN_COST)?'<button class="mini" data-act="ad" type="button">Watch ad: +'+EN_AD+' energy</button>':'')+'</div>';
   return h;
 }
+function accountHtml(){
+  const C0=window.RRcloud; if(!C0||!C0.enabled) return '';
+  const u=C0.user;
+  return '<section class="inv"><div class="ct"><span class="cn" style="color:var(--fg)">Account</span></div>'
+    +(u?'<div class="note">Signed in as '+(u.email||u.name||'player')+'. Progress saves to the cloud automatically'+(C0.status?' ('+C0.status+')':'')+'.</div><div class="foot"><button class="mini" data-acct="out" type="button">Sign out</button><button class="mini" data-acct="del" type="button">Delete account</button></div>'
+      :'<div class="note">Sign in to save your progress and play on any device.</div><div class="foot"><button class="btn sm" data-acct="google" type="button">Google</button><button class="btn sm" data-acct="apple" type="button">Apple</button></div>'+(C0.error?'<div class="note" style="color:var(--red)">'+C0.error+'</div>':''))
+    +'</section>';
+}
 function arsenalHtml(){
-  let h=invHtml()+'<div class="tabs" role="tablist">'+TABS.filter(t=>t.id!=='bestiary').map(t=>'<button class="tab" role="tab" data-tab="'+t.id+'" style="--c:'+t.color+'" aria-selected="'+(tab===t.id)+'" type="button">'+ico(TABICO[t.id],14)+t.name+'</button>').join('')+'</div><div class="cards">';
+  let h=accountHtml()+invHtml()+'<div class="tabs" role="tablist">'+TABS.filter(t=>t.id!=='bestiary').map(t=>'<button class="tab" role="tab" data-tab="'+t.id+'" style="--c:'+t.color+'" aria-selected="'+(tab===t.id)+'" type="button">'+ico(TABICO[t.id],14)+t.name+'</button>').join('')+'</div><div class="cards">';
   UPS.filter(u=>u.tab===tab).forEach(u=>{
     const lv=L(u.id), maxed=lv>=u.max, ct=CT[u.ty], b=bandOf(lv,u.max), need=cardNeed(u,lv), have=avail(u.ty,b), ok=!maxed&&have>=need;
     let pips=''; for(let i=0;i<u.max;i++) pips+='<i'+(i<lv?' class="on"':'')+'></i>';
@@ -1662,6 +1671,7 @@ armoryEl.addEventListener('scroll',hideTip,true);
 armoryEl.addEventListener('contextmenu',e=>{ if(e.target.id==='pv'||e.target.closest('canvas[data-t]')) e.preventDefault(); });
 
 armoryEl.addEventListener('click',e=>{
+  const ac=e.target.closest('[data-acct]'); if(ac&&window.RRcloud){ const a=ac.dataset.acct; if(a==='del'&&!confirm('Delete your account and cloud save? This cannot be undone.')) return; RRcloud.action(a); return; }
   const t=e.target.closest('[data-act],[data-buy],[data-tab],[data-fuse],[data-nav],[data-mode],[data-world]'); if(!t) return;
   if(t.dataset.nav){ UI.nav=t.dataset.nav; renderArmory(); return; }
   if(t.dataset.mode){ UI.elite=t.dataset.mode==='e'; renderArmory(); return; }
@@ -1923,5 +1933,6 @@ window.__rr={G:G,get P(){return P;},set P(v){P=v;},newP:newP,startLevel:startLev
 })();
 </script>
 
+<script type="module" src="cloud.js"></script>
 <script>if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));</script>
 </body></html>
