@@ -1,8 +1,51 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    function me(uid) { return request.auth != null && request.auth.uid == uid; }
+
+    // Player profile + cloud save. Written by cloud.js as {data, score, updated}.
     match /users/{uid} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
+      allow read, delete: if me(uid);
+      allow create, update: if me(uid)
+        && request.resource.data.keys().hasOnly(['data', 'score', 'updated', 'displayName', 'createdAt'])
+        && request.resource.data.keys().hasAll(['data', 'score', 'updated'])
+        && request.resource.data.data is string
+        && request.resource.data.data.size() < 200000
+        && request.resource.data.score is int
+        && request.resource.data.score >= 0
+        && request.resource.data.updated is int
+        && (!('displayName' in request.resource.data) || (request.resource.data.displayName is string && request.resource.data.displayName.size() <= 40))
+        && (!('createdAt' in request.resource.data) || request.resource.data.createdAt is int);
+
+      // Wallet / entitlements: client read-only, written only by Cloud Functions (Admin SDK).
+      match /private/{doc} {
+        allow read: if me(uid);
+        allow write: if false;
+      }
+    }
+
+    // Verified purchases: read-only for the owner, written only server-side.
+    match /purchases/{id} {
+      allow read: if request.auth != null && resource.data.uid == request.auth.uid;
+      allow write: if false;
+    }
+
+    // Leaderboards: public read; one entry per player per world, score may only increase.
+    match /leaderboards/{world}/scores/{uid} {
+      allow read: if true;
+      allow create, update: if me(uid)
+        && request.resource.data.keys().hasOnly(['name', 'score', 'wave', 'ts'])
+        && request.resource.data.name is string && request.resource.data.name.size() <= 24
+        && request.resource.data.score is int
+        && request.resource.data.score >= 0 && request.resource.data.score < 10000000
+        && request.resource.data.wave is int
+        && request.resource.data.ts is int
+        && (resource == null || request.resource.data.score > resource.data.score);
+      allow delete: if me(uid);
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }
