@@ -4,7 +4,7 @@
    ADS_CLIENT_ID empty  => ads fully off, nothing is loaded, game behaves exactly as before.
    ADS_TEST_MODE true   => adds data-adbreak-test="on" (fake test ads). Turn OFF for production. */
 (function(){
-  const ADS_CLIENT_ID='';        // e.g. 'ca-pub-1234567890123456' once AdSense + H5 Games Ads are approved
+  const ADS_CLIENT_ID='ca-pub-4954431316761739';        // e.g. 'ca-pub-1234567890123456' once AdSense + H5 Games Ads are approved
   const ADS_TEST_MODE=false;     // set true to see test ads while developing
   const FREQ_HINT='120s';        // minimum average time between interstitials (data-ad-frequency-hint)
   const INTERSTITIAL_EVERY=2;    // only offer an interstitial every Nth level end (on top of Google's own frequency capping)

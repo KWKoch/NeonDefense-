@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8">
+<html lang="en"><head><meta charset="utf-8"><meta name="google-adsense-account" content="ca-pub-4954431316761739">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <meta name="theme-color" content="#000000">
 <meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes">
@@ -315,7 +315,7 @@ body.menu{background:radial-gradient(140% 55% at 50% -5%,rgba(255,43,214,.22),rg
 #gate .gmsg{min-height:1.4em;max-width:320px;opacity:.85}
 #gate .gerr{color:var(--red)}
 </style></head><body>
-<div id="gate" role="dialog" aria-modal="true" aria-label="Sign in"><h1>Neon Defense</h1><p class="gmsg" id="gateMsg">Loading…</p><div class="gbtns" id="gateBtns"></div><p class="gmsg gerr" id="gateErr"></p></div>
+<div id="gate" role="dialog" aria-modal="true" aria-label="Sign in"><h1>Neon Defense</h1><p class="gmsg" id="gateMsg">Loading…</p><div class="gbtns" id="gateBtns"></div><p class="gmsg gerr" id="gateErr"></p><p class="gmsg"><a href="https://kwkoch.github.io/privacy.html" target="_blank" rel="noopener" style="color:var(--cyan)">Privacy Policy</a></p></div>
 
 <div id="app" hidden>
   <header id="hud">
@@ -1537,7 +1537,7 @@ function accountHtml(){
   const C0=window.RRcloud; if(!C0||!C0.enabled) return '';
   const u=C0.user; if(!u) return '';
   return '<section class="inv"><div class="ct"><span class="cn" style="color:var(--fg)">Account</span></div>'
-    +'<div class="note">Signed in as '+(u.email||u.name||'player')+'. Progress saves to the cloud automatically'+(C0.status?' ('+C0.status+')':'')+'.</div><div class="foot"><button class="mini" data-acct="out" type="button">Sign out</button><button class="mini" data-acct="del" type="button">Delete account</button></div>'
+    +'<div class="note">Signed in as '+(u.email||u.name||'player')+'. Progress saves to the cloud automatically'+(C0.status?' ('+C0.status+')':'')+'.</div><div class="foot"><button class="mini" data-acct="out" type="button">Sign out</button><button class="mini" data-acct="del" type="button">Delete account</button></div><div class="note"><a href="https://kwkoch.github.io/privacy.html" target="_blank" rel="noopener" style="color:var(--cyan)">Privacy Policy</a></div>'
     +(C0.error?'<div class="note" style="color:var(--red)">'+C0.error+'</div>':'')
     +'</section>';
 }
