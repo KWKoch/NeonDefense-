@@ -1522,10 +1522,12 @@ function battleHtml(){
 }
 function accountHtml(){
   const C0=window.RRcloud; if(!C0||!C0.enabled) return '';
-  const u=C0.user;
+  const u=C0.user, real=u&&!u.anon;
+  const signin='<div class="foot"><button class="btn sm" data-acct="google" type="button">Google</button>'+(C0.apple?'<button class="btn sm" data-acct="apple" type="button">Apple</button>':'')+'</div>';
   return '<section class="inv"><div class="ct"><span class="cn" style="color:var(--fg)">Account</span></div>'
-    +(u?'<div class="note">Signed in as '+(u.email||u.name||'player')+'. Progress saves to the cloud automatically'+(C0.status?' ('+C0.status+')':'')+'.</div><div class="foot"><button class="mini" data-acct="out" type="button">Sign out</button><button class="mini" data-acct="del" type="button">Delete account</button></div>'
-      :'<div class="note">Sign in to save your progress and play on any device.</div><div class="foot"><button class="btn sm" data-acct="google" type="button">Google</button><button class="btn sm" data-acct="apple" type="button">Apple</button></div>'+(C0.error?'<div class="note" style="color:var(--red)">'+C0.error+'</div>':''))
+    +(real?'<div class="note">Signed in as '+(u.email||u.name||'player')+'. Progress saves to the cloud automatically'+(C0.status?' ('+C0.status+')':'')+'.</div><div class="foot"><button class="mini" data-acct="out" type="button">Sign out</button><button class="mini" data-acct="del" type="button">Delete account</button></div>'
+      :'<div class="note">'+(u?'Playing as guest (backed up on this device'+(C0.status?', '+C0.status:'')+'). Sign in to keep progress across devices.':'Sign in to save your progress and play on any device.')+'</div>'+signin)
+    +(C0.error?'<div class="note" style="color:var(--red)">'+C0.error+'</div>':'')
     +'</section>';
 }
 function arsenalHtml(){
