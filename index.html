@@ -309,7 +309,13 @@ body.menu{background:radial-gradient(140% 55% at 50% -5%,rgba(255,43,214,.22),rg
 #tip .rs i{font-style:normal; font-size:11px; font-weight:700; padding:1px 7px; border-radius:999px; border:1px solid color-mix(in srgb,var(--c) 60%,#000); color:var(--c)}
 .dcard i{font-style:normal; font-size:10px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--g)}
 .dcard small{font-size:10px; letter-spacing:.06em; text-transform:uppercase; color:var(--c)}
+#gate{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:24px;background:#05030c;color:var(--fg);text-align:center}
+#gate[hidden]{display:none}
+#gate h1{margin:0;font-family:var(--display);font-weight:400;font-size:clamp(34px,10vw,56px);color:var(--cyan);text-shadow:0 0 10px var(--cyan),0 0 30px var(--magenta)}
+#gate .gmsg{min-height:1.4em;max-width:320px;opacity:.85}
+#gate .gerr{color:var(--red)}
 </style></head><body>
+<div id="gate" role="dialog" aria-modal="true" aria-label="Sign in"><h1>Neon Defense</h1><p class="gmsg" id="gateMsg">Loading…</p><div class="gbtns" id="gateBtns"></div><p class="gmsg gerr" id="gateErr"></p></div>
 
 <div id="app" hidden>
   <header id="hud">
@@ -355,6 +361,7 @@ body.menu{background:radial-gradient(140% 55% at 50% -5%,rgba(255,43,214,.22),rg
 <div id="armory"></div>
 <div id="shop" hidden></div>
 
+<script src="ads.js"></script>
 <script>
 (function(){
 'use strict';
@@ -1429,11 +1436,11 @@ overlay.addEventListener('click',e=>{
   const b=e.target.closest('[data-o]'); if(!b) return; const o=b.dataset.o;
   if(o==='resume') togglePause();
   else if(o==='quit'){ Music.resume(); save(); toArmory(); }
-  else if(o==='armory') toArmory();
-  else if(o==='next') tryStart(Math.min(G.n+1,LEVELS),G.elite);
-  else if(o==='retry') tryStart(G.n,G.elite);
+  else if(o==='armory'){ if(G.state==='won'||G.state==='over') Ads.interstitial('next','level_end_home',toArmory); else toArmory(); }
+  else if(o==='next') Ads.interstitial('next','level_end_next',()=>tryStart(Math.min(G.n+1,LEVELS),G.elite));
+  else if(o==='retry') Ads.interstitial('next','level_end_retry',()=>tryStart(G.n,G.elite));
 });
-function toArmory(){
+function toArmory(){ setTimeout(wantReward,0);
   UI.nav='battle'; G.state='armory'; overlay.hidden=true; $('shop').hidden=true; Music.setIntensity(0); Music.setBpm(122);
   P.sel=clamp(P.sel,1,Math.min(P.best+1,LEVELS)); renderArmory(); showView('armory');
 }
@@ -1441,6 +1448,12 @@ function toArmory(){
 
 /* ================= energy + card economy ================= */
 const fmtT=ms=>{ const t=Math.ceil(ms/1000), m=Math.floor(t/60), r=t%60; return m+':'+(r<10?'0':'')+r; };
+function grantAdEnergy(){ enTick(); if(P.en<EN_MAX){ P.en=Math.min(EN_MAX,P.en+EN_AD); if(P.en>=EN_MAX) P.enT=Date.now(); } save(); renderArmory(); }
+/* ads hooks: pause loop + audio during an ad, refresh armory when a rewarded ad becomes available */
+Ads.onPause=()=>{ Music.pause(); };
+Ads.onResume=()=>{ Music.resume(); last=performance.now(); };
+Ads.onChange=()=>{ if(!armoryEl.hidden) renderArmory(); };
+function wantReward(){ if(Ads.enabled&&!Ads.rewardReady&&P.en<EN_MAX) Ads.requestReward('energy_refill',grantAdEnergy); }
 function enTick(){
   const now=Date.now();
   if(P.en>=EN_MAX){ P.en=EN_MAX; P.enT=now; return; }
@@ -1517,16 +1530,14 @@ function battleHtml(){
     +(lockElite?'<div class="pvlock">'+ico('lock',30)+'<span>Clear level '+n+' with no base damage to unlock Elite</span></div>':'')+'</div>'
     +'<button class="chev r" data-act="next" type="button" aria-label="Next level" '+(n>=maxSel?'disabled':'')+'>'+ico('chev',30)+'</button></div>'
     +'<div class="facts"><span title="Waves">'+ico('wave',18)+waveCount(n)+'</span><span title="Cards per clear">'+ico('cards',18)+'~'+cnt+'</span>'+(el?'<span style="color:var(--red)" title="Elite costs double energy">'+ico('bolt',18)+'x2</span>':'')+'</div>'
-    +'<button class="btn big go" data-act="deploy" type="button" data-lock="'+(lockElite?1:0)+'">Battle</button>'+(P.en<(el?EN_COST*2:EN_COST)?'<button class="mini" data-act="ad" type="button">Watch ad: +'+EN_AD+' energy</button>':'')+'</div>';
+    +'<button class="btn big go" data-act="deploy" type="button" data-lock="'+(lockElite?1:0)+'">Battle</button>'+(P.en<(el?EN_COST*2:EN_COST)&&(!Ads.enabled||Ads.rewardReady)?'<button class="mini" data-act="ad" type="button">Watch ad: +'+EN_AD+' energy</button>':'')+'</div>';
   return h;
 }
 function accountHtml(){
   const C0=window.RRcloud; if(!C0||!C0.enabled) return '';
-  const u=C0.user, real=u&&!u.anon;
-  const signin='<div class="foot"><button class="btn sm" data-acct="google" type="button">Google</button>'+(C0.apple?'<button class="btn sm" data-acct="apple" type="button">Apple</button>':'')+'</div>';
+  const u=C0.user; if(!u) return '';
   return '<section class="inv"><div class="ct"><span class="cn" style="color:var(--fg)">Account</span></div>'
-    +(real?'<div class="note">Signed in as '+(u.email||u.name||'player')+'. Progress saves to the cloud automatically'+(C0.status?' ('+C0.status+')':'')+'.</div><div class="foot"><button class="mini" data-acct="out" type="button">Sign out</button><button class="mini" data-acct="del" type="button">Delete account</button></div>'
-      :'<div class="note">'+(u?'Playing as guest (backed up on this device'+(C0.status?', '+C0.status:'')+'). Sign in to keep progress across devices.':'Sign in to save your progress and play on any device.')+'</div>'+signin)
+    +'<div class="note">Signed in as '+(u.email||u.name||'player')+'. Progress saves to the cloud automatically'+(C0.status?' ('+C0.status+')':'')+'.</div><div class="foot"><button class="mini" data-acct="out" type="button">Sign out</button><button class="mini" data-acct="del" type="button">Delete account</button></div>'
     +(C0.error?'<div class="note" style="color:var(--red)">'+C0.error+'</div>':'')
     +'</section>';
 }
@@ -1689,7 +1700,7 @@ armoryEl.addEventListener('click',e=>{
   else if(a==='reset'){ confirmReset=true; renderArmory(); }
   else if(a==='cancel'){ confirmReset=false; renderArmory(); }
   else if(a==='reset2'){ P=newP(); UI.elite=false; confirmReset=false; save(); renderArmory(); }
-  else if(a==='ad'){ enTick(); if(P.en<EN_MAX){ if(P.en>=EN_MAX-0) P.enT=Date.now(); P.en=Math.min(EN_MAX,P.en+EN_AD); if(P.en>=EN_MAX) P.enT=Date.now(); } save(); renderArmory(); }
+  else if(a==='ad'){ if(Ads.enabled){ Ads.showReward(); } else grantAdEnergy(); }
   else if(a==='refill'){ P.en=EN_MAX; P.enT=Date.now(); save(); renderArmory(); }
 });
 
@@ -1919,7 +1930,7 @@ window.addEventListener('resize',fit);
 let last=performance.now();
 function frame(now){
   const dt=Math.min(0.033,(now-last)/1000); last=now;
-  if(!appEl.hidden){
+  if(!appEl.hidden&&!Ads.busy){
     for(let i=0;i<G.speed;i++) update(dt);
     render(dt); renderHud(); renderTools();
   }
@@ -1927,7 +1938,7 @@ function frame(now){
 }
 P.sel=clamp(P.sel,1,Math.min(P.best+1,LEVELS));
 setMode('auto');
-renderArmory(); showView('armory');
+renderArmory(); showView('armory'); wantReward();
 requestAnimationFrame(frame);
 
 /* test hook for headless checks */
