@@ -385,7 +385,7 @@ const INTRO={};
 /* ================= upgrades ================= */
 let WAVEHP=0.1, CRK=1, HPK=6.0, MOBN=10.2, MOBF=2.5, HPG=1.07, HPA=0, POOL0=55, POOLG=1.145, COSTK=1;
 const n1=v=>v<10?v.toFixed(1):String(Math.round(v));
-const EN_MAX=5, EN_REGEN=8*60*1000;
+const EN_MAX=50, EN_COST=5, EN_REGEN=96*1000, EN_AD=5;   /* 50 max, 5 per attempt (10 elite), ~8 min per attempt back, rewarded ad = +5 */
 const ST={
   rate:l=>0.36*Math.pow(0.9,l), dmg:l=>Math.pow(1.3,l), barrels:l=>1+l, pierce:l=>l, slide:l=>300+l*45, armor:l=>100+l*30,
   mdmg:l=>8*Math.pow(1.3,l), mrad:l=>48+l*8, mstock:l=>2+l, mrech:l=>5.6*Math.pow(0.88,l),
@@ -433,11 +433,11 @@ const TOOLS={
 /* Worlds: each one specialises mobs (uw = global wave a mob first appears), favoured weapons (bias on card odds) and look.
    World 1 is free. The other four are scaffolded and pay-gated (demo unlock for now). Each has its own 50 levels and progress. */
 const WORLDS=[
-  {id:'belt',  name:'Meteor Belt',  sub:'Where it starts. A bit of everything.',                      color:C.cyan,   price:0,      uw:null, sig:[],                    bias:{},                       hp:1},
-  {id:'nebula',name:'Swarm Nebula', sub:'Dart packs and swarmers. Blast and chain thrive.',           color:C.mint,   price:'$4.99',uw:{rock:1,swarm:2,dart:4,chunk:12,shield:20,brute:30},        sig:['swarm','dart'],      bias:{mine:2.2,chain:2,mortar:1.5}, hp:1},
-  {id:'armada',name:'Iron Armada',  sub:'Armored hulls and invader fleets. Blast and energy break them.',color:C.steel,price:'$4.99',uw:{rock:1,shield:3,invader:5,brute:10,chunk:14,dart:22},      sig:['shield','invader','brute'], bias:{mortar:2.2,field:2,mine:1.5}, hp:1},
-  {id:'rift',  name:'Plasma Rift',  sub:'Fast darts and drone screens. Kinetic and saws cut through.',color:C.violet, price:'$4.99',uw:{rock:1,dart:2,shield:6,swarm:10,invader:14,chunk:24},     sig:['dart','shield'],     bias:{saw:2.2,turret:1.4,chain:1.5}, hp:1},
-  {id:'void',  name:'Void Gate',    sub:'Dense rock and brutes. Only heavy hitters survive.',          color:C.red,    price:'$4.99',uw:{rock:1,chunk:3,brute:8,shield:15,swarm:22,dart:28},       sig:['chunk','brute'],     bias:{mortar:2.2,saw:2,field:1.5}, hp:1}
+  {id:'belt',  name:'Meteor Belt',  sub:'Where it starts. A bit of everything.',                      color:C.cyan,   price:0,gate:0,      uw:null, sig:[],                    bias:{},                       hp:1},
+  {id:'nebula',name:'Swarm Nebula', sub:'Dart packs and swarmers. Blast and chain thrive.',           color:C.mint,   price:1,uw:{rock:1,swarm:2,dart:4,chunk:12,shield:20,brute:30},        sig:['swarm','dart'],      bias:{mine:2.2,chain:2,mortar:1.5}, hp:1.7},
+  {id:'armada',name:'Iron Armada',  sub:'Armored hulls and invader fleets. Blast and energy break them.',color:C.steel,price:1,uw:{rock:1,shield:3,invader:5,brute:10,chunk:14,dart:22},      sig:['shield','invader','brute'], bias:{mortar:2.2,field:2,mine:1.5}, hp:2.5},
+  {id:'rift',  name:'Plasma Rift',  sub:'Fast darts and drone screens. Kinetic and saws cut through.',color:C.violet, price:1,uw:{rock:1,dart:2,shield:6,swarm:10,invader:14,chunk:24},     sig:['dart','shield'],     bias:{saw:2.2,turret:1.4,chain:1.5}, hp:3.5},
+  {id:'void',  name:'Void Gate',    sub:'Dense rock and brutes. Only heavy hitters survive.',          color:C.red,    price:1,uw:{rock:1,chunk:3,brute:8,shield:15,swarm:22,dart:28},       sig:['chunk','brute'],     bias:{mortar:2.2,saw:2,field:1.5}, hp:4.8}
 ];
 const TABS=[{id:'turret',name:'Turret',color:C.cyan},{id:'base',name:'Base',color:C.mint},{id:'mine',name:'Mines',color:C.orange},{id:'field',name:'Field',color:C.violet},{id:'chain',name:'Chain',color:C.yellow},{id:'saw',name:'Saw',color:C.lime},{id:'mortar',name:'Mortar',color:C.amber},{id:'bestiary',name:'Bestiary',color:C.lime}];
 
@@ -448,7 +448,7 @@ const newInv=()=>({pow:[0,0,0,0],tmp:[0,0,0,0],rch:[0,0,0,0],cap:[0,0,0,0],frt:[
 const newPW=()=>({best:0,sel:1,perf:{},eclr:{}});
 function pw(o){ return o.prog[o.world]||(o.prog[o.world]=newPW()); }
 const newP=()=>{
-  const o={inv:newInv(),lv:{},world:'belt',own:{belt:true},prog:{},en:EN_MAX,enT:Date.now()};
+  const o={inv:newInv(),lv:{},world:'belt',own:{belt:true},prog:{},en:EN_MAX,enV:2,enT:Date.now()};
   Object.defineProperty(o,'best',{get(){ return pw(o).best; },set(v){ pw(o).best=v; },enumerable:false});
   Object.defineProperty(o,'sel',{get(){ return pw(o).sel; },set(v){ pw(o).sel=v; },enumerable:false});
   return o;
@@ -459,7 +459,7 @@ try{
   if(s){
     const o=JSON.parse(s); P.lv=o.lv||{};
     if(o.inv) for(const t in P.inv) if(Array.isArray(o.inv[t])) for(let i=0;i<4;i++) P.inv[t][i]=Math.max(0,+o.inv[t][i]||0);
-    P.en=isFinite(+o.en)?Math.max(0,Math.min(EN_MAX,+o.en)):EN_MAX; P.enT=+o.enT||Date.now();
+    P.en=(o.enV===2&&isFinite(+o.en))?Math.max(0,Math.min(EN_MAX,+o.en)):EN_MAX; P.enT=+o.enT||Date.now();
     if(o.prog){ for(const k in o.prog){ const q=o.prog[k]||{}; P.prog[k]={best:+q.best||0,sel:+q.sel||1,perf:q.perf||{},eclr:q.eclr||{}}; } P.own=Object.assign({belt:true},o.own); if(WORLDS.some(w=>w.id===o.world)) P.world=o.world; }
     else P.prog.belt={best:+o.best||0,sel:+o.sel||1,perf:{},eclr:{}};
   } else {
@@ -1402,7 +1402,7 @@ function win(){
     +'<div class="stat1"><span style="color:var(--red)" title="Base health left">'+ico('heart',16)+Math.round(frac*100)+'%</span>'
     +(!el&&perfect?'<span style="color:var(--yellow)" title="Perfect">'+ico('pow',16)+(hadPerf?'':' Elite unlocked')+'</span>':'')+'</div>'
     +enLine()
-    +'<div class="obtns"><button class="btn" data-o="armory" type="button">Home</button>'+(canNext?'<button class="btn big" data-o="next" type="button" aria-label="Next level">Level '+nx+' '+ico('bolt',14)+(el?2:1)+'</button>':'')+'</div>';
+    +'<div class="obtns"><button class="btn" data-o="armory" type="button">Home</button>'+(canNext?'<button class="btn big" data-o="next" type="button" aria-label="Next level">Level '+nx+' '+ico('bolt',14)+(el?EN_COST*2:EN_COST)+'</button>':'')+'</div>';
   overlay.innerHTML=h; overlay.hidden=false; focusFirst();
 }
 function gameOver(){
@@ -1414,7 +1414,7 @@ function gameOver(){
   overlay.innerHTML='<h1>Base lost</h1><p class="sub">'+(G.elite?'Elite ':'Level ')+G.n+' \u00b7 wave '+G.wave+'/'+G.NW+'</p>'
     +dropsHtml(got)
     +enLine()
-    +'<div class="obtns"><button class="btn big" data-o="armory" type="button">Home</button><button class="btn" data-o="retry" type="button" aria-label="Retry">Retry '+ico('bolt',14)+(G.elite?2:1)+'</button></div>';
+    +'<div class="obtns"><button class="btn big" data-o="armory" type="button">Home</button><button class="btn" data-o="retry" type="button" aria-label="Retry">Retry '+ico('bolt',14)+(G.elite?EN_COST*2:EN_COST)+'</button></div>';
   overlay.hidden=false; focusFirst();
 }
 function focusFirst(){ const b=overlay.querySelector('button.big')||overlay.querySelector('button'); if(b) b.focus({preventScroll:true}); }
@@ -1449,8 +1449,8 @@ function enTick(){
   if(k>0){ P.en=Math.min(EN_MAX,P.en+k); P.enT=P.en>=EN_MAX?now:P.enT+k*EN_REGEN; }
 }
 const enNext=()=>P.en>=EN_MAX?0:Math.max(0,EN_REGEN-(Date.now()-P.enT));
-function useEnergy(c){ c=c||1; enTick(); if(P.en<c) return false; if(P.en>=EN_MAX) P.enT=Date.now(); P.en-=c; save(); return true; }
-function tryStart(n,el){ if(el===undefined) el=UI.elite; if(!useEnergy(el?2:1)){ toArmory(); return false; } startLevel(n,P.world,el); return true; }
+function useEnergy(c){ c=c||EN_COST; enTick(); if(P.en<c) return false; if(P.en>=EN_MAX) P.enT=Date.now(); P.en-=c; save(); return true; }
+function tryStart(n,el){ if(el===undefined) el=UI.elite; if(!useEnergy(el?EN_COST*2:EN_COST)){ toArmory(); return false; } startLevel(n,P.world,el); return true; }
 let CDROP0=7, CDROPG=0.5;
 const rarW=(n,e)=>{ const w=[100,n<3?0:20+1.5*n,n<10?0:8+1.6*(n-10),n<20?0:3+1.0*(n-20)]; if(e){ w[0]*=0.6; w[1]*=1.5; w[2]*=1.5; w[3]*=1.5; } return w; };
 function rollRar(n,e){ const w=rarW(n,e); let x=Math.random()*(w[0]+w[1]+w[2]+w[3]); for(let i=0;i<4;i++){ x-=w[i]; if(x<=0&&w[i]>0) return i; } return 0; }
@@ -1477,6 +1477,7 @@ function fuse(t,r){ if(r>=3||P.inv[t][r]<3) return false; P.inv[t][r]-=3; P.inv[
 /* ================= home (armory) ================= */
 const UI={nav:'battle',elite:false};
 let tab='turret', confirmReset=false;
+const worldOpen=i=>i===0||(((P.prog[WORLDS[i-1].id]||{}).best||0)>=LEVELS);
 const curWorld=()=>WORLDS.find(w=>w.id===P.world)||WORLDS[0];
 const uwFor=wd=>(wd&&wd.uw)||UW;
 function levelMobs(n){ const uw=uwFor(curWorld()); return Object.keys(uw).filter(k=>MOB[k]&&MOB[k].spawn&&Math.ceil(uw[k]/20)<=n); }
@@ -1484,7 +1485,7 @@ const totalCards=()=>{ let t=0; for(const k in P.inv) t+=P.inv[k].reduce((a,b)=>
 const TABICO={turret:'turret',base:'frt',mine:'mine',field:'field',chain:'chain',saw:'saw',mortar:'mortar'};
 const NAVS=[['arsenal','Arsenal','pow'],['codex','Codex','eye'],['battle','Battle','aim'],['worlds','Worlds','world']];
 function fillEnergy(){
-  enTick(); const cost=UI.elite&&UI.nav==='battle'?2:1, nx=enNext();
+  enTick(); const cost=UI.elite&&UI.nav==='battle'?EN_COST*2:EN_COST, nx=enNext();
   const box=$('enBox'); if(box) box.innerHTML=ico('bolt',16)+P.en+'/'+EN_MAX+(P.en>=EN_MAX?'':'<small>'+fmtT(nx)+'</small>');
   const d=armoryEl.querySelector('[data-act="deploy"]');
   if(d){ const lk=d.dataset.lock==='1'; d.disabled=lk||P.en<cost; d.innerHTML=lk?ico('lock',18)+'Locked':(P.en<cost?ico('bolt',18)+fmtT(nx):'Battle '+ico('bolt',18)+cost); }
@@ -1514,8 +1515,8 @@ function battleHtml(){
     +'<div class="pvwrap"><canvas id="pv" aria-label="Preview of this level\'s enemies"></canvas>'+(el?'<span class="pvtag">ELITE</span>':'')+(pr.perf[n]&&!el?'<span class="pvstar" title="Perfected">'+ico('pow',20)+'</span>':'')
     +(lockElite?'<div class="pvlock">'+ico('lock',30)+'<span>Clear level '+n+' with no base damage to unlock Elite</span></div>':'')+'</div>'
     +'<button class="chev r" data-act="next" type="button" aria-label="Next level" '+(n>=maxSel?'disabled':'')+'>'+ico('chev',30)+'</button></div>'
-    +'<div class="facts"><span title="Waves">'+ico('wave',18)+waveCount(n)+'</span><span title="Cards per clear">'+ico('cards',18)+'~'+cnt+'</span>'+(el?'<span style="color:var(--red)" title="Costs 2 energy">'+ico('bolt',18)+'x2</span>':'')+'</div>'
-    +'<button class="btn big go" data-act="deploy" type="button" data-lock="'+(lockElite?1:0)+'">Battle</button></div>';
+    +'<div class="facts"><span title="Waves">'+ico('wave',18)+waveCount(n)+'</span><span title="Cards per clear">'+ico('cards',18)+'~'+cnt+'</span>'+(el?'<span style="color:var(--red)" title="Elite costs double energy">'+ico('bolt',18)+'x2</span>':'')+'</div>'
+    +'<button class="btn big go" data-act="deploy" type="button" data-lock="'+(lockElite?1:0)+'">Battle</button>'+(P.en<(el?EN_COST*2:EN_COST)?'<button class="mini" data-act="ad" type="button">Watch ad: +'+EN_AD+' energy</button>':'')+'</div>';
   return h;
 }
 function arsenalHtml(){
@@ -1528,7 +1529,7 @@ function arsenalHtml(){
       +(maxed?'':'<div class="need'+(ok?'':' short')+'"><span>Needs '+need+'</span><span class="rtag" style="--g:'+RAR[b].color+'">'+RAR[b].name+'</span><span>'+ct.name+' \u00b7 have '+have+'</span></div>')
       +'<button class="btn sm" data-buy="'+u.id+'" type="button" style="--c:'+ct.color+'" '+(ok?'':'disabled')+'>'+(maxed?'Max':'Upgrade')+'</button></div>';
   });
-  h+='</div><div class="foot">'+(confirmReset?'<span class="note">Erase all upgrades, cards and progress?</span><button class="btn sm" data-act="reset2" type="button" style="--c:var(--red)">Erase</button><button class="btn sm" data-act="cancel" type="button">Cancel</button>':'<button class="mini" data-act="reset" type="button">Reset progress</button><button class="mini" data-act="ad" type="button" title="Placeholder for a rewarded ad">Demo: ad +1 energy</button><button class="mini" data-act="refill" type="button" title="Placeholder for a purchase">Demo: refill energy</button>')+'</div>';
+  h+='</div><div class="foot">'+(confirmReset?'<span class="note">Erase all upgrades, cards and progress?</span><button class="btn sm" data-act="reset2" type="button" style="--c:var(--red)">Erase</button><button class="btn sm" data-act="cancel" type="button">Cancel</button>':'<button class="mini" data-act="reset" type="button">Reset progress</button><button class="mini" data-act="ad" type="button" title="Placeholder for a rewarded ad">Demo: ad +5 energy</button><button class="mini" data-act="refill" type="button" title="Placeholder for a purchase">Demo: refill energy</button>')+'</div>';
   return h;
 }
 function codexHtml(){
@@ -1543,13 +1544,13 @@ function codexHtml(){
 function worldsHtml(){
   let h='<div class="wlist">';
   WORLDS.forEach(wd=>{
-    const own=!!P.own[wd.id]||!wd.price, pr=P.prog[wd.id]||{best:0}, active=P.world===wd.id, uw=uwFor(wd);
+    const wi=WORLDS.indexOf(wd), own=worldOpen(wi), pr=P.prog[wd.id]||{best:0}, active=P.world===wd.id, uw=uwFor(wd);
     const sig=(wd.sig&&wd.sig.length?wd.sig:Object.keys(uw).filter(k=>MOB[k]&&MOB[k].spawn).slice(0,4));
     h+='<div class="wcard'+(active?' on':'')+'" style="--wc:'+wd.color+'"><div class="wh"><span class="wi">'+ico('world',22)+'</span><div class="wt"><b>'+wd.name+'</b><span>'+wd.sub+'</span></div>'+(own?'':'<span class="wlock">'+ico('lock',20)+'</span>')+'</div>'
       +'<div class="wm">'+sig.map(k=>'<canvas width="120" height="120" data-t="'+k+'" aria-label="'+MOB[k].name+'"></canvas>').join('')
       +Object.keys(wd.bias).map(w=>'<span class="bw" title="Favoured weapon">'+ico(WIC[w]||'pow',13)+'x'+wd.bias[w]+'</span>').join('')
       +'<span class="pr" title="Levels cleared">'+pr.best+'/'+LEVELS+'</span></div>'
-      +'<div class="wa">'+(active?'<span class="act">'+ico('aim',16)+'Active</span>':own?'<button class="btn sm" data-world="'+wd.id+'" type="button" style="--c:'+wd.color+'">Enter</button>':'<button class="btn sm" data-buyworld="'+wd.id+'" type="button" style="--c:'+C.yellow+'" title="Demo unlock: no payment yet">'+ico('lock',14)+' '+wd.price+'</button>')+'</div></div>';
+      +'<div class="wa">'+(active?'<span class="act">'+ico('aim',16)+'Active</span>':own?'<button class="btn sm" data-world="'+wd.id+'" type="button" style="--c:'+wd.color+'">Enter</button>':'<span class="act" style="color:var(--dim)">'+ico('lock',14)+'Clear level '+LEVELS+' of '+WORLDS[wi-1].name+'</span>')+'</div></div>';
   });
   return h+'</div>';
 }
@@ -1661,11 +1662,11 @@ armoryEl.addEventListener('scroll',hideTip,true);
 armoryEl.addEventListener('contextmenu',e=>{ if(e.target.id==='pv'||e.target.closest('canvas[data-t]')) e.preventDefault(); });
 
 armoryEl.addEventListener('click',e=>{
-  const t=e.target.closest('[data-act],[data-buy],[data-tab],[data-fuse],[data-nav],[data-mode],[data-world],[data-buyworld]'); if(!t) return;
+  const t=e.target.closest('[data-act],[data-buy],[data-tab],[data-fuse],[data-nav],[data-mode],[data-world]'); if(!t) return;
   if(t.dataset.nav){ UI.nav=t.dataset.nav; renderArmory(); return; }
   if(t.dataset.mode){ UI.elite=t.dataset.mode==='e'; renderArmory(); return; }
-  if(t.dataset.world){ P.world=t.dataset.world; UI.elite=false; UI.nav='battle'; save(); renderArmory(); return; }
-  if(t.dataset.buyworld){ P.own[t.dataset.buyworld]=true; save(); renderArmory(); return; }
+  if(t.dataset.world){ if(!worldOpen(WORLDS.findIndex(w=>w.id===t.dataset.world))) return; P.world=t.dataset.world; UI.elite=false; UI.nav='battle'; save(); renderArmory(); return; }
+  
   if(t.dataset.tab){ tab=t.dataset.tab; renderArmory(); return; }
   if(t.dataset.buy){ if(buyUp(t.dataset.buy)){ Music.up(); renderArmory(); } return; }
   if(t.dataset.fuse){ const p=t.dataset.fuse.split(':'); if(fuse(p[0],+p[1])){ Music.up(); renderArmory(); } return; }
@@ -1676,7 +1677,7 @@ armoryEl.addEventListener('click',e=>{
   else if(a==='reset'){ confirmReset=true; renderArmory(); }
   else if(a==='cancel'){ confirmReset=false; renderArmory(); }
   else if(a==='reset2'){ P=newP(); UI.elite=false; confirmReset=false; save(); renderArmory(); }
-  else if(a==='ad'){ enTick(); if(P.en<EN_MAX){ if(P.en===0) P.enT=Date.now(); P.en++; if(P.en>=EN_MAX) P.enT=Date.now(); } save(); renderArmory(); }
+  else if(a==='ad'){ enTick(); if(P.en<EN_MAX){ if(P.en>=EN_MAX-0) P.enT=Date.now(); P.en=Math.min(EN_MAX,P.en+EN_AD); if(P.en>=EN_MAX) P.enT=Date.now(); } save(); renderArmory(); }
   else if(a==='refill'){ P.en=EN_MAX; P.enT=Date.now(); save(); renderArmory(); }
 });
 
