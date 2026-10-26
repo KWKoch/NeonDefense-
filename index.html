@@ -390,7 +390,7 @@ for(const k in UW) MOB[k].unlock=Math.ceil(UW[k]/20);
 const INTRO={};
 
 /* ================= upgrades ================= */
-let WAVEHP=0.1, CRK=1, HPK=6.0, MOBN=22, MOBF=3.2, HPG=1.07, HPA=0, POOL0=55, POOLG=1.145, COSTK=1;
+let WAVEHP=0.1, CRK=1, HPK=6.0, MOBN=18, MOBF=3.2, HPG=1.07, HPA=0, POOL0=55, POOLG=1.145, COSTK=1;
 const n1=v=>v<10?v.toFixed(1):String(Math.round(v));
 const EN_MAX=50, EN_COST=5, EN_REGEN=96*1000, EN_AD=5;   /* 50 max, 5 per attempt (10 elite), ~8 min per attempt back, rewarded ad = +5 */
 const ST={
@@ -612,10 +612,11 @@ const stars=[]; for(let i=0;i<90;i++) stars.push({x:Math.random()*W,y:Math.rando
 
 /* ================= level and wave generation ================= */
 const waveCount=n=>n%50===0?40:n%10===0?30:20;
-const mobn=n=>Math.max(MOBF,MOBN*Math.pow(0.94,n-1));
+const earlyDamp=n=>n<=5?0.5+0.1*(n-1):1;
+const mobn=n=>Math.max(MOBF,MOBN*Math.pow(0.94,n-1)*earlyDamp(n));
 let LATEK=0.01;
 const hpScale=n=>Math.pow(HPG,n-1)*(1+HPA*(n-1))*(1+LATEK*Math.pow(Math.max(0,n-12),2));
-const waveBudget=(n,w,elite)=>1.6*(5.2+0.7*n)*(1+0.03*(w-1))*(elite?1.5:1);
+const waveBudget=(n,w,elite)=>1.4*(5.2+0.7*n)*(1+0.03*(w-1))*(elite?1.5:1);
 function levelPoints(n){
   const NW=waveCount(n); let t=0;
   for(let w=1;w<=NW;w++){
