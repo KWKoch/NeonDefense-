@@ -662,7 +662,7 @@ function buildWave(n,w){
     const pts=cost[type]; budget-=pts;
     const x=R(34,W-34), vx=R(-14,14);
     if(type==='swarm'){
-      const cnt=Math.min(10,4+Math.floor(n/6));
+      const cnt=Math.min(5,2+Math.floor(n/12));
       add(t,()=>{ for(let i=0;i<cnt;i++) spawn('swarm',clamp(x+(i%3-1)*22,20,W-20),-14-i*13,{}); });
     } else add(t,()=>spawn(type,x,-30,{vx:type==='dart'||type==='shield'?0:vx}));
   }
