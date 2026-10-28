@@ -565,7 +565,12 @@ try{
     if(old){ const o=JSON.parse(old); P.prog.belt={best:+o.best||0,sel:+o.sel||1,perf:{},eclr:{}}; }
   }
 }catch(e){}
-function save(){ NDStore.set(SKEY,JSON.stringify(P)); try{ if(window.RRcloud&&RRcloud.enabled) RRcloud.push(); }catch(e){} }
+/* Teaching "seen" flags live in their own key too, so a cloud save swap or a mid-run close can never make a tooltip repeat. */
+const SEENK='nd-seen-v1';
+try{ if(!NDStore.get(SEENK)&&Object.keys(P.prog||{}).some(k=>(P.prog[k].best||0)>1)&&!(P.seenW&&Object.keys(P.seenW).length)){ P.seenW={}; ['turret','mine','field','chain','saw','mortar'].forEach(k=>P.seenW[k]=1); } } catch(e){}
+try{ const q=JSON.parse(NDStore.get(SEENK)||'{}'); P.seen=Object.assign({},q.m||{},P.seen||{}); P.seenW=Object.assign({},q.w||{},P.seenW||{}); }catch(e){}
+function persistSeen(){ try{ NDStore.set(SEENK,JSON.stringify({m:P.seen||{},w:P.seenW||{}})); }catch(e){} }
+function save(){ persistSeen(); NDStore.set(SKEY,JSON.stringify(P)); try{ if(window.RRcloud&&RRcloud.enabled) RRcloud.push(); }catch(e){} }
 const L=id=>P.lv[id]||0;
 
 /* ================= helpers ================= */
@@ -775,7 +780,7 @@ function scaleRes(r,n){ const x=1+0.009*Math.max(0,n-1), k=r.k+'|'+r.b+'|'+r.e+'
 function spawn(type,x,y,o){
   const d=MOB[type], n=G.n;
   let hp=Math.max(1,Math.round(d.hp*G.hpS*(G.wFac||1)*HPK/mobn(n)*(G.mutHp||1)*earlyHp(n)));
-  if(!P.seen[type]){ P.seen[type]=1; if(d.spawn||type==='boss') queueTeach({kind:'mob',type:type}); }
+  if(!P.seen[type]){ P.seen[type]=1; persistSeen(); if(d.spawn||type==='boss') queueTeach({kind:'mob',type:type}); }
   if(type==='boss'){ const tier=n/10; hp=Math.round(140*G.hpS*(1+n/25)*(o&&o.mega?2.5:1)); o=Object.assign({bt:tier,bd:3,bo:5},o); }
   if(type==='orb') hp=1;
   const e=Object.assign({type:type,x:x,y:y,vx:0,vy:d.vy*G.spS*(G.mutSp||1),regen:d.regen||0,lh:-9,r:d.r,hp:hp,maxhp:hp,val:Math.max(1,Math.round(d.val*G.cs)),dmg:Math.max(1,Math.round(d.dmg*(1+n*0.03)/mobn(n))),
@@ -2230,7 +2235,7 @@ function closeCards(){ G.state='playing'; shopEl.hidden=true; toolKey=''; hudKey
 function pickCard(i){
   if(G.state!=='cards') return;
   const c=G.offer[i]; if(!c) return;
-  applyCard(c); Music.up(); if(c.unlock){ P.seenW=P.seenW||{}; if(!P.seenW[c.w]){ P.seenW[c.w]=1; try{ save(); }catch(e){} queueTeach({kind:'weapon',w:c.w}); } }
+  applyCard(c); Music.up(); if(c.unlock){ P.seenW=P.seenW||{}; if(!P.seenW[c.w]){ P.seenW[c.w]=1; persistSeen(); try{ save(); }catch(e){} queueTeach({kind:'weapon',w:c.w}); } }
   if(G.pickQ>0){ G.pickQ--; nextOffer(); } else closeCards();
 }
 function rerollCards(){ if(G.state!=='cards'||G.rerolls<=0) return; G.rerolls--; G.offer=offerCards(); renderCards(); }
@@ -2362,10 +2367,10 @@ window.__rr={fireball:fireball,chip:chip,openTeach:openTeach,fireMortar:fireMort
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 29</div>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 30</div>
 <script>
 /* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
-(function(){ const BUILD=29; let busy=false, shown=false;
+(function(){ const BUILD=30; let busy=false, shown=false;
   const inRun=()=>{ try{ return typeof G!=='undefined'&&(G.state==='playing'||G.state==='cards'||G.state==='shop'||G.state==='paused'||G.state==='teach'); }catch(e){ return false; } };
   function wipeReload(){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
     if(n>=3) return;
