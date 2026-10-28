@@ -1792,6 +1792,8 @@ const dropCount=(n,frac,rep,el)=>Math.max(1,Math.round((CDROP0+CDROPG*n)*(rep?0.
 function awardCards(count,n,bonus,el){
   const got=[]; for(let i=0;i<count;i++) got.push({t:rollType(),r:rollRar(n,el)});
   for(let i=0;i<bonus;i++) got.push({t:rollType(),r:topRar(n,el)});
+  /* starter support: the first five levels always drop extra cards of the types the turret upgrades with (damage, rate, pierce, barrels) */
+  if(n<=5&&!el){ const tw=[['pow',4],['tmp',3],['rch',1],['cap',1]]; for(let i=0;i<2;i++){ let x=Math.random()*9, t='pow'; for(const q of tw){ x-=q[1]; if(x<=0){ t=q[0]; break; } } got.push({t:t,r:0}); } }
   got.forEach(c=>{ P.inv[c.t][c.r]++; }); return got;
 }
 const bandOf=(lv,max)=>Math.min(3,Math.floor(4*lv/max));
@@ -2105,13 +2107,15 @@ function eligible(c){
 }
 function offerCards(){
   const bias=(G.wd&&G.wd.bias)||{};
-  const pool=CARDS.filter(eligible).map(c=>({c:c,w:(c.wt||(c.evo||c.ult?9:c.unlock?(wcount()<2?14:7):c.t===1?10:c.t===2?5:4))*(bias[c.w]||1)}));
+  const early=G.n<=5&&!G.elite;
+  const pool=CARDS.filter(eligible).map(c=>({c:c,w:(c.wt||(c.evo||c.ult?9:c.unlock?(wcount()<2?14:7):c.t===1?10:c.t===2?5:4))*(bias[c.w]||1)*(early?(c.w==='turret'?2.4:c.unlock?0.45:1):1)}));
   const out=[];
   while(out.length<3&&pool.length){
     const tot=pool.reduce((a,b)=>a+b.w,0); let r=Math.random()*tot, i=0;
     for(;i<pool.length;i++){ r-=pool[i].w; if(r<=0) break; }
     i=Math.min(i,pool.length-1); out.push(pool[i].c); pool.splice(i,1);
   }
+  if(early&&!out.some(c=>c.w==='turret')){ const tp=CARDS.filter(c=>c.w==='turret'&&eligible(c)&&c.id!=='repair'); if(tp.length){ const pick=tp[Math.floor(Math.random()*tp.length)]; if(out.length<3) out.push(pick); else out[out.length-1]=pick; } }
   const big=CARDS.filter(c=>(c.evo||c.ult)&&eligible(c));
   if(big.length&&!out.some(c=>c.evo||c.ult)){ const ult=big.filter(c=>c.ult), pick=(ult.length?ult:big)[Math.floor(Math.random()*(ult.length?ult.length:big.length))]; if(out.length<3) out.push(pick); else out[2]=pick; }
   return out;
@@ -2321,10 +2325,10 @@ window.__rr={chip:chip,openTeach:openTeach,fireMortar:fireMortar,shape:shape,spa
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 25</div>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 26</div>
 <script>
 /* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
-(function(){ const BUILD=25; let busy=false, shown=false;
+(function(){ const BUILD=26; let busy=false, shown=false;
   const inRun=()=>{ try{ return typeof G!=='undefined'&&(G.state==='playing'||G.state==='cards'||G.state==='shop'||G.state==='paused'||G.state==='teach'); }catch(e){ return false; } };
   function wipeReload(){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
     if(n>=3) return;
