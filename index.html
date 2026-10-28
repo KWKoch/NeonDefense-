@@ -1349,9 +1349,14 @@ function drawEnemy(e){
   ctx.restore();
   if(e.latched){ ctx.shadowBlur=0; ctx.strokeStyle='rgba(255,56,96,.7)'; ctx.lineWidth=1.4; ctx.beginPath(); ctx.moveTo(e.x,e.y); ctx.lineTo(T.x,TURRET_Y-6); ctx.stroke(); }
   if(e.slow<1){ ctx.shadowBlur=0; ctx.strokeStyle='rgba(157,77,255,.55)'; ctx.lineWidth=1.2; ctx.beginPath(); ctx.arc(e.x,e.y,e.r+5,0,6.2832); ctx.stroke(); }
-  if(e.maxhp>=8&&e.type!=='boss'&&e.hp<e.maxhp){
-    ctx.shadowBlur=0; ctx.fillStyle='#1b2a31'; ctx.fillRect(e.x-e.r,e.y-e.r-9,e.r*2,3);
-    ctx.fillStyle=e.color; ctx.fillRect(e.x-e.r,e.y-e.r-9,e.r*2*Math.max(0,e.hp/e.maxhp),3);
+  if(e.type!=='boss'&&e.maxhp>1.5&&e.hp<e.maxhp&&e.hp>0){
+    if(e.tr===undefined) e.tr=e.maxhp; if(e.tr<e.hp) e.tr=e.hp;
+    if(e.tr>e.hp) e.tr=Math.max(e.hp,e.tr-e.maxhp*0.015-(e.tr-e.hp)*0.06);
+    const bw=Math.max(22,e.r*2.1), bh=4.5, bx=e.x-bw/2, by=e.y-e.r-12, f=Math.max(0,e.hp/e.maxhp), ft=Math.max(f,e.tr/e.maxhp);
+    ctx.shadowBlur=0; ctx.fillStyle='rgba(0,0,0,.75)'; ctx.fillRect(bx-1.5,by-1.5,bw+3,bh+3);
+    ctx.fillStyle='rgba(255,255,255,.9)'; ctx.fillRect(bx,by,bw*ft,bh);
+    ctx.fillStyle=f>0.6?'#3dff7a':f>0.3?'#ffd21f':'#ff3860'; ctx.fillRect(bx,by,bw*f,bh);
+    ctx.strokeStyle='rgba(255,255,255,.35)'; ctx.lineWidth=1; ctx.strokeRect(bx-1.5,by-1.5,bw+3,bh+3);
   }
 }
 function neon(color,blur,lw){ ctx.strokeStyle=color; ctx.shadowColor=color; ctx.shadowBlur=blur*sx; ctx.lineWidth=lw; }
@@ -2231,10 +2236,10 @@ window.__rr={shape:shape,spawn:spawn,G:G,get P(){return P;},set P(v){P=v;},newP:
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 18</div>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 19</div>
 <script>
 /* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
-(function(){ const BUILD=18; let busy=false, shown=false;
+(function(){ const BUILD=19; let busy=false, shown=false;
   const inRun=()=>{ try{ return typeof G!=='undefined'&&(G.state==='playing'||G.state==='cards'||G.state==='shop'||G.state==='paused'); }catch(e){ return false; } };
   function wipeReload(){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
     if(n>=3) return;
