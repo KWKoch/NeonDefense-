@@ -2124,6 +2124,9 @@ function offerCards(){
   const bias=(G.wd&&G.wd.bias)||{};
   const early=G.n<=5&&!G.elite;
   const pool=CARDS.filter(eligible).map(c=>({c:c,w:(c.wt||(c.evo||c.ult?9:c.unlock?(wcount()<2?14:7):c.t===1?10:c.t===2?5:4))*(bias[c.w]||1)*(early?(c.w==='turret'?2.4:c.unlock?0.45:1):1)}));
+  /* after the opening levels, every weapon you own competes on equal footing with the turret instead of the turret's longer card list swamping the offers */
+  if(!early){ const gs={}; for(const q of pool){ if(q.c.unlock||q.c.evo||q.c.ult||q.c.cond) continue; gs[q.c.w]=(gs[q.c.w]||0)+q.w; }
+    const ks=Object.keys(gs); if(ks.length>1){ const avg=ks.reduce((t,k)=>t+gs[k],0)/ks.length; for(const q of pool){ if(q.c.unlock||q.c.evo||q.c.ult||q.c.cond) continue; q.w*=Math.max(0.35,Math.min(2.5,avg/gs[q.c.w])); } } }
   const out=[];
   while(out.length<3&&pool.length){
     const tot=pool.reduce((a,b)=>a+b.w,0); let r=Math.random()*tot, i=0;
@@ -2340,10 +2343,10 @@ window.__rr={fireball:fireball,chip:chip,openTeach:openTeach,fireMortar:fireMort
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 27</div>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 28</div>
 <script>
 /* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
-(function(){ const BUILD=27; let busy=false, shown=false;
+(function(){ const BUILD=28; let busy=false, shown=false;
   const inRun=()=>{ try{ return typeof G!=='undefined'&&(G.state==='playing'||G.state==='cards'||G.state==='shop'||G.state==='paused'||G.state==='teach'); }catch(e){ return false; } };
   function wipeReload(){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
     if(n>=3) return;
