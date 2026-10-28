@@ -804,11 +804,23 @@ function spawnFormation(cols,rows,speed,pts){
 }
 
 /* ================= combat ================= */
-function burst(x,y,color,n,spd){
-  for(let i=0;i<n&&G.parts.length<500;i++){ const a=Math.random()*6.283,s=rnd(spd*0.3,spd); G.parts.push({x:x,y:y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:rnd(0.35,0.9),max:0.9,color:color,size:rnd(1.5,3.6),tri:Math.random()<0.35}); }
+function burst(x,y,color,n,spd,sz){
+  for(let i=0;i<n&&G.parts.length<500;i++){ const a=Math.random()*6.283,s=rnd(spd*0.3,spd); G.parts.push({x:x,y:y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:rnd(0.35,0.9),max:0.9,color:color,size:rnd(1.5,3.6)*(sz||1),tri:Math.random()<0.35}); }
 }
 function float(x,y,text,color){ G.floats.push({x:x,y:y,text:text,color:color,life:0.9,t:0}); }
+/* Big readable explosions: a filled fireball, shockwave rings and chunky sparks, all scaled by R (radius) and power (1-3). */
+function fireball(x,y,R,color,power){
+  if(!G.blobs) G.blobs=[]; power=power||1;
+  G.blobs.push({x:x,y:y,r:R*0.3,max:R,t:0,life:0.3+0.08*power,color:color});
+  G.rings.push({x:x,y:y,r:R*0.3,max:R*1.2,life:0.35+0.05*power,t:0,color:'#ffffff'});
+  if(power>=2) G.rings.push({x:x,y:y,r:R*0.2,max:R*1.7,life:0.55,t:0,color:color});
+  if(power>=3) G.rings.push({x:x,y:y,r:R*0.1,max:R*2.2,life:0.75,t:0,color:'#ffffff'});
+  const sz=1+R/60;
+  burst(x,y,color,Math.round(10+R*0.28),R*4+120,sz); burst(x,y,'#ffffff',Math.round(6+R*0.14),R*3+100,sz*0.8);
+  G.shake=Math.min(1,G.shake+0.03*power+R/900);
+}
 function explode(e){
+  fireball(e.x,e.y,e.r*(e.type==='boss'?3.2:2.3)+8,e.color,e.r<20?1:e.r<40?2:3);
   burst(e.x,e.y,e.color,Math.round(e.r*0.9)+6,e.r>40?300:200);
   G.rings.push({x:e.x,y:e.y,r:e.r,max:e.r*(e.type==='boss'?4:3),life:0.4,t:0,color:e.color});
   if(e.type==='boss'){ burst(e.x,e.y,C.cyan,60,360); G.shake=1; }
@@ -847,6 +859,7 @@ function fire(target){
     G.bullets.push({x:T.x+Math.sin(a)*24,y:TURRET_Y-24,vx:Math.sin(a)*BS,vy:-Math.cos(a)*BS,dmg:dmg,pierce:pierce,hits:[],target:target});
   }
   T.cool=ST.rate(L('rate'))*Math.pow(0.87,bst('rate'))*(sup?0.5:1); T.recoil=1; Music.shot();
+  if(!G.blobs) G.blobs=[]; if(G.blobs.length<40) G.blobs.push({x:T.x,y:TURRET_Y-34,r:3,max:9+2.5*n+1.2*L('dmg')+2*bst('dmg'),t:0,life:0.12,color:G.mode==='auto'?'#00f0ff':'#ff2bd6'});
 }
 /* Would a shot fired from the turret's current x hit e? Checks every barrel's straight line against e's predicted position. */
 function hitsFrom(e){
@@ -946,7 +959,7 @@ function freeze(e,t){ if(e.dead) return; e.frz=Math.max(e.frz||0,e.type==='boss'
 function detonate(m){
   m.dead=true; const R=mineR(), dmg=ST.mdmg(L('mdmg'))*Math.pow(1.4,bst('mine'));
   G.rings.push({x:m.x,y:m.y,r:10,max:R,life:0.45,t:0,color:C.orange}); G.rings.push({x:m.x,y:m.y,r:6,max:R*0.6,life:0.3,t:0,color:C.amber});
-  burst(m.x,m.y,C.orange,26,260); G.shake=Math.min(1,G.shake+0.3); Music.boom(true);
+  fireball(m.x,m.y,R*0.95,C.orange,2); G.shake=Math.min(1,G.shake+0.2); Music.boom(true);
   blast(m.x,m.y,R,dmg);
   if(bst('mfreeze')) for(const e of G.enemies){ if(!e.dead&&Math.hypot(e.x-m.x,e.y-m.y)<R+e.r*0.5) freeze(e,1.6); }
   if(bst('mcluster')) for(let i=0;i<4;i++){ const a=i*1.571+0.785, ox=Math.cos(a)*R*0.9, oy=Math.sin(a)*R*0.9;
@@ -1133,7 +1146,7 @@ function updateMortar(dt){
     if(k>=1&&!sh.done){
       sh.done=true; const R=mortR(), dmg=ST.mortdmg(L('mortdmg'))*Math.pow(1.4,bst('mortpow'))*(bst('mortbust')?2.4:1);
       G.rings.push({x:sh.tx,y:sh.ty,r:10,max:R,life:0.5,t:0,color:C.amber}); G.rings.push({x:sh.tx,y:sh.ty,r:6,max:R*0.6,life:0.32,t:0,color:C.orange});
-      burst(sh.tx,sh.ty,C.amber,40,340); burst(sh.tx,sh.ty,'#ffffff',22,420); burst(sh.tx,sh.ty,C.orange,24,260); G.shake=Math.min(1,G.shake+0.8); G.flashA=0.7; Music.boom(true);
+      fireball(sh.tx,sh.ty,R*1.05,C.amber,3); burst(sh.tx,sh.ty,C.orange,24,260,2); G.shake=Math.min(1,G.shake+0.8); G.flashA=0.7; Music.boom(true);
       G.rings.push({x:sh.tx,y:sh.ty,r:4,max:R*1.35,life:0.7,t:0,color:'#ffffff'}); G.rings.push({x:sh.tx,y:sh.ty,r:4,max:R*0.45,life:0.2,t:0,color:'#ffffff'});
       blast(sh.tx,sh.ty,R,dmg,bst('mortbust')?1:0);
       if(bst('mortclu')) for(let i=0;i<4;i++){ const a=i*1.571+0.4, ox=Math.cos(a)*R*0.95, oy=Math.sin(a)*R*0.95;
@@ -1255,8 +1268,8 @@ function updateBullets(dt){
       const dx=e.x-b.x, dy=e.y-b.y, rr=e.r+4;
       if(dx*dx+dy*dy<rr*rr){
         b.hits.push(e); hurt(e,b.dmg,'k',false); b.pierce--;
-        if(bst('arc')&&!e.dead) hurt(e,b.dmg*0.35*bst('arc'),'e',true);
-        if(bst('frag')){ const fx=e.x, fy=e.y; for(const o of G.enemies){ if(o.dead||o===e) continue; if(Math.hypot(o.x-fx,o.y-fy)<54+o.r*0.4) hurt(o,b.dmg*0.3*bst('frag'),'b',true); } G.rings.push({x:fx,y:fy,r:4,max:42,life:0.22,t:0,color:C.orange}); }
+        if(bst('arc')&&!e.dead){ hurt(e,b.dmg*0.35*bst('arc'),'e',true); const na=2+2*bst('arc'); for(let q=0;q<na;q++){ const a=Math.random()*6.283, d=e.r+18+12*bst('arc')+Math.random()*14; G.bolts.push({a:[e.x,e.y],b:[e.x+Math.cos(a)*d,e.y+Math.sin(a)*d],t:0,life:0.22,color:C.cyan}); } G.rings.push({x:e.x,y:e.y,r:4,max:e.r+24+14*bst('arc'),life:0.25,t:0,color:C.cyan}); }
+        if(bst('frag')){ const fx=e.x, fy=e.y, fr=54+16*(bst('frag')-1); for(const o of G.enemies){ if(o.dead||o===e) continue; if(Math.hypot(o.x-fx,o.y-fy)<fr+o.r*0.4) hurt(o,b.dmg*0.3*bst('frag'),'b',true); } fireball(fx,fy,fr,C.orange,bst('frag')); }
         if(b.pierce<0){ b.dead=true; break; }
       }
     }
@@ -1284,6 +1297,7 @@ function update(dt){
   updateWarps(dt); updateEnemies(dt); updateBullets(dt);
   for(const d of G.delay) d.t-=dt; for(const d of G.delay) if(d.t<=0&&!d.done){ d.done=true; d.fn(); } G.delay=G.delay.filter(d=>!d.done);
   for(const b of G.bolts) b.t+=dt; G.bolts=G.bolts.filter(b=>b.t<b.life);
+  if(G.blobs){ for(const b of G.blobs) b.t+=dt; G.blobs=G.blobs.filter(b=>b.t<b.life); }
   if(G.chips){ for(const c of G.chips){ c.life-=dt; c.x+=c.vx*dt; c.y+=c.vy*dt; c.vx*=0.97; c.vy=c.vy*0.97+40*dt; c.rot+=c.vr*dt; } G.chips=G.chips.filter(c=>c.life>0); }
   for(const p of G.parts){ p.x+=p.vx*dt; p.y+=p.vy*dt; p.vx*=0.985; p.vy*=0.985; p.life-=dt; }
   for(const r of G.rings) r.t+=dt;
@@ -1550,6 +1564,7 @@ function render(dt){
   if(G.chips) for(const c of G.chips){ const k=c.life/c.max; ctx.save(); ctx.translate(c.x,c.y); ctx.rotate(c.rot); ctx.globalAlpha=Math.max(0,Math.min(1,k*1.6)); ctx.shadowBlur=0; ctx.fillStyle=c.color+'66'; ctx.strokeStyle=c.color; ctx.lineWidth=1.2; ctx.beginPath(); for(let i=0;i<5;i++){ const a=i*1.2566, q=c.s*(0.6+0.7*Math.abs(Math.sin(c.sd+i*2.3))); ctx.lineTo(Math.cos(a)*q,Math.sin(a)*q); } ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.restore(); }
   for(const e of G.enemies) drawEnemy(e);
   drawWarps();
+  if(G.blobs){ ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.shadowBlur=0; for(const b of G.blobs){ const k=b.t/b.life, e=1-Math.pow(1-k,2), r=b.r+(b.max-b.r)*e, a=Math.max(0,1-k); const g=ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,r); g.addColorStop(0,'rgba(255,255,255,'+(0.95*a).toFixed(3)+')'); g.addColorStop(0.35,b.color+Math.round(a*200).toString(16).padStart(2,'0')); g.addColorStop(1,b.color+'00'); ctx.fillStyle=g; ctx.beginPath(); ctx.arc(b.x,b.y,r,0,6.2832); ctx.fill(); } ctx.restore(); }
   for(const sw of G.saws) drawSaw(sw);
   for(const sh of G.shells) drawShell(sh);
   for(const b of G.bolts) drawBolt(b);
@@ -1557,8 +1572,8 @@ function render(dt){
   if(G.flashA>0.01){ ctx.fillStyle='rgba(255,226,170,'+(G.flashA*0.4).toFixed(3)+')'; ctx.fillRect(-60,-60,W+120,H+120); G.flashA*=0.9; }
   ctx.shadowBlur=0; ctx.globalCompositeOperation='lighter';
   for(const b of G.bullets){
-    ctx.save(); ctx.translate(b.x,b.y); ctx.rotate(Math.atan2(b.vx,-b.vy));
-    ctx.fillStyle='#aef8ff'; ctx.beginPath(); ctx.moveTo(0,-9); ctx.lineTo(-3,3); ctx.lineTo(3,3); ctx.closePath(); ctx.fill();
+    ctx.save(); ctx.translate(b.x,b.y); ctx.rotate(Math.atan2(b.vx,-b.vy)); { const bs=1+0.09*L('dmg')+0.16*bst('dmg')+0.1*(bst('frag')+bst('arc')); ctx.scale(bs,bs); }
+    ctx.fillStyle=(L('dmg')+bst('dmg')>=8)?'#ffffff':'#aef8ff'; ctx.beginPath(); ctx.moveTo(0,-9); ctx.lineTo(-3,3); ctx.lineTo(3,3); ctx.closePath(); ctx.fill();
     ctx.fillStyle='rgba(0,240,255,.35)'; ctx.fillRect(-1.2,3,2.4,12); ctx.restore();
   }
   for(const p of G.parts){
@@ -1693,7 +1708,7 @@ function startWave(w){
 function startLevel(n,world,elite){
   G.wd=WORLDS.find(w=>w.id===(world||P.world))||WORLDS[0]; G.elite=!!elite; UI.elite=G.elite;
   G.n=n; G.hpS=hpScale(n)*(G.elite?1.6:1)*(G.wd.hp||1); G.spS=1+n*0.01; G.NW=waveCount(n); G.wave=0;
-  G.maxHp=ST.armor(L('armor')); G.hp=G.maxHp; G.earned=0; G.kills=0; G.pot=0; G.credits=0; G.boost={}; G.tools={}; G.pickQ=0; G.rerolls=1; G.offer=[]; G.superOn=0; G.superCd=10; G.chainT=2; G.chips=[]; G.teachQ=[]; { const to=document.getElementById('teachov'); if(to) to.remove(); } G.cpend=null; G.flashA=0; G.sawCd=0; G.stormT=12; G.mort=2; G.mortT=0; G.saws=[]; G.bolts=[]; G.shells=[]; G.fires=[]; G.delay=[]; lastCred=0;
+  G.maxHp=ST.armor(L('armor')); G.hp=G.maxHp; G.earned=0; G.kills=0; G.pot=0; G.credits=0; G.boost={}; G.tools={}; G.pickQ=0; G.rerolls=1; G.offer=[]; G.superOn=0; G.superCd=10; G.chainT=2; G.blobs=[]; G.chips=[]; G.teachQ=[]; { const to=document.getElementById('teachov'); if(to) to.remove(); } G.cpend=null; G.flashA=0; G.sawCd=0; G.stormT=12; G.mort=2; G.mortT=0; G.saws=[]; G.bolts=[]; G.shells=[]; G.fires=[]; G.delay=[]; lastCred=0;
   G.enemies=[]; G.bullets=[]; G.parts=[]; G.rings=[]; G.floats=[]; G.mines=[]; G.fields=[]; G.boss=null; G.tag=null; G.warps=[];
   { const pf=profileFor(G.wd,n,G.elite); G.prof=pf; G.mutHp=pf.mut==='armored'?1.3:pf.mut==='dense'?0.8:pf.mut==='swift'?0.85:1; G.mutSp=pf.mut==='swift'?1.25:1; if(pf.mut||n>1) setTimeout(()=>{ if(G.state==='playing'&&G.n===n&&G.wave<=1) say(pf.name,pf.mut?MUTS[pf.mut].note:(BRIEF[pf.feat]||'')); },1400); }
   G.waveT=0; G.shake=0; G.armed=null; G.ghost.show=false; G.placing=false; G.autoT=0.5;
@@ -2320,15 +2335,15 @@ if(!P.intro){ const io=document.createElement('div'); io.id='introov'; io.innerH
 requestAnimationFrame(frame);
 
 /* test hook for headless checks */
-window.__rr={chip:chip,openTeach:openTeach,fireMortar:fireMortar,shape:shape,spawn:spawn,G:G,get P(){return P;},set P(v){P=v;},newP:newP,startLevel:startLevel,update:update,UPS:UPS,waveCount:waveCount,levelPool:levelPool,hpScale:hpScale,tune:(a,b,c,d,m,k,bk,wh,pm,lk,c0,cg)=>{if(lk!==undefined)LATEK=lk;if(pm!==undefined)PICKM=pm;if(wh!==undefined)WAVEHP=wh;if(k!==undefined)HPK=k;if(m!==undefined)MOBN=m;if(c0!==undefined)CDROP0=c0;if(cg!==undefined)CDROPG=cg;HPG=a;POOL0=b;POOLG=c;if(d!==undefined)HPA=d;},bst:bst,pickCard:pickCard,CARDS:CARDS,offerCards:offerCards,hasTool:hasTool,fireMortar:fireMortar,canMortar:canMortar,T:T,wcount:wcount,canBuy:canBuy,buyUp:buyUp,cardNeed:cardNeed,bandOf:bandOf,avail:avail,awardCards:awardCards,dropCount:dropCount,fuse:fuse,useEnergy:useEnergy,enTick:enTick,tryStart:tryStart,win:win,gameOver:gameOver,profileFor:profileFor,MOB:MOB,WORLDS:WORLDS,briefFor:briefFor};
+window.__rr={fireball:fireball,chip:chip,openTeach:openTeach,fireMortar:fireMortar,shape:shape,spawn:spawn,G:G,get P(){return P;},set P(v){P=v;},newP:newP,startLevel:startLevel,update:update,UPS:UPS,waveCount:waveCount,levelPool:levelPool,hpScale:hpScale,tune:(a,b,c,d,m,k,bk,wh,pm,lk,c0,cg)=>{if(lk!==undefined)LATEK=lk;if(pm!==undefined)PICKM=pm;if(wh!==undefined)WAVEHP=wh;if(k!==undefined)HPK=k;if(m!==undefined)MOBN=m;if(c0!==undefined)CDROP0=c0;if(cg!==undefined)CDROPG=cg;HPG=a;POOL0=b;POOLG=c;if(d!==undefined)HPA=d;},bst:bst,pickCard:pickCard,CARDS:CARDS,offerCards:offerCards,hasTool:hasTool,fireMortar:fireMortar,canMortar:canMortar,T:T,wcount:wcount,canBuy:canBuy,buyUp:buyUp,cardNeed:cardNeed,bandOf:bandOf,avail:avail,awardCards:awardCards,dropCount:dropCount,fuse:fuse,useEnergy:useEnergy,enTick:enTick,tryStart:tryStart,win:win,gameOver:gameOver,profileFor:profileFor,MOB:MOB,WORLDS:WORLDS,briefFor:briefFor};
 })();
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 26</div>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 27</div>
 <script>
 /* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
-(function(){ const BUILD=26; let busy=false, shown=false;
+(function(){ const BUILD=27; let busy=false, shown=false;
   const inRun=()=>{ try{ return typeof G!=='undefined'&&(G.state==='playing'||G.state==='cards'||G.state==='shop'||G.state==='paused'||G.state==='teach'); }catch(e){ return false; } };
   function wipeReload(){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
     if(n>=3) return;
