@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8">
+<html lang="en"><head><meta charset="utf-8"><meta name="google-adsense-account" content="ca-pub-4954431316761739">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <meta name="theme-color" content="#000000">
 <meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes">
@@ -316,10 +316,15 @@ body.menu{background:radial-gradient(140% 55% at 50% -5%,rgba(255,43,214,.22),rg
 #tip .rs i{font-style:normal; font-size:11px; font-weight:700; padding:1px 7px; border-radius:999px; border:1px solid color-mix(in srgb,var(--c) 60%,#000); color:var(--c)}
 .dcard i{font-style:normal; font-size:10px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--g)}
 .dcard small{font-size:10px; letter-spacing:.06em; text-transform:uppercase; color:var(--c)}
-
 #introov{position:fixed; z-index:60; background:rgba(0,0,0,.92)}
 #introov[hidden]{display:none}
+#gate{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:24px;background:#05030c;color:var(--fg);text-align:center}
+#gate[hidden]{display:none}
+#gate h1{margin:0;font-family:var(--display);font-weight:400;font-size:clamp(34px,10vw,56px);color:var(--cyan);text-shadow:0 0 10px var(--cyan),0 0 30px var(--magenta)}
+#gate .gmsg{min-height:1.4em;max-width:320px;opacity:.85}
+#gate .gerr{color:var(--red)}
 </style></head><body>
+<div id="gate" role="dialog" aria-modal="true" aria-label="Sign in"><h1>Neon Defense</h1><p class="gmsg" id="gateMsg">Loading…</p><div class="gbtns" id="gateBtns"></div><p class="gmsg gerr" id="gateErr"></p><p class="gmsg"><a href="https://kwkoch.github.io/privacy.html" target="_blank" rel="noopener" style="color:var(--cyan)">Privacy Policy</a></p></div>
 
 <div id="app" hidden>
   <header id="hud">
@@ -365,6 +370,7 @@ body.menu{background:radial-gradient(140% 55% at 50% -5%,rgba(255,43,214,.22),rg
 <div id="armory"></div>
 <div id="shop" hidden></div>
 
+<script src="ads.js"></script>
 <script>
 (function(){
 'use strict';
@@ -405,16 +411,16 @@ for(const k in UW) MOB[k].unlock=Math.ceil(UW[k]/20);
 const INTRO={};
 
 /* ================= upgrades ================= */
-let WAVEHP=0.1, CRK=1, HPK=6.0, MOBN=10.2, MOBF=2.5, HPG=1.07, HPA=0, POOL0=55, POOLG=1.145, COSTK=1;
+let WAVEHP=0.1, CRK=1, HPK=6.0, MOBN=18, MOBF=3.2, HPG=1.07, HPA=0, POOL0=55, POOLG=1.145, COSTK=1;
 const n1=v=>v<10?v.toFixed(1):String(Math.round(v));
 const EN_MAX=50, EN_COST=5, EN_REGEN=96*1000, EN_AD=5;   /* 50 max, 5 per attempt (10 elite), ~8 min per attempt back, rewarded ad = +5 */
 const ST={
-  rate:l=>0.36*Math.pow(0.9,l), dmg:l=>Math.pow(1.3,l), barrels:l=>1+l, pierce:l=>l, slide:l=>300+l*45, armor:l=>100+l*30,
-  mdmg:l=>8*Math.pow(1.3,l), mrad:l=>48+l*8, mstock:l=>2+l, mrech:l=>5.6*Math.pow(0.88,l),
-  fslow:l=>Math.max(0.18,0.62-0.07*l), fdur:l=>5+l, fwid:l=>100+l*25, fdps:l=>3*Math.pow(1.32,l), frech:l=>9.8*Math.pow(0.9,l),
-  cdmg:l=>5*Math.pow(1.3,l), cj:l=>3+l, ccool:l=>2.8*Math.pow(0.93,l), cfk:l=>1+l,
-  sdmg:l=>3*Math.pow(1.3,l), slife:l=>8+l, ssz:l=>13*(1+0.07*l), scool:l=>0.18*Math.pow(0.9,l),
-  mortdmg:l=>14*Math.pow(1.3,l), mortrad:l=>64+l*8, mortrech:l=>7*Math.pow(0.9,l), mortmax:l=>2+l
+  rate:l=>0.36*Math.pow(0.9,l), dmg:l=>Math.pow(1.18,l), barrels:l=>1+l, pierce:l=>l, slide:l=>300+l*45, armor:l=>100+l*30,
+  mdmg:l=>8*Math.pow(1.18,l), mrad:l=>48+l*8, mstock:l=>2+l, mrech:l=>5.6*Math.pow(0.88,l),
+  fslow:l=>Math.max(0.18,0.62-0.07*l), fdur:l=>5+l, fwid:l=>100+l*25, fdps:l=>3*Math.pow(1.2,l), frech:l=>9.8*Math.pow(0.9,l),
+  cdmg:l=>5*Math.pow(1.18,l), cj:l=>3+l, ccool:l=>2.8*Math.pow(0.93,l), cfk:l=>1+l,
+  sdmg:l=>3*Math.pow(1.18,l), slife:l=>8+l, ssz:l=>13*(1+0.07*l), scool:l=>0.18*Math.pow(0.9,l),
+  mortdmg:l=>14*Math.pow(1.18,l), mortrad:l=>64+l*8, mortrech:l=>7*Math.pow(0.9,l), mortmax:l=>2+l
 };
 const fslowLv=l=>Math.min(6,Math.floor(l/4));
 /* Universal card types: every weapon has one upgrade line per type (ty). Rarity gates how deep a line can go. */
@@ -524,9 +530,11 @@ const newP=()=>{
   Object.defineProperty(o,'sel',{get(){ return pw(o).sel; },set(v){ pw(o).sel=v; },enumerable:false});
   return o;
 };
+/* storage: portal providers may replace window.NDStore (e.g. CrazyGames data module); default = guarded localStorage */
+const NDStore=window.NDStore||{get(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } },set(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }};
 let P=newP();
 try{
-  const s=localStorage.getItem(SKEY);
+  const s=NDStore.get(SKEY);
   if(s){
     const o=JSON.parse(s); P.lv=o.lv||{};
     if(o.inv) for(const t in P.inv) if(Array.isArray(o.inv[t])) for(let i=0;i<4;i++) P.inv[t][i]=Math.max(0,+o.inv[t][i]||0);
@@ -539,11 +547,11 @@ try{
     }
     P.intro=o.intro||(Object.keys(P.prog).some(k=>(P.prog[k].best||0)>0)?1:0);
   } else {
-    const old=localStorage.getItem('rave-rampart-v4');
+    const old=NDStore.get('rave-rampart-v4');
     if(old){ const o=JSON.parse(old); P.prog.belt={best:+o.best||0,sel:+o.sel||1,perf:{},eclr:{}}; }
   }
 }catch(e){}
-function save(){ try{ localStorage.setItem(SKEY,JSON.stringify(P)); }catch(e){} try{ if(window.RRcloud&&RRcloud.enabled) RRcloud.push(); }catch(e){} }
+function save(){ NDStore.set(SKEY,JSON.stringify(P)); try{ if(window.RRcloud&&RRcloud.enabled) RRcloud.push(); }catch(e){} }
 const L=id=>P.lv[id]||0;
 
 /* ================= helpers ================= */
@@ -679,10 +687,11 @@ const stars=[]; for(let i=0;i<90;i++) stars.push({x:Math.random()*W,y:Math.rando
 
 /* ================= level and wave generation ================= */
 const waveCount=n=>n%50===0?40:n%10===0?30:20;
-const mobn=n=>Math.max(MOBF,MOBN*Math.pow(0.88,n-1));
+const earlyDamp=n=>n<=5?0.5+0.1*(n-1):1;
+const mobn=n=>Math.max(MOBF,MOBN*Math.pow(0.94,n-1)*earlyDamp(n));
 let LATEK=0.01;
 const hpScale=n=>Math.pow(HPG,n-1)*(1+HPA*(n-1))*(1+LATEK*Math.pow(Math.max(0,n-12),2));
-const waveBudget=(n,w,elite)=>1.2*(4.5+0.6*n)*(1+0.025*(w-1))*(elite?1.4:1);
+const waveBudget=(n,w,elite)=>1.4*(5.2+0.7*n)*(1+0.03*(w-1))*(elite?1.5:1);
 function levelPoints(n){
   const NW=waveCount(n); let t=0;
   for(let w=1;w<=NW;w++){
@@ -732,7 +741,7 @@ function buildWave(n,w){
     const x=R(34,W-34), vx=R(-14,14);
     const warp=type==='phantom'||(warpP&&rng()<warpP), wy=R(90,330);
     if(type==='swarm'){
-      const cnt=Math.min(10,4+Math.floor(n/6));
+      const cnt=Math.min(5,2+Math.floor(n/12));
       if(warp) add(t,()=>{ for(let i=0;i<cnt;i++) warpIn('swarm',clamp(x+(i%3-1)*22,20,W-20),wy+Math.floor(i/3)*16,{}); });
       else add(t,()=>{ for(let i=0;i<cnt;i++) spawn('swarm',clamp(x+(i%3-1)*22,20,W-20),-14-i*13,{}); });
     } else if(warp) add(t,()=>warpIn(type,clamp(x,40,W-40),wy,{vx:type==='dart'||type==='shield'?0:vx}));
@@ -810,7 +819,7 @@ function leak(e){
 }
 function fire(target){
   const sup=G.superOn>0, n=1+L('barrels')+bst('barrel'), pierce=L('pierce')+bst('pierce')+2*bst('deep');
-  const base=ST.dmg(L('dmg'))*Math.pow(1.35,bst('dmg'))*(sup?1.5:1), cc=0.15*bst('crit');
+  const base=ST.dmg(L('dmg'))*Math.pow(1.32,bst('dmg'))*(sup?1.5:1), cc=0.15*bst('crit');
   for(let i=0;i<n;i++){
     const a=(i-(n-1)/2)*0.085, dmg=Math.random()<cc?base*2.5:base;
     G.bullets.push({x:T.x+Math.sin(a)*24,y:TURRET_Y-24,vx:Math.sin(a)*BS,vy:-Math.cos(a)*BS,dmg:dmg,pierce:pierce,hits:[],target:target});
@@ -831,7 +840,7 @@ function hitsFrom(e){
 function pickTarget(){
   const pend=new Map();
   for(const b of G.bullets) if(b.target&&!b.target.dead) pend.set(b.target,(pend.get(b.target)||0)+b.dmg*b.target.res.k);
-  const sup=G.superOn>0, shot=ST.dmg(L('dmg'))*Math.pow(1.35,bst('dmg'))*(sup?1.5:1), slide=ST.slide(L('rate'))+90*bst('slide');
+  const sup=G.superOn>0, shot=ST.dmg(L('dmg'))*Math.pow(1.32,bst('dmg'))*(sup?1.5:1), slide=ST.slide(L('rate'))+90*bst('slide');
   let best=null,bs=-1e9;
   for(const e of G.enemies){
     if(e.dead||e.y<-e.r*0.3) continue;
@@ -1513,7 +1522,7 @@ function startLevel(n,world,elite){
   G.waveT=0; G.shake=0; G.armed=null; G.ghost.show=false; G.placing=false; G.autoT=0.5;
   G.stock=0; G.mineT=0; G.fieldCd=0;
   T.x=W/2; T.cool=0; T.recoil=0; T.target=null; input.active=false;
-  G.state='playing'; overlay.hidden=true; $('shop').hidden=true; hudKey=''; toolKey=''; thumbKey='';
+  Ads.gameplayStart(); G.state='playing'; overlay.hidden=true; $('shop').hidden=true; hudKey=''; toolKey=''; thumbKey='';
   $('pauseBtn').textContent='Pause';
   showView('game'); setMode(G.mode);
   Music.start(); Music.setBpm(122+Math.min(14,Math.floor(n/4)*1.2));
@@ -1529,7 +1538,7 @@ function dropsHtml(got){
 }
 function enLine(){ enTick(); return '<div class="stat1" title="Energy"><span style="color:var(--yellow)">'+ico('bolt',16)+P.en+'/'+EN_MAX+'</span></div>'; }
 function win(){
-  G.state='won'; G.armed=null;
+  Ads.gameplayStop(); G.state='won'; G.armed=null;
   const pr=pw(P), el=G.elite, replay=el?!!pr.eclr[G.n]:G.n<=pr.best, frac=G.hp/G.maxHp, perfect=frac>=0.999, hadPerf=!!pr.perf[G.n];
   const got=awardCards(dropCount(G.n,frac,replay,el),G.n,(isBoss(G.n)?(replay?1:2):0)+(el&&!replay?1:0),el);
   if(el) pr.eclr[G.n]=true;
@@ -1547,7 +1556,7 @@ function win(){
 }
 function gameOver(){
   if(G.state!=='playing') return;
-  G.state='over'; G.armed=null;
+  Ads.gameplayStop(); G.state='over'; G.armed=null;
   const pr=pw(P), done=Math.max(0,G.wave-1), rep=G.elite?!!pr.eclr[G.n]:G.n<=pr.best, full=dropCount(G.n,1,rep,G.elite);
   const cnt=Math.max(done>=3?1:0,Math.round(full*0.5*done/G.NW));
   const got=awardCards(cnt,G.n,0,G.elite); save();
@@ -1560,20 +1569,20 @@ function gameOver(){
 function focusFirst(){ const b=overlay.querySelector('button.big')||overlay.querySelector('button'); if(b) b.focus({preventScroll:true}); }
 function togglePause(){
   if(G.state==='playing'){
-    G.state='paused'; G.armed=null; Music.pause(); $('pauseBtn').textContent='Resume';
+    Ads.gameplayStop(); G.state='paused'; G.armed=null; Music.pause(); $('pauseBtn').textContent='Resume';
     overlay.innerHTML='<h1>Paused</h1><div class="obtns"><button class="btn big" data-o="resume" type="button">Resume</button><button class="btn" data-o="quit" type="button">Quit to armory</button></div><p class="note">Quitting forfeits this run.</p>';
     overlay.hidden=false; focusFirst();
-  } else if(G.state==='paused'){ G.state='playing'; Music.resume(); overlay.hidden=true; $('pauseBtn').textContent='Pause'; }
+  } else if(G.state==='paused'){ Ads.gameplayStart(); G.state='playing'; Music.resume(); overlay.hidden=true; $('pauseBtn').textContent='Pause'; }
 }
 overlay.addEventListener('click',e=>{
   const b=e.target.closest('[data-o]'); if(!b) return; const o=b.dataset.o;
   if(o==='resume') togglePause();
   else if(o==='quit'){ Music.resume(); save(); toArmory(); }
-  else if(o==='armory') toArmory();
-  else if(o==='next') tryStart(Math.min(G.n+1,LEVELS),G.elite);
-  else if(o==='retry') tryStart(G.n,G.elite);
+  else if(o==='armory'){ if(Ads.homeAds&&(G.state==='won'||G.state==='over')) Ads.interstitial('level_end_home',toArmory); else toArmory(); }
+  else if(o==='next') Ads.interstitial('level_end_next',()=>tryStart(Math.min(G.n+1,LEVELS),G.elite));
+  else if(o==='retry') Ads.interstitial('level_end_retry',()=>tryStart(G.n,G.elite));
 });
-function toArmory(){
+function toArmory(){ setTimeout(wantReward,0);
   UI.nav='battle'; G.state='armory'; overlay.hidden=true; $('shop').hidden=true; Music.setIntensity(0); Music.setBpm(122);
   P.sel=clamp(P.sel,1,Math.min(P.best+1,LEVELS)); renderArmory(); showView('armory');
 }
@@ -1581,6 +1590,12 @@ function toArmory(){
 
 /* ================= energy + card economy ================= */
 const fmtT=ms=>{ const t=Math.ceil(ms/1000), m=Math.floor(t/60), r=t%60; return m+':'+(r<10?'0':'')+r; };
+function grantAdEnergy(){ enTick(); if(P.en<EN_MAX){ P.en=Math.min(EN_MAX,P.en+EN_AD); if(P.en>=EN_MAX) P.enT=Date.now(); } save(); renderArmory(); }
+/* ads hooks: pause loop + audio during an ad, refresh armory when a rewarded ad becomes available */
+Ads.onPause=()=>{ Music.pause(); };
+Ads.onResume=()=>{ Music.resume(); last=performance.now(); };
+Ads.onChange=()=>{ if(!armoryEl.hidden) renderArmory(); };
+function wantReward(){ if(P.en<EN_MAX) Ads.prepareReward(); }
 function enTick(){
   const now=Date.now();
   if(P.en>=EN_MAX){ P.en=EN_MAX; P.enT=now; return; }
@@ -1603,7 +1618,7 @@ function awardCards(count,n,bonus,el){
   got.forEach(c=>{ P.inv[c.t][c.r]++; }); return got;
 }
 const bandOf=(lv,max)=>Math.min(3,Math.floor(4*lv/max));
-const NEEDB=[2,3,4,6];
+const NEEDB=[3,5,8,12];
 const cardNeed=(u,lv)=>NEEDB[bandOf(lv,u.max)];
 function avail(t,b){ let n=0; for(let i=b;i<4;i++) n+=P.inv[t][i]; return n; }
 function spendCards(t,b,k){ for(let i=b;i<4&&k>0;i++){ const d=Math.min(k,P.inv[t][i]); P.inv[t][i]-=d; k-=d; } }
@@ -1658,15 +1673,15 @@ function battleHtml(){
     +'<button class="chev r" data-act="next" type="button" aria-label="Next level" '+(n>=maxSel?'disabled':'')+'>'+ico('chev',30)+'</button></div>'
     +'<div class="brief">'+briefFor(wd,n,el)+'</div>'
     +'<div class="facts"><span title="Waves">'+ico('wave',18)+waveCount(n)+'</span><span title="Cards per clear">'+ico('cards',18)+'~'+cnt+'</span>'+(el?'<span style="color:var(--red)" title="Elite costs double energy">'+ico('bolt',18)+'x2</span>':'')+'</div>'
-    +'<button class="btn big go" data-act="deploy" type="button" data-lock="'+(lockElite?1:0)+'">Battle</button>'+(P.en<(el?EN_COST*2:EN_COST)?'<button class="mini" data-act="ad" type="button">Watch ad: +'+EN_AD+' energy</button>':'')+'</div>';
+    +'<button class="btn big go" data-act="deploy" type="button" data-lock="'+(lockElite?1:0)+'">Battle</button>'+(P.en<(el?EN_COST*2:EN_COST)&&Ads.rewardAvailable()?'<button class="mini" data-act="ad" type="button">Watch ad: +'+EN_AD+' energy</button>':'')+'</div>';
   return h;
 }
 function accountHtml(){
   const C0=window.RRcloud; if(!C0||!C0.enabled) return '';
-  const u=C0.user;
+  const u=C0.user; if(!u) return '';
   return '<section class="inv"><div class="ct"><span class="cn" style="color:var(--fg)">Account</span></div>'
-    +(u?'<div class="note">Signed in as '+(u.email||u.name||'player')+'. Progress saves to the cloud automatically'+(C0.status?' ('+C0.status+')':'')+'.</div><div class="foot"><button class="mini" data-acct="out" type="button">Sign out</button><button class="mini" data-acct="del" type="button">Delete account</button></div>'
-      :'<div class="note">Sign in to save your progress and play on any device.</div><div class="foot"><button class="btn sm" data-acct="google" type="button">Google</button><button class="btn sm" data-acct="apple" type="button">Apple</button></div>'+(C0.error?'<div class="note" style="color:var(--red)">'+C0.error+'</div>':''))
+    +'<div class="note">Signed in as '+(u.email||u.name||'player')+'. Progress saves to the cloud automatically'+(C0.status?' ('+C0.status+')':'')+'.</div><div class="foot"><button class="mini" data-acct="out" type="button">Sign out</button><button class="mini" data-acct="del" type="button">Delete account</button></div><div class="note"><a href="https://kwkoch.github.io/privacy.html" target="_blank" rel="noopener" style="color:var(--cyan)">Privacy Policy</a></div>'
+    +(C0.error?'<div class="note" style="color:var(--red)">'+C0.error+'</div>':'')
     +'</section>';
 }
 function arsenalHtml(){
@@ -1679,7 +1694,7 @@ function arsenalHtml(){
       +(maxed?'':'<div class="need'+(ok?'':' short')+'"><span>Needs '+need+'</span><span class="rtag" style="--g:'+RAR[b].color+'">'+RAR[b].name+'</span><span>'+ct.name+' \u00b7 have '+have+'</span></div>')
       +'<button class="btn sm" data-buy="'+u.id+'" type="button" style="--c:'+ct.color+'" '+(ok?'':'disabled')+'>'+(maxed?'Max':'Upgrade')+'</button></div>';
   });
-  h+='</div><div class="foot">'+(confirmReset?'<span class="note">Erase all upgrades, cards and progress?</span><button class="btn sm" data-act="reset2" type="button" style="--c:var(--red)">Erase</button><button class="btn sm" data-act="cancel" type="button">Cancel</button>':'<button class="mini" data-act="reset" type="button">Reset progress</button><button class="mini" data-act="ad" type="button" title="Placeholder for a rewarded ad">Demo: ad +5 energy</button><button class="mini" data-act="refill" type="button" title="Placeholder for a purchase">Demo: refill energy</button>')+'</div>';
+  h+='</div><div class="foot">'+(confirmReset?'<span class="note">Erase all upgrades, cards and progress?</span><button class="btn sm" data-act="reset2" type="button" style="--c:var(--red)">Erase</button><button class="btn sm" data-act="cancel" type="button">Cancel</button>':'<button class="mini" data-act="reset" type="button">Reset progress</button><button class="mini" data-act="ad" type="button" title="Placeholder for a rewarded ad">Demo: ad +5 energy</button>')+'</div>';
   return h;
 }
 function codexHtml(){
@@ -1832,8 +1847,7 @@ armoryEl.addEventListener('click',e=>{
   else if(a==='reset'){ confirmReset=true; renderArmory(); }
   else if(a==='cancel'){ confirmReset=false; renderArmory(); }
   else if(a==='reset2'){ P=newP(); UI.elite=false; confirmReset=false; save(); renderArmory(); }
-  else if(a==='ad'){ enTick(); if(P.en<EN_MAX){ if(P.en>=EN_MAX-0) P.enT=Date.now(); P.en=Math.min(EN_MAX,P.en+EN_AD); if(P.en>=EN_MAX) P.enT=Date.now(); } save(); renderArmory(); }
-  else if(a==='refill'){ P.en=EN_MAX; P.enT=Date.now(); save(); renderArmory(); }
+  else if(a==='ad'){ Ads.showReward(grantAdEnergy); }
 });
 
 /* ================= upgrade cards (pick 1 of 3, reset every level) ================= */
@@ -1851,11 +1865,11 @@ const CARDS=[
  {id:'slide',w:'turret',t:1,max:4,name:'Servo Motors',txt:l=>'+'+(l*90)+' px/s turret speed'},
  {id:'fort',w:'turret',t:1,max:3,name:'Reinforced Base',txt:l=>'+'+(l*12)+'% base health'},
  {id:'repair',w:'turret',t:1,max:99,name:'Emergency Repair',txt:l=>'restore 30% base health',cond:()=>G.hp<G.maxHp*0.85,wt:6},
- {id:'arc',w:'turret',t:2,max:2,name:'Arc Rounds',txt:l=>'shots add +'+(l*35)+'% energy damage',req:{rate:2,dmg:2}},
- {id:'frag',w:'turret',t:2,max:2,name:'Explosive Rounds',txt:l=>'shots splash +'+(l*30)+' % blast damage'.replace(' %','%'),req:{dmg:3}},
+ {id:'arc',w:'turret',t:2,max:2,name:'Arc Rounds',txt:l=>'shots add +'+(l*35)+'% energy damage',req:{rate:4,dmg:4}},
+ {id:'frag',w:'turret',t:2,max:2,name:'Explosive Rounds',txt:l=>'shots splash +'+(l*30)+' % blast damage'.replace(' %','%'),req:{dmg:4}},
  {id:'deep',w:'turret',t:2,max:1,name:'Deep Pierce',txt:l=>'+2 more pierce',req:{pierce:2}},
- {id:'crit',w:'turret',t:2,max:3,name:'Critical Strike',txt:l=>(l*15)+'% chance of 2.5x damage',req:{dmg:2}},
- {id:'super',w:'turret',t:3,max:3,name:'Supercharge',txt:l=>'every '+(22-l*3)+'s: 4s overdrive, 2x fire rate and +50% damage',req:{rate:3,barrel:1}},
+ {id:'crit',w:'turret',t:2,max:3,name:'Critical Strike',txt:l=>(l*15)+'% chance of 2.5x damage',req:{dmg:4}},
+ {id:'super',w:'turret',t:3,max:3,name:'Supercharge',txt:l=>'every '+(22-l*3)+'s: 4s overdrive, 2x fire rate and +50% damage',req:{rate:4,barrel:2}},
  {id:'tmine',w:'mine',t:1,max:1,unlock:true,name:'Mine Layer',desc:'NEW WEAPON. Drops proximity mines that blast everything nearby. The AI places them for you, or tap the Mine button and drag to place them yourself. Blast damage.'},
  {id:'tfield',w:'field',t:1,max:1,unlock:true,name:'Slow Field',desc:'NEW WEAPON. Lays an energy bar that slows mobs and burns them while they pass through. The AI places it, or tap Field and drag to place it yourself. Energy damage.'},
  {id:'mine',w:'mine',t:1,max:5,name:'Mine Power',txt:l=>'+'+Math.round((Math.pow(1.4,l)-1)*100)+'% blast damage'},
@@ -2062,7 +2076,7 @@ window.addEventListener('resize',fit);
 let last=performance.now();
 function frame(now){
   const dt=Math.min(0.033,(now-last)/1000); last=now;
-  if(!appEl.hidden){
+  if(!appEl.hidden&&!Ads.busy){
     for(let i=0;i<G.speed;i++) update(dt);
     render(dt); renderHud(); renderTools();
   }
@@ -2070,12 +2084,12 @@ function frame(now){
 }
 P.sel=clamp(P.sel,1,Math.min(P.best+1,LEVELS));
 setMode('auto');
-renderArmory(); showView('armory');
+renderArmory(); showView('armory'); wantReward(); Ads.loadingDone();
 if(!P.intro){ const io=document.createElement('div'); io.id='introov'; io.innerHTML='<h1>Neon Defense</h1>'+STORY.intro.map(t=>'<p class="sub">'+t+'</p>').join('')+'<div class="obtns"><button class="btn big" type="button">Begin</button></div>'; io.addEventListener('click',e=>{ if(e.target.closest('button')){ P.intro=1; save(); io.remove(); } }); document.body.appendChild(io); }
 requestAnimationFrame(frame);
 
 /* test hook for headless checks */
-window.__rr={G:G,get P(){return P;},set P(v){P=v;},newP:newP,startLevel:startLevel,update:update,UPS:UPS,waveCount:waveCount,levelPool:levelPool,hpScale:hpScale,tune:(a,b,c,d,m,k,bk,wh,pm,lk,c0,cg)=>{if(lk!==undefined)LATEK=lk;if(pm!==undefined)PICKM=pm;if(wh!==undefined)WAVEHP=wh;if(k!==undefined)HPK=k;if(m!==undefined)MOBN=m;if(c0!==undefined)CDROP0=c0;if(cg!==undefined)CDROPG=cg;HPG=a;POOL0=b;POOLG=c;if(d!==undefined)HPA=d;},bst:bst,pickCard:pickCard,CARDS:CARDS,offerCards:offerCards,hasTool:hasTool,fireMortar:fireMortar,canMortar:canMortar,T:T,wcount:wcount,canBuy:canBuy,buyUp:buyUp,cardNeed:cardNeed,bandOf:bandOf,avail:avail,awardCards:awardCards,dropCount:dropCount,fuse:fuse,useEnergy:useEnergy,enTick:enTick,tryStart:tryStart,profileFor:profileFor,MOB:MOB,WORLDS:WORLDS,briefFor:briefFor};
+window.__rr={G:G,get P(){return P;},set P(v){P=v;},newP:newP,startLevel:startLevel,update:update,UPS:UPS,waveCount:waveCount,levelPool:levelPool,hpScale:hpScale,tune:(a,b,c,d,m,k,bk,wh,pm,lk,c0,cg)=>{if(lk!==undefined)LATEK=lk;if(pm!==undefined)PICKM=pm;if(wh!==undefined)WAVEHP=wh;if(k!==undefined)HPK=k;if(m!==undefined)MOBN=m;if(c0!==undefined)CDROP0=c0;if(cg!==undefined)CDROPG=cg;HPG=a;POOL0=b;POOLG=c;if(d!==undefined)HPA=d;},bst:bst,pickCard:pickCard,CARDS:CARDS,offerCards:offerCards,hasTool:hasTool,fireMortar:fireMortar,canMortar:canMortar,T:T,wcount:wcount,canBuy:canBuy,buyUp:buyUp,cardNeed:cardNeed,bandOf:bandOf,avail:avail,awardCards:awardCards,dropCount:dropCount,fuse:fuse,useEnergy:useEnergy,enTick:enTick,tryStart:tryStart,win:win,gameOver:gameOver,profileFor:profileFor,MOB:MOB,WORLDS:WORLDS,briefFor:briefFor};
 })();
 </script>
 
