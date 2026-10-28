@@ -555,7 +555,7 @@ try{
     P.en=(o.enV===2&&isFinite(+o.en))?Math.max(0,Math.min(EN_MAX,+o.en)):EN_MAX; P.enT=+o.enT||Date.now();
     if(o.prog){ for(const k in o.prog){ const q=o.prog[k]||{}; P.prog[k]={best:+q.best||0,sel:+q.sel||1,perf:q.perf||{},eclr:q.eclr||{}}; } P.own=Object.assign({belt:true},o.own); if(WORLDS.some(w=>w.id===o.world)) P.world=o.world; }
     else P.prog.belt={best:+o.best||0,sel:+o.sel||1,perf:{},eclr:{}};
-    if(o.seen&&typeof o.seen==='object') P.seen=o.seen;
+    if(o.seen&&typeof o.seen==='object') P.seen=o.seen; if(o.seenW&&typeof o.seenW==='object') P.seenW=o.seenW;
     else { /* old save: assume mobs up to the player's best level were seen */
       for(const wd of WORLDS){ const b=(P.prog[wd.id]||{}).best||0; if(!b) continue; const uw=wd.uw||UW; for(const k in uw) if(Math.ceil(uw[k]/20)<=b+1) P.seen[k]=1; P.seen.small=1; if(P.seen.chunk) P.seen.small=1; if(P.seen.egg) P.seen.hatch=1; if(b>=10){ P.seen.boss=1; P.seen.orb=1; } }
     }
@@ -2189,7 +2189,7 @@ function closeCards(){ G.state='playing'; shopEl.hidden=true; toolKey=''; hudKey
 function pickCard(i){
   if(G.state!=='cards') return;
   const c=G.offer[i]; if(!c) return;
-  applyCard(c); Music.up(); if(c.unlock) queueTeach({kind:'weapon',w:c.w});
+  applyCard(c); Music.up(); if(c.unlock){ P.seenW=P.seenW||{}; if(!P.seenW[c.w]){ P.seenW[c.w]=1; try{ save(); }catch(e){} queueTeach({kind:'weapon',w:c.w}); } }
   if(G.pickQ>0){ G.pickQ--; nextOffer(); } else closeCards();
 }
 function rerollCards(){ if(G.state!=='cards'||G.rerolls<=0) return; G.rerolls--; G.offer=offerCards(); renderCards(); }
@@ -2321,10 +2321,10 @@ window.__rr={chip:chip,openTeach:openTeach,fireMortar:fireMortar,shape:shape,spa
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 24</div>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 25</div>
 <script>
 /* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
-(function(){ const BUILD=24; let busy=false, shown=false;
+(function(){ const BUILD=25; let busy=false, shown=false;
   const inRun=()=>{ try{ return typeof G!=='undefined'&&(G.state==='playing'||G.state==='cards'||G.state==='shop'||G.state==='paused'||G.state==='teach'); }catch(e){ return false; } };
   function wipeReload(){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
     if(n>=3) return;
