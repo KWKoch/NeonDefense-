@@ -981,13 +981,17 @@ function autoTools(dt){
     if(best) placeMine(bx,by);
   }
   if(canField()){
-    let cnt=0,heavy=false,low=null;
+    /* only drop a field where it will actually catch things: aim at where the lead mobs will be, and need a crowd or a heavy in the lane */
+    const hw=fieldHW(); let best=null,bs=0;
     for(const e of G.enemies){
-      if(e.dead||e.y<120||e.y>GROUND-170) continue;
-      cnt++; if(e.type==='brute'||e.type==='shield'||e.type==='boss'||e.type==='chunk') heavy=true;
-      if(!low||e.y>low.y) low=e;
+      if(e.dead||e.y<110||e.y>GROUND-230||e.type==='orb') continue;
+      const fy=Math.min(GROUND-170,e.y+(e.vy||30)*1.1+30), fx=clamp(e.x+(e.vx||0)*1.1,hw*0.4,W-hw*0.4);
+      if(G.fields.some(f=>Math.abs(f.x-fx)<hw*1.2&&Math.abs(f.y-fy)<70)) continue;
+      let sc=0;
+      for(const o of G.enemies){ if(o.dead||o.type==='orb') continue; if(Math.abs(o.x-fx)<=hw&&o.y<fy+10&&o.y>fy-150){ sc+=(o.type==='brute'||o.type==='shield'||o.type==='boss'||o.type==='chunk'||o.type==='egg')?3:1; } }
+      if(sc>bs){ bs=sc; best={x:fx,y:fy}; }
     }
-    if(low&&(cnt>=3||heavy)) placeField(low.x,low.y+65);
+    if(best&&bs>=3) placeField(best.x,best.y);
   }
 }
 
@@ -1356,26 +1360,71 @@ function circ2(x,y,r,fill){ ctx.beginPath(); ctx.arc(x,y,r,0,6.2832); if(fill) c
 const ORDER=[5,2,9,0,7,3,10,1,6,11,4,8], BH=[34,52,28,46,60,38,44,30,56,40,48,32];
 const RANK=[]; ORDER.forEach((b,i)=>{ RANK[b]=i; });
 function drawGround(pulse){
+  const t=G.time;
+  /* distant skyline for depth */
+  ctx.shadowBlur=0; ctx.fillStyle='rgba(60,30,130,.22)'; ctx.strokeStyle='rgba(110,70,220,.25)'; ctx.lineWidth=1;
+  for(let i=0;i<16;i++){ const x=i*38-6, h=22+((i*53)%34); ctx.fillRect(x,GROUND+8-h+16,28,h); ctx.strokeRect(x,GROUND+8-h+16,28,h); }
   neon(C.violet,10+10*pulse,2); ctx.globalAlpha=0.55+0.45*pulse;
   ctx.beginPath(); ctx.moveTo(0,GROUND); ctx.lineTo(W,GROUND); ctx.stroke(); ctx.globalAlpha=1;
-  const alive=Math.ceil(G.hp/G.maxHp*12);
-  ctx.shadowBlur=0; ctx.lineWidth=1.8; ctx.strokeStyle='#7a3dff'; ctx.fillStyle='rgba(122,61,255,.1)';
+  const alive=Math.ceil(G.hp/G.maxHp*12), base=H-6;
   for(let i=0;i<12;i++){
-    if(RANK[i]>=alive) continue;
-    const x=i*50+7, w=36, h=BH[i], y=H-6-h;
-    ctx.fillRect(x,y,w,h); ctx.strokeRect(x,y,w,h);
-    tri2(x,y,x+w/2,y-9,x+w,y);
-    ctx.fillStyle='rgba(0,240,255,.55)'; circ2(x+10,y+12,1.6,true); circ2(x+w-10,y+12,1.6,true); ctx.fillStyle='rgba(122,61,255,.1)';
+    const x=i*50+7, w=36, h=BH[i]+8, y=base-h, kind=i%4;
+    if(RANK[i]>=alive){ /* rubble */
+      ctx.shadowBlur=0; ctx.fillStyle='rgba(40,20,90,.5)'; ctx.strokeStyle='rgba(122,61,255,.5)'; ctx.lineWidth=1.2;
+      ctx.beginPath(); ctx.moveTo(x,base); ctx.lineTo(x+3,base-9); ctx.lineTo(x+11,base-4); ctx.lineTo(x+17,base-13); ctx.lineTo(x+25,base-6); ctx.lineTo(x+31,base-10); ctx.lineTo(x+w,base); ctx.closePath(); ctx.fill(); ctx.stroke();
+      if(Math.sin(t*5+i*2)>0.4){ ctx.fillStyle='rgba(255,120,40,.8)'; ctx.fillRect(x+14,base-14,2,2); }
+      continue;
+    }
+    const gr=ctx.createLinearGradient(0,y,0,base); gr.addColorStop(0,'rgba(150,100,255,.34)'); gr.addColorStop(1,'rgba(40,20,100,.55)');
+    ctx.shadowColor='#7a3dff'; ctx.shadowBlur=8*sx; ctx.strokeStyle='#8d55ff'; ctx.lineWidth=1.8; ctx.fillStyle=gr;
+    ctx.beginPath();
+    if(kind===0){ /* stepped tower */ ctx.moveTo(x,base); ctx.lineTo(x,y+12); ctx.lineTo(x+7,y+12); ctx.lineTo(x+7,y+4); ctx.lineTo(x+w-7,y+4); ctx.lineTo(x+w-7,y+12); ctx.lineTo(x+w,y+12); ctx.lineTo(x+w,base); }
+    else if(kind===1){ /* domed block */ ctx.moveTo(x,base); ctx.lineTo(x,y+14); ctx.quadraticCurveTo(x+w/2,y-12,x+w,y+14); ctx.lineTo(x+w,base); }
+    else if(kind===2){ /* tapered spire */ ctx.moveTo(x,base); ctx.lineTo(x+3,y+16); ctx.lineTo(x+w/2-3,y+10); ctx.lineTo(x+w/2,y-6); ctx.lineTo(x+w/2+3,y+10); ctx.lineTo(x+w-3,y+16); ctx.lineTo(x+w,base); }
+    else { /* slanted slab */ ctx.moveTo(x,base); ctx.lineTo(x,y+16); ctx.lineTo(x+w,y); ctx.lineTo(x+w,base); }
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.shadowBlur=0;
+    /* floor lines + windows */
+    ctx.strokeStyle='rgba(150,110,255,.28)'; ctx.lineWidth=1;
+    for(let fy=y+22;fy<base-6;fy+=9){ ctx.beginPath(); ctx.moveTo(x+2,fy); ctx.lineTo(x+w-2,fy); ctx.stroke(); }
+    for(let fy=y+25,r=0;fy<base-8;fy+=9,r++) for(let c=0;c<4;c++){
+      const wx=x+5+c*8, on=Math.sin(i*7.3+r*3.1+c*1.7+t*0.35)>-0.15; if(!on) continue;
+      ctx.fillStyle=((i+r+c)%5===0)?'rgba(255,196,80,.85)':'rgba(0,240,255,.7)'; ctx.fillRect(wx,fy,4,3);
+    }
+    /* rooftop details */
+    if(kind===0||kind===3){ ctx.strokeStyle='#8d55ff'; ctx.lineWidth=1.2; const ax=kind===0?x+w/2:x+w-6, ay=kind===0?y+4:y; ctx.beginPath(); ctx.moveTo(ax,ay); ctx.lineTo(ax,ay-12); ctx.stroke(); if(Math.sin(t*3+i)>0){ ctx.fillStyle='#ff2a3a'; ctx.shadowColor='#ff2a3a'; ctx.shadowBlur=8*sx; ctx.beginPath(); ctx.arc(ax,ay-12,1.8,0,6.2832); ctx.fill(); ctx.shadowBlur=0; } }
+    if(kind===1){ ctx.fillStyle='rgba(0,240,255,.5)'; ctx.beginPath(); ctx.arc(x+w/2,y+8,3.2,0,6.2832); ctx.fill(); }
+    if(kind===2){ ctx.fillStyle='rgba(255,43,214,.9)'; ctx.shadowColor='#ff2bd6'; ctx.shadowBlur=8*sx; ctx.beginPath(); ctx.arc(x+w/2,y-6,1.8,0,6.2832); ctx.fill(); ctx.shadowBlur=0; }
   }
 }
 function drawTurret(){
-  const n=1+L('barrels')+bst('barrel'), col=G.mode==='auto'?C.cyan:C.magenta;
+  const n=1+L('barrels')+bst('barrel'), col=G.mode==='auto'?C.cyan:C.magenta, rc=G.mode==='auto'?'0,240,255':'255,43,214', t=G.time, hot=Math.min(1,T.recoil);
   ctx.save(); ctx.translate(T.x,TURRET_Y);
-  neon(col,14,2.2); ctx.fillStyle=col+'22';
-  for(let i=0;i<n;i++){ ctx.save(); ctx.rotate((i-(n-1)/2)*0.085); tri2(-3.6,-8,0,-34+T.recoil*5,3.6,-8); ctx.restore(); }
-  tri2(-24,14,0,-8,24,14); ctx.fill();
-  circ2(0,2,7,true); ctx.shadowBlur=0; ctx.strokeStyle=C.magenta; ctx.lineWidth=1.6;
-  circ2(-22,12,3.4); circ2(22,12,3.4);
+  /* thruster glow under the hull */
+  ctx.globalCompositeOperation='lighter'; const tg=ctx.createRadialGradient(0,16,0,0,16,26); tg.addColorStop(0,'rgba('+rc+','+(0.35+0.1*Math.sin(t*12)).toFixed(2)+')'); tg.addColorStop(1,'rgba('+rc+',0)'); ctx.fillStyle=tg; ctx.fillRect(-28,0,56,34); ctx.globalCompositeOperation='source-over';
+  /* barrels */
+  for(let i=0;i<n;i++){
+    ctx.save(); ctx.rotate((i-(n-1)/2)*0.085); const rec=T.recoil*5;
+    const bg=ctx.createLinearGradient(-4,0,4,0); bg.addColorStop(0,'#2a3b46'); bg.addColorStop(.5,'#8fa6b4'); bg.addColorStop(1,'#2a3b46');
+    neon(col,8,1.4); ctx.fillStyle=bg; ctx.beginPath(); ctx.moveTo(-4.2,-4); ctx.lineTo(-2.6,-34+rec); ctx.lineTo(2.6,-34+rec); ctx.lineTo(4.2,-4); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.shadowBlur=0; ctx.strokeStyle='rgba('+rc+',.7)'; ctx.lineWidth=1; for(let v=0;v<3;v++){ const y=-12-v*7+rec*0.3; ctx.beginPath(); ctx.moveTo(-3.2,y); ctx.lineTo(3.2,y); ctx.stroke(); }
+    ctx.fillStyle='rgba('+rc+','+(0.5+0.5*hot)+')'; ctx.shadowColor=col; ctx.shadowBlur=(8+14*hot)*sx; ctx.beginPath(); ctx.arc(0,-34+rec,2.2+hot*1.5,0,6.2832); ctx.fill();
+    ctx.restore();
+  }
+  /* wing armour */
+  for(const sg of [-1,1]){
+    const wg=ctx.createLinearGradient(0,-2,0,16); wg.addColorStop(0,'#5e7482'); wg.addColorStop(1,'#1b2831');
+    neon(col,8,1.6); ctx.fillStyle=wg; ctx.beginPath(); ctx.moveTo(sg*6,-1); ctx.lineTo(sg*27,13); ctx.lineTo(sg*25,18); ctx.lineTo(sg*9,15); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.shadowBlur=0; ctx.strokeStyle='rgba('+rc+',.6)'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(sg*10,6); ctx.lineTo(sg*22,13); ctx.stroke();
+    ctx.fillStyle=(Math.sin(t*6+sg)>0)?'rgb('+rc+')':'#1d3a40'; ctx.shadowColor=col; ctx.shadowBlur=8*sx; ctx.beginPath(); ctx.arc(sg*23,15,1.8,0,6.2832); ctx.fill();
+  }
+  /* hull + dome */
+  const hg=ctx.createLinearGradient(0,-6,0,16); hg.addColorStop(0,'#8fa6b4'); hg.addColorStop(.5,'#3a4d59'); hg.addColorStop(1,'#16222a');
+  neon(col,10,1.8); ctx.fillStyle=hg; ctx.beginPath(); ctx.moveTo(-11,16); ctx.lineTo(-13,4); ctx.quadraticCurveTo(0,-14,13,4); ctx.lineTo(11,16); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.shadowBlur=0; ctx.strokeStyle='rgba(255,255,255,.35)'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(-8,2); ctx.quadraticCurveTo(-2,-7,5,-4); ctx.stroke();
+  /* energy core */
+  const cr=5+hot*1.5+Math.sin(t*5)*0.6, cg=ctx.createRadialGradient(0,6,0,0,6,cr*2); cg.addColorStop(0,'rgba(255,255,255,.95)'); cg.addColorStop(.35,'rgba('+rc+',.9)'); cg.addColorStop(1,'rgba('+rc+',0)');
+  ctx.globalCompositeOperation='lighter'; ctx.fillStyle=cg; ctx.beginPath(); ctx.arc(0,6,cr*2,0,6.2832); ctx.fill(); ctx.globalCompositeOperation='source-over';
   ctx.restore();
 }
 const MINE_R=17;
@@ -1466,11 +1515,6 @@ function render(dt){
   for(const r of G.rings){ const k=r.t/r.life; ctx.globalAlpha=1-k; ctx.strokeStyle=r.color; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(r.x,r.y,r.r+(r.max-r.r)*k,0,6.2832); ctx.stroke(); }
   ctx.globalAlpha=1; ctx.globalCompositeOperation='source-over';
   drawTurret();
-  if(T.target&&!T.target.dead&&G.state==='playing'){
-    const t=T.target; ctx.save(); ctx.translate(t.x,t.y); ctx.rotate(G.time*2);
-    ctx.shadowBlur=0; ctx.strokeStyle='rgba(255,255,255,.6)'; ctx.lineWidth=1.3; ctx.setLineDash([6,9]);
-    ctx.beginPath(); ctx.arc(0,0,t.r+12,0,6.2832); ctx.stroke(); ctx.restore();
-  }
   if(G.armed&&G.ghost.show){
     const g=G.ghost;
     if(G.armed==='mine'){ const R=mineR(); ctx.save(); ctx.shadowBlur=0; ctx.strokeStyle='rgba(255,138,0,.45)'; ctx.lineWidth=1.2; ctx.setLineDash([5,7]); ctx.beginPath(); ctx.arc(clamp(g.x,24,W-24),clamp(g.y,200,GROUND-50),R,0,6.2832); ctx.stroke(); ctx.restore(); drawMine({x:clamp(g.x,24,W-24),y:clamp(g.y,200,GROUND-50),t:1},true); }
@@ -2187,17 +2231,20 @@ window.__rr={shape:shape,spawn:spawn,G:G,get P(){return P;},set P(v){P=v;},newP:
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 16</div>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 17</div>
 <script>
 /* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
-(function(){ const BUILD=16; try{
-  fetch('index.html?v='+Date.now(),{cache:'no-store'}).then(r=>r.text()).then(t=>{
-    const m=t.match(/const BUILD=(\d+);/); const live=m?+m[1]:BUILD;
-    if(live>BUILD){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
-      if(n>=2) return;
-      Promise.all([(navigator.serviceWorker?navigator.serviceWorker.getRegistrations().then(rs=>Promise.all(rs.map(r=>r.unregister()))):0),(window.caches?caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k)))):0)]).catch(()=>{}).then(()=>location.replace(location.pathname+'?u='+Date.now()));
-    } else { try{ sessionStorage.removeItem('ndReload'); }catch(e){} }
-  }).catch(()=>{});
-}catch(e){} })();
+(function(){ const BUILD=17; let busy=false;
+  function check(){ if(busy) return; busy=true; try{
+    fetch('index.html?v='+Date.now(),{cache:'no-store'}).then(r=>r.text()).then(t=>{
+      busy=false; const m=t.match(/const BUILD=(\d+);/); const live=m?+m[1]:BUILD;
+      if(live>BUILD){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
+        if(n>=3) return;
+        Promise.all([(navigator.serviceWorker?navigator.serviceWorker.getRegistrations().then(rs=>Promise.all(rs.map(r=>r.unregister()))):0),(window.caches?caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k)))):0)]).catch(()=>{}).then(()=>location.replace(location.pathname+'?u='+Date.now()));
+      } else { try{ sessionStorage.removeItem('ndReload'); }catch(e){} }
+    }).catch(()=>{busy=false;});
+  }catch(e){busy=false;} }
+  check(); document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') check(); }); addEventListener('pageshow',check);
+})();
 if('serviceWorker' in navigator){ let had=!!navigator.serviceWorker.controller; navigator.serviceWorker.addEventListener('controllerchange',()=>{ if(had) location.reload(); had=true; }); addEventListener('load',()=>navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{})); }</script>
 </body></html>
