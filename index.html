@@ -539,7 +539,7 @@ const newInv=()=>({pow:[0,0,0,0],tmp:[0,0,0,0],rch:[0,0,0,0],cap:[0,0,0,0],frt:[
 const newPW=()=>({best:0,sel:1,perf:{},eclr:{}});
 function pw(o){ return o.prog[o.world]||(o.prog[o.world]=newPW()); }
 const newP=()=>{
-  const o={inv:newInv(),lv:{},world:'belt',own:{belt:true},prog:{},seen:{},intro:0,en:EN_MAX,enV:2,enT:Date.now()};
+  const o={inv:newInv(),lv:{},cm:{},world:'belt',own:{belt:true},prog:{},seen:{},intro:0,en:EN_MAX,enV:2,enT:Date.now()};
   Object.defineProperty(o,'best',{get(){ return pw(o).best; },set(v){ pw(o).best=v; },enumerable:false});
   Object.defineProperty(o,'sel',{get(){ return pw(o).sel; },set(v){ pw(o).sel=v; },enumerable:false});
   return o;
@@ -555,7 +555,7 @@ try{
     P.en=(o.enV===2&&isFinite(+o.en))?Math.max(0,Math.min(EN_MAX,+o.en)):EN_MAX; P.enT=+o.enT||Date.now();
     if(o.prog){ for(const k in o.prog){ const q=o.prog[k]||{}; P.prog[k]={best:+q.best||0,sel:+q.sel||1,perf:q.perf||{},eclr:q.eclr||{}}; } P.own=Object.assign({belt:true},o.own); if(WORLDS.some(w=>w.id===o.world)) P.world=o.world; }
     else P.prog.belt={best:+o.best||0,sel:+o.sel||1,perf:{},eclr:{}};
-    if(o.seen&&typeof o.seen==='object') P.seen=o.seen; if(o.seenW&&typeof o.seenW==='object') P.seenW=o.seenW;
+    if(o.seen&&typeof o.seen==='object') P.seen=o.seen; if(o.seenW&&typeof o.seenW==='object') P.seenW=o.seenW; if(o.cm&&typeof o.cm==='object') P.cm=o.cm;
     else { /* old save: assume mobs up to the player's best level were seen */
       for(const wd of WORLDS){ const b=(P.prog[wd.id]||{}).best||0; if(!b) continue; const uw=wd.uw||UW; for(const k in uw) if(Math.ceil(uw[k]/20)<=b+1) P.seen[k]=1; P.seen.small=1; if(P.seen.chunk) P.seen.small=1; if(P.seen.egg) P.seen.hatch=1; if(b>=10){ P.seen.boss=1; P.seen.orb=1; } }
     }
@@ -853,13 +853,13 @@ function leak(e){
 }
 function fire(target){
   const sup=G.superOn>0, n=1+L('barrels')+bst('barrel'), pierce=L('pierce')+bst('pierce')+2*bst('deep');
-  const base=ST.dmg(L('dmg'))*Math.pow(1.32,bst('dmg'))*(sup?1.5:1), cc=0.15*bst('crit');
+  const base=ST.dmg(L('dmg'))*Math.pow(1.32,bq('dmg'))*(sup?1.5:1), cc=0.15*bst('crit');
   for(let i=0;i<n;i++){
     const a=(i-(n-1)/2)*0.085, dmg=Math.random()<cc?base*2.5:base;
     G.bullets.push({x:T.x+Math.sin(a)*24,y:TURRET_Y-24,vx:Math.sin(a)*BS,vy:-Math.cos(a)*BS,dmg:dmg,pierce:pierce,hits:[],target:target});
   }
-  T.cool=ST.rate(L('rate'))*Math.pow(0.87,bst('rate'))*(sup?0.5:1); T.recoil=1; Music.shot();
-  if(!G.blobs) G.blobs=[]; if(G.blobs.length<40) G.blobs.push({x:T.x,y:TURRET_Y-34,r:3,max:9+2.5*n+1.2*L('dmg')+2*bst('dmg'),t:0,life:0.12,color:G.mode==='auto'?'#00f0ff':'#ff2bd6'});
+  T.cool=ST.rate(L('rate'))*Math.pow(0.87,bq('rate'))*(sup?0.5:1); T.recoil=1; Music.shot();
+  if(!G.blobs) G.blobs=[]; if(G.blobs.length<40) G.blobs.push({x:T.x,y:TURRET_Y-34,r:3,max:9+2.5*n+1.2*L('dmg')+2*bq('dmg'),t:0,life:0.12,color:G.mode==='auto'?'#00f0ff':'#ff2bd6'});
 }
 /* Would a shot fired from the turret's current x hit e? Checks every barrel's straight line against e's predicted position. */
 function hitsFrom(e){
@@ -875,7 +875,7 @@ function hitsFrom(e){
 function pickTarget(){
   const pend=new Map();
   for(const b of G.bullets) if(b.target&&!b.target.dead) pend.set(b.target,(pend.get(b.target)||0)+b.dmg*b.target.res.k);
-  const sup=G.superOn>0, shot=ST.dmg(L('dmg'))*Math.pow(1.32,bst('dmg'))*(sup?1.5:1), slide=ST.slide(L('rate'))+90*bst('slide');
+  const sup=G.superOn>0, shot=ST.dmg(L('dmg'))*Math.pow(1.32,bq('dmg'))*(sup?1.5:1), slide=ST.slide(L('rate'))+90*bq('slide');
   let best=null,bs=-1e9;
   for(const e of G.enemies){
     if(e.dead||e.y<-e.r*0.3) continue;
@@ -906,7 +906,7 @@ function inLine(tg,pend){
   return hit;
 }
 function updateTurret(dt){
-  const slide=ST.slide(L('rate'))+90*bst('slide');
+  const slide=ST.slide(L('rate'))+90*bq('slide');
   T.cool-=dt; T.recoil=Math.max(0,T.recoil-dt*6);
   if(bst('super')>0){ if(G.superOn>0) G.superOn-=dt; else { G.superCd-=dt; if(G.superCd<=0){ G.superOn=4; G.superCd=22-3*bst('super'); float(T.x,TURRET_Y-60,'SUPERCHARGE',C.yellow); G.rings.push({x:T.x,y:TURRET_Y-14,r:10,max:90,life:0.5,t:0,color:C.yellow}); } } }
   if(G.mode==='auto'){
@@ -926,12 +926,12 @@ function updateTurret(dt){
 }
 
 /* ---- tools ---- */
-function mineRech(){ return ST.mrech(L('mrech'))*Math.pow(0.85,bst('mrech')); }
-function mortRech(){ return ST.mortrech(L('mortrech'))*Math.pow(0.88,bst('mortspd')); }
-function chainCd(){ return Math.max(0.3,ST.ccool(L('ccool'))*Math.pow(0.85,bst('crate'))); }
+function mineRech(){ return ST.mrech(L('mrech'))*Math.pow(0.85,bq('mrech')); }
+function mortRech(){ return ST.mortrech(L('mortrech'))*Math.pow(0.88,bq('mortspd')); }
+function chainCd(){ return Math.max(0.3,ST.ccool(L('ccool'))*Math.pow(0.85,bq('crate'))); }
 function mineMax(){ return ST.mstock(L('mstock'))+2*bst('mcount'); }
-function mineR(){ return ST.mrad(L('mrad'))*(1+0.15*bst('marea')); }
-function fieldHW(){ return ST.fwid(L('fwid'))*(1+0.2*bst('fwidb')); }
+function mineR(){ return ST.mrad(L('mrad'))*(1+0.15*bq('marea')); }
+function fieldHW(){ return ST.fwid(L('fwid'))*(1+0.2*bq('fwidb')); }
 function canMine(){ return hasTool('mine')&&G.stock>=1; }
 /* Support weapons (mines, chain lightning) go after mobs the turret is NOT already shooting: not its locked target, not anything in its firing lane. */
 function supportOK(e){ return e!==T.target&&Math.abs(e.x-T.x)>26+e.r*0.7; }
@@ -945,7 +945,7 @@ function placeMine(x,y){
 function placeField(x,y){
   if(!canField()) return false;
   const hw=fieldHW();
-  G.fields.push({x:clamp(x,hw*0.4,W-hw*0.4),y:clamp(y,140,GROUND-100),hw:hw,h:22,t:0,dur:ST.fdur(L('fdur'))+2*bst('fdurc'),zapT:0.4,slow:Math.max(0.05,ST.fslow(fslowLv(L('fdps')))*Math.pow(0.85,bst('fchill'))),dps:ST.fdps(L('fdps'))*Math.pow(1.4,bst('field'))});
+  G.fields.push({x:clamp(x,hw*0.4,W-hw*0.4),y:clamp(y,140,GROUND-100),hw:hw,h:22,t:0,dur:ST.fdur(L('fdur'))+2*bq('fdurc'),zapT:0.4,slow:Math.max(0.05,ST.fslow(fslowLv(L('fdps')))*Math.pow(0.85,bst('fchill'))),dps:ST.fdps(L('fdps'))*Math.pow(1.4,bq('field'))});
   G.fieldCd=G.fields.length<1+bst('fcount')?1.5:ST.frech(L('frech')); Music.place(true); return true;
 }
 function blast(x,y,R,dmg,floor){
@@ -957,7 +957,7 @@ function blast(x,y,R,dmg,floor){
 }
 function freeze(e,t){ if(e.dead) return; e.frz=Math.max(e.frz||0,e.type==='boss'?t*0.3:t); }
 function detonate(m){
-  m.dead=true; const R=mineR(), dmg=ST.mdmg(L('mdmg'))*Math.pow(1.4,bst('mine'));
+  m.dead=true; const R=mineR(), dmg=ST.mdmg(L('mdmg'))*Math.pow(1.4,bq('mine'));
   G.rings.push({x:m.x,y:m.y,r:10,max:R,life:0.45,t:0,color:C.orange}); G.rings.push({x:m.x,y:m.y,r:6,max:R*0.6,life:0.3,t:0,color:C.amber});
   fireball(m.x,m.y,R*0.95,C.orange,2); G.shake=Math.min(1,G.shake+0.2); Music.boom(true);
   blast(m.x,m.y,R,dmg);
@@ -1031,7 +1031,7 @@ function autoTools(dt){
 
 /* ---- chain lightning (auto, energy) ---- */
 function chainStrike(tg){
-  const dmg=ST.cdmg(L('cdmg'))*Math.pow(1.4,bst('cpow')), jumps=ST.cj(L('cjmp'))+2*bst('cjump'), fork=ST.cfk(L('cfk'))+(bst('cfork')?1:0);
+  const dmg=ST.cdmg(L('cdmg'))*Math.pow(1.4,bq('cpow')), jumps=ST.cj(L('cjmp'))+2*bst('cjump'), fork=ST.cfk(L('cfk'))+(bst('cfork')?1:0);
   const hit=new Set([tg]); let fr=[{e:tg,x:tg.x,y:tg.y}];
   G.rings.push({x:tg.x,y:tg.y,r:4,max:tg.r*2.6,life:0.3,t:0,color:C.yellow}); burst(tg.x,tg.y,C.yellow,14,200); G.shake=Math.min(1,G.shake+0.15);
   hurt(tg,dmg*(bst('cshock')?1.6:1),'e',false); if(bst('cshock')) freeze(tg,0.7);
@@ -1070,7 +1070,7 @@ function updateChain(dt){
   if(bst('cstorm')){
     G.stormT-=dt;
     if(G.stormT<=0 && G.enemies.some(e=>!e.dead&&e.y>0)){
-      G.stormT=15; const dmg=ST.cdmg(L('cdmg'))*Math.pow(1.4,bst('cpow'))*1.6; G.shake=Math.min(1,G.shake+0.5);
+      G.stormT=15; const dmg=ST.cdmg(L('cdmg'))*Math.pow(1.4,bq('cpow'))*1.6; G.shake=Math.min(1,G.shake+0.5);
       for(const e of G.enemies){ if(e.dead||e.y<0) continue; G.bolts.push({a:[e.x+rnd(-10,10),0],b:[e.x,e.y],t:0,life:0.45,color:C.yellow}); hurt(e,dmg,'e',false); }
       float(W/2,GROUND-200,'THUNDERSTORM',C.yellow);
     }
@@ -1082,11 +1082,11 @@ function updateSaws(dt){
   G.sawCd-=dt;
   const want=1+bst('scount');
   if(G.saws.length<want&&G.sawCd<=0&&G.enemies.some(e=>!e.dead&&e.y>0)){
-    const a=rnd(-0.55,0.55), r=ST.ssz(L('ssz'))*(bst('sbig')?1.6:1), life=ST.slife(L('sspd'))+2*bst('sspeed');
+    const a=rnd(-0.55,0.55), r=ST.ssz(L('ssz'))*(bst('sbig')?1.6:1), life=ST.slife(L('sspd'))+2*bq('sspeed');
     G.saws.push({x:T.x,y:TURRET_Y-30,vx:Math.sin(a)*430,vy:-Math.cos(a)*430,r:r,life:life,max:life,rot:0});
     G.sawCd=0.56;
   }
-  const dmg=ST.sdmg(L('sdmg'))*Math.pow(1.4,bst('spow'))*(bst('sbig')?1.5:1);
+  const dmg=ST.sdmg(L('sdmg'))*Math.pow(1.4,bq('spow'))*(bst('sbig')?1.5:1);
   const steps=3, h=dt/steps;
   for(const sw of G.saws){
     sw.life-=dt; sw.rot+=dt*16;
@@ -1125,7 +1125,7 @@ function updateSaws(dt){
 }
 /* ---- mortar (manual aim, delayed shell: lead your target) ---- */
 function mortMax(){ return ST.mortmax(L('mortmax'))+bst('mortcap'); }
-function mortR(){ return ST.mortrad(L('mortrad'))*(1+0.15*bst('mortarea'))*(bst('mortbust')?0.6:1); }
+function mortR(){ return ST.mortrad(L('mortrad'))*(1+0.15*bq('mortarea'))*(bst('mortbust')?0.6:1); }
 function canMortar(){ return hasTool('mortar')&&G.mort>=1; }
 function fireMortar(x,y){
   if(!canMortar()) return false;
@@ -1144,7 +1144,7 @@ function updateMortar(dt){
     sh.x=sh.sx+(sh.tx-sh.sx)*k; sh.y=sh.sy+(sh.ty-sh.sy)*k-Math.sin(k*Math.PI)*200;
     if(!sh.done&&G.parts.length<420){ G.parts.push({x:sh.x,y:sh.y,vx:rnd(-14,14),vy:rnd(-14,14),life:0.55,max:0.9,color:Math.random()<0.4?'#ffffff':C.amber,size:rnd(1.5,3.2),tri:false}); }
     if(k>=1&&!sh.done){
-      sh.done=true; const R=mortR(), dmg=ST.mortdmg(L('mortdmg'))*Math.pow(1.4,bst('mortpow'))*(bst('mortbust')?2.4:1);
+      sh.done=true; const R=mortR(), dmg=ST.mortdmg(L('mortdmg'))*Math.pow(1.4,bq('mortpow'))*(bst('mortbust')?2.4:1);
       G.rings.push({x:sh.tx,y:sh.ty,r:10,max:R,life:0.5,t:0,color:C.amber}); G.rings.push({x:sh.tx,y:sh.ty,r:6,max:R*0.6,life:0.32,t:0,color:C.orange});
       fireball(sh.tx,sh.ty,R*1.05,C.amber,3); burst(sh.tx,sh.ty,C.orange,24,260,2); G.shake=Math.min(1,G.shake+0.8); G.flashA=0.7; Music.boom(true);
       G.rings.push({x:sh.tx,y:sh.ty,r:4,max:R*1.35,life:0.7,t:0,color:'#ffffff'}); G.rings.push({x:sh.tx,y:sh.ty,r:4,max:R*0.45,life:0.2,t:0,color:'#ffffff'});
@@ -1572,8 +1572,8 @@ function render(dt){
   if(G.flashA>0.01){ ctx.fillStyle='rgba(255,226,170,'+(G.flashA*0.4).toFixed(3)+')'; ctx.fillRect(-60,-60,W+120,H+120); G.flashA*=0.9; }
   ctx.shadowBlur=0; ctx.globalCompositeOperation='lighter';
   for(const b of G.bullets){
-    ctx.save(); ctx.translate(b.x,b.y); ctx.rotate(Math.atan2(b.vx,-b.vy)); { const bs=1+0.09*L('dmg')+0.16*bst('dmg')+0.1*(bst('frag')+bst('arc')); ctx.scale(bs,bs); }
-    ctx.fillStyle=(L('dmg')+bst('dmg')>=8)?'#ffffff':'#aef8ff'; ctx.beginPath(); ctx.moveTo(0,-9); ctx.lineTo(-3,3); ctx.lineTo(3,3); ctx.closePath(); ctx.fill();
+    ctx.save(); ctx.translate(b.x,b.y); ctx.rotate(Math.atan2(b.vx,-b.vy)); { const bs=1+0.09*L('dmg')+0.16*bq('dmg')+0.1*(bst('frag')+bst('arc')); ctx.scale(bs,bs); }
+    ctx.fillStyle=(L('dmg')+bq('dmg')>=8)?'#ffffff':'#aef8ff'; ctx.beginPath(); ctx.moveTo(0,-9); ctx.lineTo(-3,3); ctx.lineTo(3,3); ctx.closePath(); ctx.fill();
     ctx.fillStyle='rgba(0,240,255,.35)'; ctx.fillRect(-1.2,3,2.4,12); ctx.restore();
   }
   for(const p of G.parts){
@@ -1821,6 +1821,7 @@ function buyUp(id){
   if(!canBuy(id)) return false;
   const u=UPS.find(x=>x.id===id), lv=L(id); spendCards(u.ty,bandOf(lv,u.max),cardNeed(u,lv)); P.lv[id]=lv+1; save(); return true;
 }
+function cmBuy(id){ const c=CARDBY[id]; if(!c) return false; const r=cmRank(id), ty=CIC[id]; if(r>=3||!CT[ty]) return false; if(avail(ty,r)<NEEDB[r]) return false; spendCards(ty,r,NEEDB[r]); P.cm=P.cm||{}; P.cm[id]=r+1; save(); return true; }
 function fuse(t,r){ if(r>=3||P.inv[t][r]<3) return false; P.inv[t][r]-=3; P.inv[t][r+1]++; save(); return true; }
 
 /* ================= home (armory) ================= */
@@ -1889,6 +1890,19 @@ function arsenalHtml(){
       +(maxed?'':'<div class="need'+(ok?'':' short')+'"><span>Needs '+need+'</span><span class="rtag" style="--g:'+RAR[b].color+'">'+RAR[b].name+'</span><span>'+ct.name+' \u00b7 have '+have+'</span></div>')
       +'<button class="btn sm" data-buy="'+u.id+'" type="button" style="--c:'+ct.color+'" '+(ok?'':'disabled')+'>'+(maxed?'Max':'Upgrade')+'</button></div>';
   });
+  const mc=CARDS.filter(c=>c.t===1&&!c.unlock&&c.id!=='repair'&&(c.id==='fort'?'base':c.w)===tab);
+  if(mc.length){
+    h+='<div class="note" style="grid-column:1/-1;margin-top:6px"><b>In-run cards.</b> Cards you pick during a level start basic. Mastering a card here makes every pick stronger, and it shows up more often in your level-ups.</div>';
+    mc.forEach(c=>{
+      const r=cmRank(c.id), ty=CIC[c.id], ct=CT[ty], maxed=r>=3, need=NEEDB[Math.min(r,3)], have=avail(ty,Math.min(r,2)), ok=!maxed&&have>=need;
+      const fmt=k=>COUNTC.has(c.id)?(()=>{const n=Math.min(c.max,1+k);return 'up to '+n+(n>1?' picks':' pick')+' per run'})():CONT.has(c.id)?c.txt(CMW[k]).replace(/\d+\.\d+/g,m=>Math.round(+m))+' per pick':c.txt(1);
+      let pips=''; for(let i=0;i<3;i++) pips+='<i'+(i<r?' class="on"':'')+'></i>';
+      h+='<div class="card" style="--c:'+ct.color+'"><div class="ct"><span class="cn">'+c.name+'</span><span class="chip" style="--c:'+ct.color+'">Card \u00b7 '+ct.name+'</span></div>'
+        +'<div class="cv">'+fmt(r)+(maxed?'':' <em>\u2192</em> '+fmt(r+1))+'</div><div class="pips">'+pips+'</div>'
+        +(maxed?'':'<div class="need'+(ok?'':' short')+'"><span>Needs '+need+'</span><span class="rtag" style="--g:'+RAR[r].color+'">'+RAR[r].name+'</span><span>'+ct.name+' \u00b7 have '+have+'</span></div>')
+        +'<button class="btn sm" data-cm="'+c.id+'" type="button" style="--c:'+ct.color+'" '+(ok?'':'disabled')+'>'+(maxed?'Mastered':'Master')+'</button></div>';
+    });
+  }
   h+='</div><div class="foot">'+(confirmReset?'<span class="note">Erase all upgrades, cards and progress?</span><button class="btn sm" data-act="reset2" type="button" style="--c:var(--red)">Erase</button><button class="btn sm" data-act="cancel" type="button">Cancel</button>':'<button class="mini" data-act="reset" type="button">Reset progress</button><button class="mini" data-act="ad" type="button" title="Placeholder for a rewarded ad">Demo: ad +5 energy</button>')+'</div>';
   return h;
 }
@@ -2027,12 +2041,13 @@ armoryEl.addEventListener('contextmenu',e=>{ if(e.target.id==='pv'||e.target.clo
 
 armoryEl.addEventListener('click',e=>{
   const ac=e.target.closest('[data-acct]'); if(ac&&window.RRcloud){ const a=ac.dataset.acct; if(a==='del'&&!confirm('Delete your account and cloud save? This cannot be undone.')) return; RRcloud.action(a); return; }
-  const t=e.target.closest('[data-act],[data-buy],[data-tab],[data-fuse],[data-nav],[data-mode],[data-world]'); if(!t) return;
+  const t=e.target.closest('[data-act],[data-buy],[data-cm],[data-tab],[data-fuse],[data-nav],[data-mode],[data-world]'); if(!t) return;
   if(t.dataset.nav){ UI.nav=t.dataset.nav; renderArmory(); return; }
   if(t.dataset.mode){ UI.elite=t.dataset.mode==='e'; renderArmory(); return; }
   if(t.dataset.world){ if(!worldOpen(WORLDS.findIndex(w=>w.id===t.dataset.world))) return; P.world=t.dataset.world; UI.elite=false; UI.nav='battle'; save(); renderArmory(); return; }
   
   if(t.dataset.tab){ tab=t.dataset.tab; renderArmory(); return; }
+  if(t.dataset.cm){ if(cmBuy(t.dataset.cm)){ Music.up(); renderArmory(); } return; }
   if(t.dataset.buy){ if(buyUp(t.dataset.buy)){ Music.up(); renderArmory(); } return; }
   if(t.dataset.fuse){ const p=t.dataset.fuse.split(':'); if(fuse(p[0],+p[1])){ Music.up(); renderArmory(); } return; }
   const a=t.dataset.act;
@@ -2048,6 +2063,9 @@ armoryEl.addEventListener('click',e=>{
 /* ================= upgrade cards (pick 1 of 3, reset every level) ================= */
 const shopEl=$('shop');
 const bst=id=>(G.boost&&G.boost[id])||0;
+/* Card mastery (menu): each stat card has a rank 0-3. Rank 0 is deliberately basic; ranks scale its in-run strength (continuous cards) or the number of picks allowed (count cards). */
+const CMW=[0.5,0.7,0.9,1.15], CONT=new Set(['rate','dmg','slide','fort','mine','marea','mrech','field','fwidb','fdurc','cpow','crate','spow','sspeed','mortpow','mortarea','mortspd']), COUNTC=new Set(['barrel','pierce','mcount','fcount','cjump','scount','mortcap']);
+const cmRank=id=>(P.cm&&P.cm[id])||0, cmw=id=>CMW[cmRank(id)], bq=id=>bst(id)*cmw(id);
 const wlv=w=>CARDS.reduce((a,c)=>a+(c.w===w&&c.t===1&&!c.unlock?bst(c.id):0),0);
 const mastery=w=>UPS.reduce((a,u)=>a+(u.tab===w?L(u.id):0),0);
 const EVO_LV=5, ULT_LV=9, EVO_MST=6, ULT_MST=14;
@@ -2112,6 +2130,7 @@ const reqOk=c=>!c.req||Object.keys(c.req).every(k=>bst(k)>=c.req[k]);
 const reqText=r=>Object.keys(r).map(k=>CARDBY[k].name+(CARDBY[k].max>1?' '+r[k]:'')).join(' + ');
 function eligible(c){
   if(bst(c.id)>=c.max||!reqOk(c)) return false;
+  if(COUNTC.has(c.id)&&bst(c.id)>=1+cmRank(c.id)) return false;
   if(c.cond&&!c.cond()) return false;
   if(c.lv&&wlv(c.w)<c.lv) return false;
   if(c.mst&&mastery(c.w)<c.mst) return false;
@@ -2123,7 +2142,7 @@ function eligible(c){
 function offerCards(){
   const bias=(G.wd&&G.wd.bias)||{};
   const early=G.n<=5&&!G.elite;
-  const pool=CARDS.filter(eligible).map(c=>({c:c,w:(c.wt||(c.evo||c.ult?9:c.unlock?(wcount()<2?14:7):c.t===1?10:c.t===2?5:4))*(bias[c.w]||1)*(early?(c.w==='turret'?2.4:c.unlock?0.45:1):1)}));
+  const pool=CARDS.filter(eligible).map(c=>({c:c,w:(c.wt||(c.evo||c.ult?9:c.unlock?(wcount()<2?14:7):c.t===1?10:c.t===2?5:4))*(bias[c.w]||1)*(early?(c.w==='turret'?2.4:c.unlock?0.45:1):1)*(c.t===1&&!c.unlock?1+0.25*cmRank(c.id):1)}));
   /* after the opening levels, every weapon you own competes on equal footing with the turret instead of the turret's longer card list swamping the offers */
   if(!early){ const gs={}; for(const q of pool){ if(q.c.unlock||q.c.evo||q.c.ult||q.c.cond) continue; gs[q.c.w]=(gs[q.c.w]||0)+q.w; }
     const ks=Object.keys(gs); if(ks.length>1){ const avg=ks.reduce((t,k)=>t+gs[k],0)/ks.length; for(const q of pool){ if(q.c.unlock||q.c.evo||q.c.ult||q.c.cond) continue; q.w*=Math.max(0.35,Math.min(2.5,avg/gs[q.c.w])); } } }
@@ -2141,7 +2160,7 @@ function offerCards(){
 function applyCard(c){
   G.boost[c.id]=bst(c.id)+1;
   if(c.unlock){ G.tools[c.w]=true; if(c.w==='mortar'){ G.mort=mortMax(); G.mortT=0; say('Mortar online','Double-tap the field to fire'); } if(c.w==='mine'){ G.stock=mineMax(); G.mineT=0; } }
-  if(c.id==='fort'){ const add=ST.armor(L('armor'))*0.12; G.maxHp+=add; G.hp+=add; }
+  if(c.id==='fort'){ const add=ST.armor(L('armor'))*0.12*cmw('fort'); G.maxHp+=add; G.hp+=add; }
   if(c.id==='repair') G.hp=Math.min(G.maxHp,G.hp+G.maxHp*0.3);
   toolKey=''; hudKey='';
 }
@@ -2155,7 +2174,7 @@ function renderCards(){
     +'<div class="note" style="margin-bottom:12px">Wave '+G.wave+'/'+G.NW+(G.pickQ>0?' \u00b7 +'+G.pickQ:'')+'</div><div class="pickgrid">';
   G.offer.forEach((c,i)=>{
     const wc=WEAPN[c.w], l=bst(c.id), tcol=RAR[c.t-1].color;
-    const body=(c.unlock?c.desc.replace(/^NEW WEAPON\.\s*/,''):(l?c.txt(l)+' \u2192 ':'')+c.txt(l+1)).replace(/^(EVOLVE|ULTIMATE): /,'')+(c.ex?' Excludes '+CARDBY[c.ex[0]].name+'.':'');
+    const ef=k=>CONT.has(c.id)?k*cmw(c.id):k, rd=t=>t.replace(/\d+\.\d+/g,m=>Math.round(+m)), body=rd(c.unlock?c.desc.replace(/^NEW WEAPON\.\s*/,''):(l?c.txt(ef(l))+' \u2192 ':'')+c.txt(ef(l+1))).replace(/^(EVOLVE|ULTIMATE): /,'')+(c.ex?' Excludes '+CARDBY[c.ex[0]].name+'.':'');
     let d=''; for(let k=1;k<=3;k++) d+='<i'+(k>c.t?' class="o"':'')+'></i>';
     const ic2=c.unlock?'':'<span class="ci2" style="--tc:'+tcol+'">'+ico(CIC[c.id]||'pow',12)+'</span>';
     h+='<button type="button" class="pk t'+c.t+'" data-pick="'+i+'" style="--c:'+wc.color+';--g:'+tcol+'" title="'+c.name+': '+body.replace(/"/g,'')+'" aria-label="'+c.name+', '+wc.name+': '+body.replace(/"/g,'')+'">'
@@ -2223,7 +2242,7 @@ function renderShop(){
     if(w!=='turret'&&!hasTool(w)) return;
     const own=CARDS.filter(c=>c.w===w&&!c.unlock&&bst(c.id)>0);
     h+='<div class="card" style="--c:'+WEAPN[w].color+';margin-bottom:10px"><div class="ct"><span class="cn">'+WEAPN[w].name+'</span></div>'
-      +(own.length?own.map(c=>'<div class="perk"><span>'+c.name+(c.max>1?' '+bst(c.id):'')+'</span><span>'+c.txt(bst(c.id))+'</span></div>').join(''):'<div class="note">No cards yet.</div>')+'</div>';
+      +(own.length?own.map(c=>'<div class="perk"><span>'+c.name+(c.max>1?' '+bst(c.id):'')+'</span><span>'+c.txt(CONT.has(c.id)?bst(c.id)*cmw(c.id):bst(c.id)).replace(/\d+\.\d+/g,m=>Math.round(+m))+'</span></div>').join(''):'<div class="note">No cards yet.</div>')+'</div>';
   });
   h+='<div class="sticky"><button class="btn big" data-sact="close" type="button">Back to battle</button></div></div>';
   shopEl.innerHTML=h;
@@ -2343,10 +2362,10 @@ window.__rr={fireball:fireball,chip:chip,openTeach:openTeach,fireMortar:fireMort
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 28</div>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 29</div>
 <script>
 /* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
-(function(){ const BUILD=28; let busy=false, shown=false;
+(function(){ const BUILD=29; let busy=false, shown=false;
   const inRun=()=>{ try{ return typeof G!=='undefined'&&(G.state==='playing'||G.state==='cards'||G.state==='shop'||G.state==='paused'||G.state==='teach'); }catch(e){ return false; } };
   function wipeReload(){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
     if(n>=3) return;
