@@ -913,7 +913,7 @@ function placeField(x,y){
   if(!canField()) return false;
   const hw=fieldHW();
   G.fields.push({x:clamp(x,hw*0.4,W-hw*0.4),y:clamp(y,140,GROUND-100),hw:hw,h:22,t:0,dur:ST.fdur(L('fdur'))+2*bst('fdurc'),zapT:0.4,slow:Math.max(0.1,ST.fslow(fslowLv(L('fdps')))*Math.pow(0.85,bst('fchill'))),dps:ST.fdps(L('fdps'))*Math.pow(1.4,bst('field'))});
-  G.fieldCd=ST.frech(L('frech')); Music.place(true); return true;
+  G.fieldCd=G.fields.length<1+bst('fcount')?1.5:ST.frech(L('frech')); Music.place(true); return true;
 }
 function blast(x,y,R,dmg,floor){
   for(const e of G.enemies){
@@ -986,9 +986,9 @@ function autoTools(dt){
     for(const e of G.enemies){
       if(e.dead||e.y<110||e.y>GROUND-230||e.type==='orb') continue;
       const fy=Math.min(GROUND-170,e.y+(e.vy||30)*1.1+30), fx=clamp(e.x+(e.vx||0)*1.1,hw*0.4,W-hw*0.4);
-      if(G.fields.some(f=>Math.abs(f.x-fx)<hw*1.2&&Math.abs(f.y-fy)<70)) continue;
+      if(G.fields.some(f=>Math.abs(f.x-fx)<hw*0.5&&Math.abs(f.y-fy)<45)) continue;
       let sc=0;
-      for(const o of G.enemies){ if(o.dead||o.type==='orb') continue; if(Math.abs(o.x-fx)<=hw&&o.y<fy+10&&o.y>fy-150){ sc+=(o.type==='brute'||o.type==='shield'||o.type==='boss'||o.type==='chunk'||o.type==='egg')?3:1; } }
+      for(const o of G.enemies){ if(o.dead||o.type==='orb') continue; if(G.fields.some(f=>Math.abs(o.x-f.x)<=f.hw&&Math.abs(o.y-f.y)<=f.h+o.r)) continue; if(Math.abs(o.x-fx)<=hw&&o.y<fy+10&&o.y>fy-150){ sc+=(o.type==='brute'||o.type==='shield'||o.type==='boss'||o.type==='chunk'||o.type==='egg')?3:1; } }
       if(sc>bs){ bs=sc; best={x:fx,y:fy}; }
     }
     if(best&&bs>=3) placeField(best.x,best.y);
@@ -1586,7 +1586,7 @@ function renderTools(){
   const mrem=mo&&G.stock<mineMax()?Math.max(0,mR-G.mineT):0, trem=mt&&G.mort<mortMax()?Math.max(0,tR-G.mortT):0;
   const mrp=mt?(G.mort>=mortMax()?100:Math.round(G.mortT/tR*100)):0;
   const mp=mo?(G.stock>=mineMax()?100:Math.round(G.mineT/mR*100)):0;
-  const fcd=Math.max(0,G.fieldCd), fp=fo?(fcd>0?Math.round((1-fcd/ST.frech(L('frech')))*100):100):0;
+  const fcd=Math.max(0,G.fieldCd), fp=fo?(fcd>0?Math.round((1-Math.min(1,fcd/ST.frech(L('frech'))))*100):100):0;
   const fact=G.fields.length?Math.max.apply(null,G.fields.map(f=>f.dur-f.t)):0;
   const ccd=co?Math.max(0,G.chainT):0, cp=co?Math.round((1-Math.min(1,ccd/chainCd()))*100):0;
   const sw0=G.saws[0], sact=G.saws.length?Math.max.apply(null,G.saws.map(w=>w.life)):0, scd=so&&!G.saws.length?Math.max(0,G.sawCd):0;
@@ -2236,10 +2236,10 @@ window.__rr={shape:shape,spawn:spawn,G:G,get P(){return P;},set P(v){P=v;},newP:
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 19</div>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 20</div>
 <script>
 /* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
-(function(){ const BUILD=19; let busy=false, shown=false;
+(function(){ const BUILD=20; let busy=false, shown=false;
   const inRun=()=>{ try{ return typeof G!=='undefined'&&(G.state==='playing'||G.state==='cards'||G.state==='shop'||G.state==='paused'); }catch(e){ return false; } };
   function wipeReload(){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
     if(n>=3) return;
