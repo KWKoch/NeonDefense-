@@ -455,7 +455,7 @@ const CT={pow:{name:'Power',color:'#ff3860'},tmp:{name:'Tempo',color:'#00f0ff'},
 const CTYPES=['pow','tmp','rch','cap','frt'], CW={pow:42,tmp:24,rch:13,cap:13,frt:8};
 const RAR=[{name:'Common',ab:'Com',color:'#b8c4cc'},{name:'Rare',ab:'Rare',color:'#3d8bff'},{name:'Epic',ab:'Epic',color:'#ff2bd6'},{name:'Legendary',ab:'Leg',color:'#fff200'}];
 const TOOLS={
-  mine:{name:'Mine layer',color:C.orange,cost:150,kind:'b',desc:'Drop proximity mines on the field. They detonate when an enemy gets close and hurt everything in the blast.'},
+  mine:{name:'Mine layer',color:'#aeb8bf',cost:150,kind:'b',desc:'Drop proximity mines on the field. They detonate when an enemy gets close and hurt everything in the blast.'},
   field:{name:'Slow field',color:C.violet,cost:300,kind:'e',desc:'Lay a horizontal energy bar. Anything inside it slows down and takes energy damage over time.'}
 };
 /* Worlds: each one specialises mobs (uw = global wave a mob first appears), favoured weapons (bias on card odds) and look.
@@ -906,7 +906,7 @@ function canField(){ return hasTool('field')&&G.fieldCd<=0&&G.fields.length<1+bs
 function placeMine(x,y){
   if(!canMine()) return false;
   const n=Math.min(1+bst('mcount'),G.stock);
-  for(let i=0;i<n;i++){ G.stock--; G.mines.push({x:clamp(x+(i-(n-1)/2)*38,24,W-24),y:clamp(y+(i%2?16:0),200,GROUND-50),t:0,dead:false}); }
+  for(let i=0;i<n;i++){ G.stock--; G.mines.push({x:clamp(x+(i-(n-1)/2)*46,24,W-24),y:clamp(y+(i%2?16:0),200,GROUND-50),t:0,dead:false}); }
   Music.place(false); return true;
 }
 function placeField(x,y){
@@ -939,7 +939,7 @@ function updateMines(dt){
     m.t+=dt; if(m.t<0.6) continue;
     for(const e of G.enemies){
       if(e.dead) continue;
-      const rr=20+e.r*0.6; const dx=e.x-m.x, dy=e.y-m.y;
+      const rr=MINE_R+10+e.r*0.6; const dx=e.x-m.x, dy=e.y-m.y;
       if(dx*dx+dy*dy<rr*rr){ detonate(m); break; }
     }
   }
@@ -1039,21 +1039,29 @@ function updateSaws(dt){
     sw.life-=dt; sw.rot+=dt*16;
     for(let k=0;k<steps;k++){
       sw.vy+=260*h; sw.x+=sw.vx*h; sw.y+=sw.vy*h;
-      if(sw.x<sw.r){ sw.x=sw.r; sw.vx=Math.abs(sw.vx)*0.98; } else if(sw.x>W-sw.r){ sw.x=W-sw.r; sw.vx=-Math.abs(sw.vx)*0.98; }
-      if(sw.y<sw.r+6){ sw.y=sw.r+6; sw.vy=Math.abs(sw.vy)*0.98; }
-      const fl=GROUND-sw.r-22; if(sw.y>fl){ sw.y=fl; sw.vy=-Math.max(Math.abs(sw.vy)*0.95,420); }
+      if(sw.x<sw.r){ sw.x=sw.r; sw.vx=Math.abs(sw.vx)*0.98; sw.pool=dmg*2; } else if(sw.x>W-sw.r){ sw.x=W-sw.r; sw.vx=-Math.abs(sw.vx)*0.98; sw.pool=dmg*2; }
+      if(sw.y<sw.r+6){ sw.y=sw.r+6; sw.vy=Math.abs(sw.vy)*0.98; sw.pool=dmg*2; }
+      const fl=GROUND-sw.r-22; if(sw.y>fl){ sw.y=fl; sw.vy=-Math.max(Math.abs(sw.vy)*0.95,420); sw.pool=dmg*2; }
       for(const e of G.enemies){
         if(e.dead||e.y<-e.r) continue;
         const dx=sw.x-e.x, dy=sw.y-e.y, rr=sw.r+e.r*0.85, d2=dx*dx+dy*dy;
         if(d2<rr*rr){
-          const d=Math.sqrt(d2)||0.01, nx=dx/d, ny=dy/d;
-          sw.x=e.x+nx*rr; sw.y=e.y+ny*rr;
-          const vn=sw.vx*nx+sw.vy*ny; if(vn<0){ sw.vx-=1.9*vn*nx; sw.vy-=1.9*vn*ny; }
-          if(G.time-(e.sh||0)>ST.scool(L('scool'))){
-            e.sh=G.time; hurt(e,dmg,'k',false);
+          const ready=G.time-(e.sh||0)>ST.scool(L('scool'));
+          const hitFx=()=>{
             if(bst('sfire')){ blast(e.x,e.y,44,dmg*0.5); e.burn=2.5; e.burnDps=dmg*0.8; G.rings.push({x:e.x,y:e.y,r:4,max:38,life:0.22,t:0,color:C.orange}); }
             if(bst('sbleed')){ e.bleed=4; e.bleedDps=Math.min((e.bleedDps||0)+dmg*0.5,dmg*2.5); }
             burst(sw.x,sw.y,C.lime,4,170);
+          };
+          const need=e.hp/Math.max(0.05,e.res.k);
+          if(sw.pool===undefined) sw.pool=dmg*2;
+          if(need<=dmg+sw.pool){
+            /* overpowered: the blade slices straight through and keeps its momentum for the next target */
+            if(ready){ e.sh=G.time; sw.pool=Math.max(0,sw.pool-Math.max(0,need-dmg)); hurt(e,Math.max(dmg,need*1.05),'k',false); hitFx(); float(e.x,e.y-e.r-12,'SLICE',C.lime); }
+          } else {
+            const d=Math.sqrt(d2)||0.01, nx=dx/d, ny=dy/d;
+            sw.x=e.x+nx*rr; sw.y=e.y+ny*rr;
+            const vn=sw.vx*nx+sw.vy*ny; if(vn<0){ sw.vx-=1.9*vn*nx; sw.vy-=1.9*vn*ny; }
+            if(ready){ e.sh=G.time; hurt(e,dmg,'k',false); hitFx(); }
           }
         }
       }
@@ -1370,13 +1378,23 @@ function drawTurret(){
   circ2(-22,12,3.4); circ2(22,12,3.4);
   ctx.restore();
 }
+const MINE_R=17;
 function drawMine(m,ghost){
   ctx.save(); ctx.translate(m.x,m.y);
-  const armed=ghost||m.t>=0.6, pul=armed?0.5+0.5*Math.sin(G.time*7+m.x):0.2;
+  const armed=ghost||m.t>=0.6, blink=armed?(Math.sin(G.time*9+m.x)>0.2):(Math.sin(G.time*20)>0.5), R=MINE_R;
   ctx.globalAlpha=ghost?0.7:1;
-  neon(C.orange,10+8*pul,2); ctx.fillStyle='rgba(255,138,0,.15)';
-  circ2(0,0,9,true); tri2(0,-5,-4.5,3.5,4.5,3.5);
-  ctx.shadowBlur=0; ctx.lineWidth=1.4; for(let i=0;i<3;i++){ const a=i*2.094-1.57; ctx.beginPath(); ctx.moveTo(Math.cos(a)*9,Math.sin(a)*9); ctx.lineTo(Math.cos(a)*14,Math.sin(a)*14); ctx.stroke(); }
+  const sp=ctx.createRadialGradient(-R*.3,-R*.35,R*.1,0,0,R*1.1); sp.addColorStop(0,'#c9d2d8'); sp.addColorStop(.6,'#7d8890'); sp.addColorStop(1,'#3d454b');
+  /* spikes */
+  neon('#aeb8bf',6,1.6); ctx.fillStyle='#8a949b';
+  for(let i=0;i<8;i++){ const a=i*0.7854; ctx.beginPath(); ctx.moveTo(Math.cos(a-.17)*R*.92,Math.sin(a-.17)*R*.92); ctx.lineTo(Math.cos(a)*R*1.42,Math.sin(a)*R*1.42); ctx.lineTo(Math.cos(a+.17)*R*.92,Math.sin(a+.17)*R*.92); ctx.closePath(); ctx.fill(); ctx.stroke(); }
+  /* body */
+  ctx.fillStyle=sp; ctx.beginPath(); ctx.arc(0,0,R,0,6.2832); ctx.fill(); ctx.stroke();
+  ctx.shadowBlur=0; ctx.lineWidth=1.2; ctx.strokeStyle='#4b545a'; ctx.beginPath(); ctx.arc(0,0,R*.68,0,6.2832); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(-R,0); ctx.lineTo(-R*.68,0); ctx.moveTo(R,0); ctx.lineTo(R*.68,0); ctx.moveTo(0,-R); ctx.lineTo(0,-R*.68); ctx.moveTo(0,R); ctx.lineTo(0,R*.68); ctx.stroke();
+  ctx.fillStyle='#2f363b'; for(let i=0;i<4;i++){ const a=i*1.5708+.785; ctx.beginPath(); ctx.arc(Math.cos(a)*R*.82,Math.sin(a)*R*.82,1.4,0,6.2832); ctx.fill(); }
+  /* status light */
+  const lc=armed?'#ff2a3a':'#ffb020'; ctx.fillStyle=blink?lc:'#40191d'; if(blink){ ctx.shadowColor=lc; ctx.shadowBlur=14*sx; }
+  ctx.beginPath(); ctx.arc(0,0,R*.3,0,6.2832); ctx.fill();
   ctx.restore();
 }
 function drawField(f,ghost){
@@ -1920,7 +1938,7 @@ const EVO_LV=5, ULT_LV=9, EVO_MST=6, ULT_MST=14;
 let PICKM=1;
 const pickWave=w=>w>=2&&(w-2)%PICKM===0;
 const wcount=()=>['mine','field','chain','saw','mortar'].filter(hasTool).length;
-const WEAPN={turret:{name:'Turret',color:C.cyan},mine:{name:'Mine layer',color:C.orange},field:{name:'Slow field',color:C.violet},chain:{name:'Chain lightning',color:C.yellow},saw:{name:'Buzz saw',color:C.lime},mortar:{name:'Mortar',color:C.amber}};
+const WEAPN={turret:{name:'Turret',color:C.cyan},mine:{name:'Mine layer',color:'#aeb8bf'},field:{name:'Slow field',color:C.violet},chain:{name:'Chain lightning',color:C.yellow},saw:{name:'Buzz saw',color:C.lime},mortar:{name:'Mortar',color:C.amber}};
 const CARDS=[
  {id:'rate',w:'turret',t:1,max:8,name:'Rapid Fire',txt:l=>'+'+Math.round((Math.pow(1/0.87,l)-1)*100)+'% fire rate'},
  {id:'dmg',w:'turret',t:1,max:8,name:'Heavy Rounds',txt:l=>'+'+Math.round((Math.pow(1.35,l)-1)*100)+'% damage'},
@@ -2169,10 +2187,10 @@ window.__rr={shape:shape,spawn:spawn,G:G,get P(){return P;},set P(v){P=v;},newP:
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 15</div>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 16</div>
 <script>
 /* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
-(function(){ const BUILD=15; try{
+(function(){ const BUILD=16; try{
   fetch('index.html?v='+Date.now(),{cache:'no-store'}).then(r=>r.text()).then(t=>{
     const m=t.match(/const BUILD=(\d+);/); const live=m?+m[1]:BUILD;
     if(live>BUILD){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
