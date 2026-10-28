@@ -702,8 +702,8 @@ const stars=[]; for(let i=0;i<90;i++) stars.push({x:Math.random()*W,y:Math.rando
 /* ================= level and wave generation ================= */
 const waveCount=n=>n%50===0?40:n%10===0?30:20;
 const earlyDamp=n=>n<=5?0.5+0.1*(n-1):1;
-const EHP=[0.35,0.45,0.55,0.7,0.85,0.95];
-const earlyHp=n=>n<=6?EHP[n-1]:1;
+const EHP=[0.55,0.65,0.9,1.05,1.1];
+const earlyHp=n=>n<=5?EHP[n-1]:n<=14?2.0+0.17*(n-6):n<=24?3.36-0.236*(n-14):1;
 const mobn=n=>Math.max(MOBF,MOBN*Math.pow(0.94,n-1)*earlyDamp(n));
 let LATEK=0.01;
 const hpScale=n=>Math.pow(HPG,n-1)*(1+HPA*(n-1))*(1+LATEK*Math.pow(Math.max(0,n-12),2));
@@ -2321,10 +2321,10 @@ window.__rr={chip:chip,openTeach:openTeach,fireMortar:fireMortar,shape:shape,spa
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 23</div>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 24</div>
 <script>
 /* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
-(function(){ const BUILD=23; let busy=false, shown=false;
+(function(){ const BUILD=24; let busy=false, shown=false;
   const inRun=()=>{ try{ return typeof G!=='undefined'&&(G.state==='playing'||G.state==='cards'||G.state==='shop'||G.state==='paused'||G.state==='teach'); }catch(e){ return false; } };
   function wipeReload(){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
     if(n>=3) return;
