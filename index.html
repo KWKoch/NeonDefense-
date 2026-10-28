@@ -1380,15 +1380,34 @@ function drawMine(m,ghost){
   ctx.restore();
 }
 function drawField(f,ghost){
-  const a=ghost?0.8:Math.min(1,f.t/0.25,(f.dur-f.t)/0.8), x0=f.x-f.hw, w=f.hw*2;
-  ctx.save(); ctx.globalAlpha=Math.max(0,a);
-  ctx.fillStyle='rgba(157,77,255,'+(ghost?0.1:0.16)+')'; ctx.fillRect(x0,f.y-f.h,w,f.h*2);
-  neon(C.violet,12,2); if(ghost) ctx.setLineDash([10,8]);
-  ctx.beginPath(); ctx.moveTo(x0,f.y-f.h); ctx.lineTo(x0+w,f.y-f.h); ctx.moveTo(x0,f.y+f.h); ctx.lineTo(x0+w,f.y+f.h); ctx.stroke(); ctx.setLineDash([]);
-  ctx.shadowBlur=0; ctx.lineWidth=1.2; ctx.strokeStyle='rgba(200,150,255,.55)'; ctx.setLineDash([3,12]); ctx.lineDashOffset=-G.time*40;
-  ctx.beginPath(); ctx.moveTo(x0,f.y); ctx.lineTo(x0+w,f.y); ctx.stroke(); ctx.setLineDash([]); ctx.lineDashOffset=0;
-  neon(C.violet,10,2);
-  tri2(x0-10,f.y,x0,f.y-f.h,x0,f.y+f.h); tri2(x0+w+10,f.y,x0+w,f.y-f.h,x0+w,f.y+f.h);
+  const t=G.time, grow=ghost?1:Math.min(1,f.t/0.5), ez=1-Math.pow(1-grow,3), fade=ghost?1:Math.max(0,Math.min(1,(f.dur-f.t)/1.1));
+  const hw=Math.max(4,f.hw*ez), h=f.h, rgb=bst('fchill')?'120,220,255':bst('fpull')?'255,110,225':'160,90,255', lt=bst('fchill')?'200,245,255':bst('fpull')?'255,190,240':'215,175,255';
+  ctx.save(); ctx.translate(f.x,f.y); ctx.globalAlpha=Math.max(0,fade)*(ghost?0.7:1);
+  const env=x=>h*1.05*Math.sqrt(Math.max(0,1-Math.pow(x/hw,4)));
+  /* soft gas body */
+  ctx.save(); ctx.scale(1,(h*1.5)/hw);
+  const rg=ctx.createRadialGradient(0,0,0,0,0,hw); rg.addColorStop(0,'rgba('+lt+',.34)'); rg.addColorStop(.55,'rgba('+rgb+',.2)'); rg.addColorStop(1,'rgba('+rgb+',0)');
+  ctx.fillStyle=rg; ctx.fillRect(-hw,-hw,hw*2,hw*2); ctx.restore();
+  /* clip to lens for wisps and rings */
+  ctx.save(); ctx.beginPath(); for(let x=-hw;x<=hw;x+=6) ctx.lineTo(x,-env(x)*1.15); for(let x=hw;x>=-hw;x-=6) ctx.lineTo(x,env(x)*1.15); ctx.closePath(); ctx.clip();
+  ctx.globalCompositeOperation='lighter';
+  for(let i=0;i<16;i++){
+    const sp=(14+(i%5)*7)*(i%2?1:-1), x=((i*53+t*sp)%(hw*2)+hw*2)%(hw*2)-hw, y=Math.sin(t*1.2+i*1.9)*h*0.75, r=7+(i%4)*4;
+    const bg=ctx.createRadialGradient(x,y,0,x,y,r); bg.addColorStop(0,'rgba('+lt+',.22)'); bg.addColorStop(1,'rgba('+rgb+',0)'); ctx.fillStyle=bg; ctx.fillRect(x-r,y-r,r*2,r*2);
+  }
+  ctx.lineWidth=1.2; const pull=bst('fpull')?1.8:0.8;
+  for(let i=0;i<4;i++){ const k=((t*0.55*pull+i/4)%1), sc=1-k; ctx.strokeStyle='rgba('+lt+','+(0.55*k*(1-k)*3).toFixed(3)+')'; ctx.beginPath(); ctx.ellipse(0,0,Math.max(2,hw*sc),Math.max(1,h*1.1*sc),0,0,6.2832); ctx.stroke(); }
+  ctx.fillStyle='rgba('+lt+',.9)';
+  for(let i=0;i<12;i++){ const x=((i*71+t*(9+i%3*5)*(i%2?1:-1))%(hw*2)+hw*2)%(hw*2)-hw, y=h*0.9-((t*(14+i%4*6)+i*13)%(h*1.8)), tw=0.4+0.6*Math.abs(Math.sin(t*3+i)); ctx.globalAlpha=Math.max(0,fade)*tw*(ghost?0.7:1); ctx.fillRect(x,y,1.6,1.6); }
+  ctx.restore();
+  /* rippling energy boundaries */
+  ctx.globalAlpha=Math.max(0,fade)*(ghost?0.7:1); ctx.shadowColor='rgb('+rgb+')'; ctx.shadowBlur=12*sx; ctx.strokeStyle='rgba('+lt+',.8)'; ctx.lineWidth=1.8; if(ghost) ctx.setLineDash([8,6]);
+  for(const sg of [-1,1]){ ctx.beginPath(); for(let x=-hw;x<=hw;x+=5){ const y=sg*(env(x)+Math.sin(x*0.09+t*3.2*sg)*2.2*(1-Math.abs(x/hw))); x===-hw?ctx.moveTo(x,y):ctx.lineTo(x,y); } ctx.stroke(); }
+  ctx.setLineDash([]); ctx.shadowBlur=0; ctx.lineWidth=1; ctx.strokeStyle='rgba('+rgb+',.55)'; ctx.setLineDash([3,10]); ctx.lineDashOffset=-t*30; ctx.beginPath(); ctx.moveTo(-hw,0); ctx.lineTo(hw,0); ctx.stroke(); ctx.setLineDash([]); ctx.lineDashOffset=0;
+  /* projector nodes at each tip */
+  ctx.shadowBlur=14*sx; ctx.fillStyle='rgb('+lt+')'; for(const sg of [-1,1]){ const pr=3.2+Math.sin(t*6+sg)*0.8; ctx.beginPath(); ctx.arc(sg*hw,0,pr,0,6.2832); ctx.fill(); ctx.globalAlpha*=0.5; ctx.beginPath(); ctx.arc(sg*hw,0,pr*2.6,0,6.2832); ctx.stroke(); ctx.globalAlpha=Math.max(0,fade)*(ghost?0.7:1); }
+  /* materialise shockwave */
+  if(!ghost&&f.t<0.7){ const k=f.t/0.7; ctx.shadowBlur=0; ctx.globalAlpha=(1-k)*0.8; ctx.strokeStyle='rgba('+lt+',1)'; ctx.lineWidth=2.2; ctx.beginPath(); ctx.ellipse(0,0,f.hw*(0.3+1.0*k),h*(0.6+1.8*k),0,0,6.2832); ctx.stroke(); }
   ctx.restore();
 }
 function render(dt){
@@ -2150,6 +2169,17 @@ window.__rr={shape:shape,spawn:spawn,G:G,get P(){return P;},set P(v){P=v;},newP:
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 13</div>
-<script>if('serviceWorker' in navigator){ let had=!!navigator.serviceWorker.controller; navigator.serviceWorker.addEventListener('controllerchange',()=>{ if(had) location.reload(); had=true; }); addEventListener('load',()=>navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{})); }</script>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 15</div>
+<script>
+/* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
+(function(){ const BUILD=15; try{
+  fetch('index.html?v='+Date.now(),{cache:'no-store'}).then(r=>r.text()).then(t=>{
+    const m=t.match(/const BUILD=(\d+);/); const live=m?+m[1]:BUILD;
+    if(live>BUILD){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
+      if(n>=2) return;
+      Promise.all([(navigator.serviceWorker?navigator.serviceWorker.getRegistrations().then(rs=>Promise.all(rs.map(r=>r.unregister()))):0),(window.caches?caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k)))):0)]).catch(()=>{}).then(()=>location.replace(location.pathname+'?u='+Date.now()));
+    } else { try{ sessionStorage.removeItem('ndReload'); }catch(e){} }
+  }).catch(()=>{});
+}catch(e){} })();
+if('serviceWorker' in navigator){ let had=!!navigator.serviceWorker.controller; navigator.serviceWorker.addEventListener('controllerchange',()=>{ if(had) location.reload(); had=true; }); addEventListener('load',()=>navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{})); }</script>
 </body></html>
