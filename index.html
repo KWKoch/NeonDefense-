@@ -2231,20 +2231,23 @@ window.__rr={shape:shape,spawn:spawn,G:G,get P(){return P;},set P(v){P=v;},newP:
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 17</div>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 18</div>
 <script>
 /* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
-(function(){ const BUILD=17; let busy=false;
+(function(){ const BUILD=18; let busy=false, shown=false;
+  const inRun=()=>{ try{ return typeof G!=='undefined'&&(G.state==='playing'||G.state==='cards'||G.state==='shop'||G.state==='paused'); }catch(e){ return false; } };
+  function wipeReload(){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
+    if(n>=3) return;
+    Promise.all([(navigator.serviceWorker?navigator.serviceWorker.getRegistrations().then(rs=>Promise.all(rs.map(r=>r.unregister()))):0),(window.caches?caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k)))):0)]).catch(()=>{}).then(()=>location.replace(location.pathname+'?u='+Date.now())); }
+  function banner(){ if(shown) return; shown=true; const d=document.createElement('button'); d.type='button'; d.textContent='Update ready \u2013 tap to reload'; d.style.cssText='position:fixed;left:50%;top:8px;transform:translateX(-50%);z-index:99999;background:#00f0ff;color:#000;font:700 13px system-ui;border:0;border-radius:999px;padding:9px 16px;box-shadow:0 0 16px #00f0ff'; d.onclick=wipeReload; document.body.appendChild(d); }
   function check(){ if(busy) return; busy=true; try{
     fetch('index.html?v='+Date.now(),{cache:'no-store'}).then(r=>r.text()).then(t=>{
       busy=false; const m=t.match(/const BUILD=(\d+);/); const live=m?+m[1]:BUILD;
-      if(live>BUILD){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
-        if(n>=3) return;
-        Promise.all([(navigator.serviceWorker?navigator.serviceWorker.getRegistrations().then(rs=>Promise.all(rs.map(r=>r.unregister()))):0),(window.caches?caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k)))):0)]).catch(()=>{}).then(()=>location.replace(location.pathname+'?u='+Date.now()));
-      } else { try{ sessionStorage.removeItem('ndReload'); }catch(e){} }
+      if(live>BUILD){ if(inRun()) banner(); else wipeReload(); } else { try{ sessionStorage.removeItem('ndReload'); }catch(e){} }
     }).catch(()=>{busy=false;});
   }catch(e){busy=false;} }
-  check(); document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') check(); }); addEventListener('pageshow',check);
+  check(); setInterval(()=>{ if(document.visibilityState==='visible') check(); },45000);
+  document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') check(); }); addEventListener('pageshow',check);
 })();
 if('serviceWorker' in navigator){ let had=!!navigator.serviceWorker.controller; navigator.serviceWorker.addEventListener('controllerchange',()=>{ if(had) location.reload(); had=true; }); addEventListener('load',()=>navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{})); }</script>
 </body></html>
