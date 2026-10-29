@@ -41,9 +41,9 @@
   };
   // Rewarded: ask the API; the button is shown only once beforeReward hands us showAdFn.
   let show=null, grant=null, ready=false;
-  A.prepareReward=()=>{
+  A.prepareReward=nm=>{
     if(A.failed||A.busy||ready) return;
-    try{ adBreak({type:'reward',name:'energy_refill',beforeAd:before,afterAd:after,
+    try{ adBreak({type:'reward',name:nm||'energy_refill',beforeAd:before,afterAd:after,
       beforeReward:fn=>{ show=fn; ready=true; A.onChange(); },
       adViewed:()=>{ try{ grant&&grant(); }catch(e){} },
       adDismissed:()=>{},

@@ -336,6 +336,15 @@ body.menu{background:radial-gradient(140% 55% at 50% -5%,rgba(255,43,214,.22),rg
 #gate h1{margin:0;font-family:var(--display);font-weight:400;font-size:clamp(34px,10vw,56px);color:var(--cyan);text-shadow:0 0 10px var(--cyan),0 0 30px var(--magenta)}
 #gate .gmsg{min-height:1.4em;max-width:320px;opacity:.85}
 #gate .gerr{color:var(--red)}
+
+.toast{position:fixed;left:50%;bottom:92px;transform:translate(-50%,20px);background:#06141f;border:1px solid #7df9ff;color:#e6fbff;padding:10px 16px;border-radius:12px;font-weight:700;font-size:14px;z-index:60;opacity:0;pointer-events:none;transition:.25s;max-width:90vw;text-align:center}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+.btn small{font-size:11px;opacity:.75;font-weight:600}
+.btn.dbl{margin:8px 0;border-color:#7df9ff;color:#7df9ff}
+.pbs{display:grid;grid-template-columns:repeat(auto-fit,minmax(76px,1fr));gap:8px;margin-top:8px}
+.pbtn{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 4px;border-radius:10px;background:#04101a;border:1px solid var(--g,#789);color:var(--g,#cde);font-weight:700;font-size:12px;cursor:pointer}
+.pbtn b{font-size:14px;color:#e6fbff;display:inline-flex;align-items:center;gap:4px}
+.pbtn:disabled{opacity:.4;cursor:default}
 </style></head><body>
 <div id="gate" role="dialog" aria-modal="true" aria-label="Sign in"><h1>Neon Defense</h1><p class="gmsg" id="gateMsg">Loading…</p><div class="gbtns" id="gateBtns"></div><p class="gmsg gerr" id="gateErr"></p><p class="gmsg"><a href="https://kwkoch.github.io/privacy.html" target="_blank" rel="noopener" style="color:var(--cyan)">Privacy Policy</a></p></div>
 
@@ -539,7 +548,7 @@ const newInv=()=>({pow:[0,0,0,0],tmp:[0,0,0,0],rch:[0,0,0,0],cap:[0,0,0,0],frt:[
 const newPW=()=>({best:0,sel:1,perf:{},eclr:{}});
 function pw(o){ return o.prog[o.world]||(o.prog[o.world]=newPW()); }
 const newP=()=>{
-  const o={inv:newInv(),lv:{},cm:{},world:'belt',own:{belt:true},prog:{},seen:{},intro:0,en:EN_MAX,enV:2,enT:Date.now()};
+  const o={inv:newInv(),lv:{},cm:{},gems:0,pass:0,starter:0,chestDay:'',passDay:'',world:'belt',own:{belt:true},prog:{},seen:{},intro:0,en:EN_MAX,enV:2,enT:Date.now()};
   Object.defineProperty(o,'best',{get(){ return pw(o).best; },set(v){ pw(o).best=v; },enumerable:false});
   Object.defineProperty(o,'sel',{get(){ return pw(o).sel; },set(v){ pw(o).sel=v; },enumerable:false});
   return o;
@@ -555,7 +564,9 @@ try{
     P.en=(o.enV===2&&isFinite(+o.en))?Math.max(0,Math.min(EN_MAX,+o.en)):EN_MAX; P.enT=+o.enT||Date.now();
     if(o.prog){ for(const k in o.prog){ const q=o.prog[k]||{}; P.prog[k]={best:+q.best||0,sel:+q.sel||1,perf:q.perf||{},eclr:q.eclr||{}}; } P.own=Object.assign({belt:true},o.own); if(WORLDS.some(w=>w.id===o.world)) P.world=o.world; }
     else P.prog.belt={best:+o.best||0,sel:+o.sel||1,perf:{},eclr:{}};
-    if(o.seen&&typeof o.seen==='object') P.seen=o.seen; if(o.seenW&&typeof o.seenW==='object') P.seenW=o.seenW; if(o.cm&&typeof o.cm==='object') P.cm=o.cm;
+    if(o.seenW&&typeof o.seenW==='object') P.seenW=o.seenW; if(o.cm&&typeof o.cm==='object') P.cm=o.cm;
+    if(isFinite(+o.gems)) P.gems=Math.max(0,Math.floor(+o.gems)); P.pass=+o.pass||0; P.starter=o.starter?1:0; P.chestDay=o.chestDay||''; P.passDay=o.passDay||'';
+    if(o.seen&&typeof o.seen==='object') P.seen=o.seen;
     else { /* old save: assume mobs up to the player's best level were seen */
       for(const wd of WORLDS){ const b=(P.prog[wd.id]||{}).best||0; if(!b) continue; const uw=wd.uw||UW; for(const k in uw) if(Math.ceil(uw[k]/20)<=b+1) P.seen[k]=1; P.seen.small=1; if(P.seen.chunk) P.seen.small=1; if(P.seen.egg) P.seen.hatch=1; if(b>=10){ P.seen.boss=1; P.seen.orb=1; } }
     }
@@ -852,7 +863,7 @@ function hurt(e,amt,kind,dot,floor){
   if(e.hp<=0){ if(ROCKY[e.type]) chip(e,6); killEnemy(e,true); }
 }
 function leak(e){
-  e.dead=true; explode(e); G.hp=Math.max(0,G.hp-e.dmg); G.shake=Math.min(1,G.shake+e.dmg/25);
+  e.dead=true; explode(e); G.hp=Math.max(0,G.hp-(G.time<(G.shieldUntil||0)?0:e.dmg)); G.shake=Math.min(1,G.shake+e.dmg/25);
   float(e.x,GROUND-24,'-'+e.dmg,C.red); Music.boom(true);
   if(G.hp<=0) gameOver();
 }
@@ -1227,7 +1238,7 @@ function updateEnemies(dt){
     else if(e.type==='swarm'||e.type==='hatch'){ e.vx=Math.cos(e.t*3+e.ph*0.2)*55; e.x=clamp(e.x+e.vx*d,e.r,W-e.r); e.y+=e.vy*d; }
     else if(e.type==='leech'){
       if(!e.latched){ e.vx=Math.sin(e.t*3+e.ph)*60; e.x=clamp(e.x+e.vx*d,e.r,W-e.r); e.y+=e.vy*d; if(e.y>=TURRET_Y-70){ e.latched=true; e.y=TURRET_Y-70; float(e.x,e.y-22,'LATCHED',C.red); } }
-      else { e.vx=0; G.hp=Math.max(0,G.hp-e.dmg*0.45*d); G.shake=Math.max(G.shake,0.08); if(G.hp<=0) gameOver(); }
+      else { e.vx=0; G.hp=Math.max(0,G.hp-(G.time<(G.shieldUntil||0)?0:e.dmg*0.45*d)); G.shake=Math.max(G.shake,0.08); if(G.hp<=0) gameOver(); }
     }
     else if(e.type==='egg'){
       if(e.y<170) e.y+=70*d;
@@ -1631,6 +1642,7 @@ const IC={
   aim:'<circle cx="8" cy="8" r="4.500"/><path d="M8 1v3M8 12v3M1 8h3M12 8h3"/>',
   chev:'<path d="M10.500 2.500 5 8l5.500 5.500"/>',
   turret:'<path d="M8 2 12.500 11H3.500z"/><path d="M2.500 14h11"/>',
+  gem:'<path d="M4 2.500h8l2.500 3.500L8 14 1.500 6z"/><path d="M1.500 6h13M6 2.500 5 6l3 8 3-8-1-3.500"/>',
   heart:'<path d="M8 14 2.500 8.500a3.200 3.200 0 0 1 5.500-3.200 3.200 3.200 0 0 1 5.500 3.200z"/>'
 };
 const ico=(n,sz)=>'<svg class="ic" viewBox="0 0 16 16" width="'+(sz||14)+'" height="'+(sz||14)+'" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+IC[n]+'</svg>';
@@ -1713,7 +1725,7 @@ function startWave(w){
 function startLevel(n,world,elite){
   G.wd=WORLDS.find(w=>w.id===(world||P.world))||WORLDS[0]; G.elite=!!elite; UI.elite=G.elite;
   G.n=n; G.hpS=hpScale(n)*(G.elite?1.6:1)*(G.wd.hp||1); G.spS=1+n*0.01; G.NW=waveCount(n); G.wave=0;
-  G.maxHp=ST.armor(L('armor')); G.hp=G.maxHp; G.earned=0; G.kills=0; G.pot=0; G.credits=0; G.boost={}; G.pity={}; G.sinceW=0; G.tools={}; G.pickQ=0; G.rerolls=1; G.offer=[]; G.superOn=0; G.superCd=10; G.chainT=2; G.blobs=[]; G.chips=[]; G.teachQ=[]; { const to=document.getElementById('teachov'); if(to) to.remove(); } G.cpend=null; G.flashA=0; G.sawCd=0; G.stormT=12; G.mort=2; G.mortT=0; G.saws=[]; G.bolts=[]; G.shells=[]; G.fires=[]; G.delay=[]; lastCred=0;
+  G.maxHp=ST.armor(L('armor')); G.hp=G.maxHp; G.earned=0; G.kills=0; G.pot=0; G.credits=0; G.boost={}; G.pity={}; G.sinceW=0; G.revived=false; G.shieldUntil=0; G.tools={}; G.pickQ=0; G.rerolls=1; G.offer=[]; G.superOn=0; G.superCd=10; G.chainT=2; G.blobs=[]; G.chips=[]; G.teachQ=[]; { const to=document.getElementById('teachov'); if(to) to.remove(); } G.cpend=null; G.flashA=0; G.sawCd=0; G.stormT=12; G.mort=2; G.mortT=0; G.saws=[]; G.bolts=[]; G.shells=[]; G.fires=[]; G.delay=[]; lastCred=0;
   G.enemies=[]; G.bullets=[]; G.parts=[]; G.rings=[]; G.floats=[]; G.mines=[]; G.fields=[]; G.boss=null; G.tag=null; G.warps=[];
   { const pf=profileFor(G.wd,n,G.elite); G.prof=pf; G.mutHp=pf.mut==='armored'?1.3:pf.mut==='dense'?0.8:pf.mut==='swift'?0.85:1; G.mutSp=pf.mut==='swift'?1.25:1; if(pf.mut||n>1) setTimeout(()=>{ if(G.state==='playing'&&G.n===n&&G.wave<=1) say(pf.name,pf.mut?MUTS[pf.mut].note:(BRIEF[pf.feat]||'')); },1400); }
   G.waveT=0; G.shake=0; G.armed=null; G.ghost.show=false; G.placing=false; G.autoT=0.5;
@@ -1738,13 +1750,14 @@ function win(){
   Ads.gameplayStop(); G.state='won'; G.armed=null;
   const pr=pw(P), el=G.elite, replay=el?!!pr.eclr[G.n]:G.n<=pr.best, frac=G.hp/G.maxHp, perfect=frac>=0.999, hadPerf=!!pr.perf[G.n];
   const got=awardCards(dropCount(G.n,frac,replay,el),G.n,(isBoss(G.n)?(replay?1:2):0)+(el&&!replay?1:0),el);
+  const gem=Math.max(1,Math.ceil((4+Math.floor(G.n/3)+(perfect?2:0))*(el?2:1)*(replay?0.5:1))); P.gems=(P.gems||0)+gem; G.lastGot=got; G.lastGems=gem; G.doubled=false;
   if(el) pr.eclr[G.n]=true;
   else { pr.best=Math.max(pr.best,G.n); pr.sel=Math.min(G.n+1,LEVELS); if(perfect) pr.perf[G.n]=true; }
   save();
   const last=G.n>=LEVELS, nx=G.n+1, canNext=!last&&(!el||!!pr.perf[nx]);
   const tx=(!el&&G.wd.id==='belt'&&STORY.win[G.n])||'';
   let h='<h1>'+(last?'Installment clear':(el?'Elite ':'Level ')+(el?G.n+' ':G.n+' ')+'clear')+'</h1>'
-    +(tx?'<p class="sub">'+tx+'</p>':'')+dropsHtml(got)
+    +(tx?'<p class="sub">'+tx+'</p>':'')+dropsHtml(got)+gemLine(gem)+'<div id="dblrow"><button class="btn dbl" data-o="double" type="button">'+ico('cards',16)+' Double rewards '+(passActive()?'':'<small>(watch ad)</small>')+'</button></div>'
     +'<div class="stat1"><span style="color:var(--red)" title="Base health left">'+ico('heart',16)+Math.round(frac*100)+'%</span>'
     +(!el&&perfect?'<span style="color:var(--yellow)" title="Perfect">'+ico('pow',16)+(hadPerf?'':' Elite unlocked')+'</span>':'')+'</div>'
     +enLine()
@@ -1756,9 +1769,10 @@ function gameOver(){
   Ads.gameplayStop(); G.state='over'; G.armed=null;
   const pr=pw(P), done=Math.max(0,G.wave-1), rep=G.elite?!!pr.eclr[G.n]:G.n<=pr.best, full=dropCount(G.n,1,rep,G.elite);
   const cnt=Math.max(done>=3?1:0,Math.round(full*0.5*done/G.NW));
-  const got=awardCards(cnt,G.n,0,G.elite); save();
+  const got=awardCards(cnt,G.n,0,G.elite); const gem=1+Math.floor(done/3); P.gems=(P.gems||0)+gem; G.lastGot=got; G.lastGems=gem; G.doubled=false; save();
   overlay.innerHTML='<h1>Base lost</h1><p class="sub">'+(G.elite?'Elite ':'Level ')+G.n+' \u00b7 wave '+G.wave+'/'+G.NW+'</p>'
-    +dropsHtml(got)
+    +dropsHtml(got)+gemLine(gem)
+    +(G.revived?'':'<div id="dblrow"><button class="btn dbl" data-o="revive" type="button">'+ico('heart',16)+' Revive \u00b7 keep fighting '+(passActive()?'':'<small>(watch ad)</small>')+'</button></div>')
     +enLine()
     +'<div class="obtns"><button class="btn big" data-o="armory" type="button">Home</button><button class="btn" data-o="retry" type="button" aria-label="Retry">Retry '+ico('bolt',14)+(G.elite?EN_COST*2:EN_COST)+'</button></div>';
   overlay.hidden=false; focusFirst();
@@ -1775,9 +1789,11 @@ overlay.addEventListener('click',e=>{
   const b=e.target.closest('[data-o]'); if(!b) return; const o=b.dataset.o;
   if(o==='resume') togglePause();
   else if(o==='quit'){ Music.resume(); save(); toArmory(); }
-  else if(o==='armory'){ if(Ads.homeAds&&(G.state==='won'||G.state==='over')) Ads.interstitial('level_end_home',toArmory); else toArmory(); }
-  else if(o==='next') Ads.interstitial('level_end_next',()=>tryStart(Math.min(G.n+1,LEVELS),G.elite));
-  else if(o==='retry') Ads.interstitial('level_end_retry',()=>tryStart(G.n,G.elite));
+  else if(o==='armory') toArmory();
+  else if(o==='next') tryStart(Math.min(G.n+1,LEVELS),G.elite);
+  else if(o==='retry') tryStart(G.n,G.elite);
+  else if(o==='double') doubleRewards();
+  else if(o==='revive') reviveRun();
 });
 function toArmory(){ setTimeout(wantReward,0);
   UI.nav='battle'; G.state='armory'; overlay.hidden=true; $('shop').hidden=true; Music.setIntensity(0); Music.setBpm(122);
@@ -1809,6 +1825,79 @@ function rollRar(n,e){ const w=rarW(n,e); let x=Math.random()*(w[0]+w[1]+w[2]+w[
 function rollType(){ let x=Math.random()*100; for(const t of CTYPES){ x-=CW[t]; if(x<=0) return t; } return 'pow'; }
 function topRar(n,e){ const w=rarW(n,e); let t=0; for(let i=0;i<4;i++) if(w[i]>0) t=i; return t; }
 const dropCount=(n,frac,rep,el)=>Math.max(1,Math.round((CDROP0+CDROPG*n)*(rep?0.5:1)*(el?1.6:1)*Math.max(0.4,frac)));
+/* ================= gems, shop, rewarded ads, season pass ================= */
+const today=()=>{ const d=new Date(); return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); };
+const passActive=()=>(P.pass||0)>Date.now();
+const gemLine=g=>'<div class="stat1" style="color:#7df9ff" title="Gems">'+ico('gem',16)+' +'+g+' gems</div>';
+let toastEl=null, toastT=0;
+function toast(t){ if(!toastEl){ toastEl=document.createElement('div'); toastEl.className='toast'; toastEl.setAttribute('role','status'); document.body.appendChild(toastEl); } toastEl.textContent=t; toastEl.classList.add('on'); clearTimeout(toastT); toastT=setTimeout(()=>toastEl.classList.remove('on'),2600); }
+/* Real-money purchases need the store's billing (Google Play / App Store). On the web build nothing is charged; the Android/iOS builds replace Billing.buy and call grantSku on success. */
+const PRICES={starter:'$2.99',pass:'$4.99',g100:'$0.99',g550:'$4.99',g1200:'$9.99'};
+const Billing={ready:false, buy(sku){ if(Billing.ready&&Billing.native) return Billing.native(sku,()=>grantSku(sku)); toast('Store purchases open with the Android and iOS release. Nothing was charged.'); }};
+function grantSku(sku){
+  if(sku==='g100') P.gems+=100; else if(sku==='g550') P.gems+=550; else if(sku==='g1200') P.gems+=1200;
+  else if(sku==='pass'){ P.pass=Math.max(Date.now(),P.pass||0)+30*864e5; }
+  else if(sku==='starter'&&!P.starter){ P.starter=1; P.gems+=150; for(const t in CT){ P.inv[t][1]+=2; } enTick(); P.en=Math.min(EN_MAX,P.en+25); }
+  save(); renderArmory();
+}
+let rwBusy=false;
+function rewardFlow(name,grant){
+  if(rwBusy) return;
+  if(passActive()){ grant(); return; }
+  if(Ads.rewardAvailable()){ Ads.showReward(grant); return; }
+  rwBusy=true; toast('Loading ad\u2026'); Ads.prepareReward(name); let n=0;
+  const iv=setInterval(()=>{ n++; if(Ads.rewardAvailable()){ clearInterval(iv); rwBusy=false; Ads.showReward(grant); } else if(n>28){ clearInterval(iv); rwBusy=false; toast('No ad is ready right now. Try again in a moment.'); } },300);
+}
+function doubleRewards(){
+  if(!G.lastGot||G.doubled) return;
+  rewardFlow('double_rewards',()=>{
+    if(G.doubled) return; G.doubled=true;
+    G.lastGot.forEach(c=>{ P.inv[c.t][c.r]++; }); P.gems+=G.lastGems; save();
+    const dr=overlay.querySelector('.drops'); if(dr) dr.outerHTML=dropsHtml(G.lastGot.concat(G.lastGot));
+    const row=overlay.querySelector('#dblrow'); if(row) row.innerHTML='<div class="note" style="color:#7df9ff">Rewards doubled! +'+G.lastGems+' more gems</div>';
+    Music.up();
+  });
+}
+function reviveRun(){
+  if(G.state!=='over'||G.revived) return;
+  rewardFlow('revive',()=>{
+    if(G.state!=='over'||G.revived) return; G.revived=true;
+    (G.lastGot||[]).forEach(c=>{ P.inv[c.t][c.r]=Math.max(0,P.inv[c.t][c.r]-1); }); P.gems=Math.max(0,P.gems-(G.lastGems||0)); save();
+    G.enemies.forEach(e=>{ if(!e.dead&&e.y>GROUND-330){ e.dead=true; explode(e); } });
+    G.hp=Math.max(G.hp,G.maxHp*0.6); G.shieldUntil=G.time+2.5; G.shake=0.6;
+    G.state='playing'; overlay.hidden=true; Ads.gameplayStart(); Music.resume(); hudKey=''; toolKey='';
+    say('Base revived','Hold the line');
+  });
+}
+function adReroll(){ if(G.state!=='cards') return; rewardFlow('card_reroll',()=>{ if(G.state==='cards'){ G.offer=offerCards(); renderCards(); } }); }
+const PACKP=[12,45,150,480];
+function buyPack(k){ const p=k.split(':'), t=p[0], r=+p[1]; if(!CT[t]||!(r>=0&&r<4)) return; const cost=PACKP[r]; if((P.gems||0)<cost){ toast('Not enough gems'); return; }
+  P.gems-=cost; P.inv[t][r]+=3; save(); Music.up(); toast('Opened: 3\u00d7 '+RAR[r].name+' '+CT[t].name+' cards'); renderArmory(); }
+function claim(k){
+  if(k==='chest'){ if(P.chestDay===today()) return; rewardFlow('daily_chest',()=>{ if(P.chestDay===today()) return; P.chestDay=today(); const m=passActive()?2:1, g=8*m; P.gems+=g; let txt='';
+      for(let i=0;i<3*m;i++){ const t=rollType(), r=Math.random()<0.7?0:1; P.inv[t][r]++; } save(); Music.up(); toast('Daily chest: +'+g+' gems and '+3*m+' cards'); renderArmory(); }); }
+  else if(k==='pass'){ if(!passActive()||P.passDay===today()) return; P.passDay=today(); P.gems+=15; save(); Music.up(); toast('Pass bonus: +15 gems'); renderArmory(); }
+}
+function shopHtml(){
+  const g=P.gems||0, can=P.chestDay!==today(), pa=passActive(), days=Math.ceil(((P.pass||0)-Date.now())/864e5);
+  let h='<div class="wrap shop"><div class="ahead"><h1>Shop</h1><div class="cr"><span class="lbl">Gems</span><b style="color:#7df9ff">'+g+'</b></div></div>';
+  h+='<div class="card" style="--c:#ffc400"><div class="ct"><span class="cn">Daily chest</span><span class="chip" style="--c:#ffc400">Free</span></div><div class="cv">8 gems and 3 cards'+(pa?' (doubled by your pass)':'')+'</div>'
+    +'<button class="btn" data-claim="chest" type="button" style="--c:#ffc400" '+(can?'':'disabled')+'>'+(can?'Open chest'+(pa?'':' <small>(watch ad)</small>'):'Come back tomorrow')+'</button></div>';
+  h+='<div class="card" style="--c:#9d4dff"><div class="ct"><span class="cn">Neon Pass</span><span class="chip" style="--c:#9d4dff">'+(pa?days+' days left':'30 days')+'</span></div>'
+    +'<div class="cv">The only way to remove ads. Every reward ad is granted instantly with no waiting, 15 gems every day, and double daily chests.</div>'
+    +(pa?'<button class="btn" data-claim="pass" type="button" style="--c:#9d4dff" '+(P.passDay===today()?'disabled':'')+'>'+(P.passDay===today()?'Daily 15 gems claimed':'Claim 15 gems')+'</button>':'')
+    +'<button class="btn big" data-sku="pass" type="button" style="--c:#9d4dff">'+(pa?'Extend 30 days \u00b7 ':'Get Neon Pass \u00b7 ')+PRICES.pass+'</button></div>';
+  if(!P.starter) h+='<div class="card" style="--c:#00f0ff"><div class="ct"><span class="cn">Starter pack</span><span class="chip" style="--c:#00f0ff">One time</span></div><div class="cv">150 gems, 2 Rare cards of every type and 25 energy.</div>'
+    +'<button class="btn big" data-sku="starter" type="button" style="--c:#00f0ff">'+PRICES.starter+'</button></div>';
+  h+='<div class="note" style="margin:10px 0 4px"><b>Card packs.</b> Each pack holds 3 cards of one type and one rarity. Pay with gems you earn by playing.</div>';
+  Object.keys(CT).forEach(t=>{
+    h+='<div class="card prow" style="--c:'+CT[t].color+'"><div class="ct"><span class="cn">'+ico(t,18)+' '+CT[t].name+' packs</span></div><div class="pbs">'
+      +PACKP.map((c,r)=>'<button class="pbtn" type="button" data-pack="'+t+':'+r+'" style="--g:'+RAR[r].color+'" '+(g<c?'disabled':'')+'><span>'+RAR[r].name+'</span><b>'+ico('gem',12)+c+'</b></button>').join('')+'</div></div>';
+  });
+  h+='<div class="note" style="margin:10px 0 4px"><b>Gem bundles.</b></div><div class="card"><div class="pbs">'
+    +[['g100',100],['g550',550],['g1200',1200]].map(b=>'<button class="pbtn" type="button" data-sku="'+b[0]+'" style="--g:#7df9ff"><span>'+b[1]+' gems</span><b>'+PRICES[b[0]]+'</b></button>').join('')+'</div></div>';
+  return h+'</div>';
+}
 function awardCards(count,n,bonus,el){
   const got=[]; for(let i=0;i<count;i++) got.push({t:rollType(),r:rollRar(n,el)});
   for(let i=0;i<bonus;i++) got.push({t:rollType(),r:topRar(n,el)});
@@ -1838,7 +1927,7 @@ const uwFor=wd=>(wd&&wd.uw)||UW;
 function levelMobs(n){ return profileFor(curWorld(),n,UI.elite).roster; }
 const totalCards=()=>{ let t=0; for(const k in P.inv) t+=P.inv[k].reduce((a,b)=>a+b,0); return t; };
 const TABICO={turret:'turret',base:'frt',mine:'mine',field:'field',chain:'chain',saw:'saw',mortar:'mortar'};
-const NAVS=[['arsenal','Arsenal','pow'],['codex','Codex','eye'],['battle','Battle','aim'],['worlds','Worlds','world']];
+const NAVS=[['arsenal','Arsenal','pow'],['codex','Codex','eye'],['battle','Battle','aim'],['shop','Shop','gem'],['worlds','Worlds','world']];
 function fillEnergy(){
   enTick(); const cost=UI.elite&&UI.nav==='battle'?EN_COST*2:EN_COST, nx=enNext();
   const box=$('enBox'); if(box) box.innerHTML=ico('bolt',16)+P.en+'/'+EN_MAX+(P.en>=EN_MAX?'':'<small>'+fmtT(nx)+'</small>');
@@ -1873,7 +1962,7 @@ function battleHtml(){
     +'<button class="chev r" data-act="next" type="button" aria-label="Next level" '+(n>=maxSel?'disabled':'')+'>'+ico('chev',30)+'</button></div>'
     +'<div class="brief">'+briefFor(wd,n,el)+'</div>'
     +'<div class="facts"><span title="Waves">'+ico('wave',18)+waveCount(n)+'</span><span title="Cards per clear">'+ico('cards',18)+'~'+cnt+'</span>'+(el?'<span style="color:var(--red)" title="Elite costs double energy">'+ico('bolt',18)+'x2</span>':'')+'</div>'
-    +'<button class="btn big go" data-act="deploy" type="button" data-lock="'+(lockElite?1:0)+'">Battle</button>'+(P.en<(el?EN_COST*2:EN_COST)&&Ads.rewardAvailable()?'<button class="mini" data-act="ad" type="button">Watch ad: +'+EN_AD+' energy</button>':'')+'</div>';
+    +'<button class="btn big go" data-act="deploy" type="button" data-lock="'+(lockElite?1:0)+'">Battle</button>'+(P.en<(el?EN_COST*2:EN_COST)?'<button class="mini" data-act="ad" type="button">Watch ad: +'+EN_AD+' energy</button>':'')+'</div>';
   return h;
 }
 function accountHtml(){
@@ -1940,9 +2029,9 @@ function renderArmory(){
   enTick();
   const wd=curWorld(), keepEl=armoryEl.querySelector('.content'), keep=keepEl?keepEl.scrollTop:0;
   P.sel=clamp(P.sel,1,Math.min(P.best+1,LEVELS));
-  let body=UI.nav==='arsenal'?arsenalHtml():UI.nav==='codex'?codexHtml():UI.nav==='worlds'?worldsHtml():battleHtml();
+  let body=UI.nav==='arsenal'?arsenalHtml():UI.nav==='codex'?codexHtml():UI.nav==='worlds'?worldsHtml():UI.nav==='shop'?shopHtml():battleHtml();
   const h='<div class="topbar"><button class="wchip" type="button" data-nav="worlds" style="--wc:'+wd.color+'" aria-label="Worlds"><span class="dot">'+ico('world',14)+'</span><span class="nm">'+wd.name+'</span></button><span class="sp"></span>'
-    +'<span class="pill" title="Upgrade cards">'+ico('cards',16)+totalCards()+'</span><span class="pill" id="enBox" title="Energy"></span></div>'
+    +'<span class="pill" title="Gems" style="color:#7df9ff">'+ico('gem',16)+(P.gems||0)+'</span><span class="pill" title="Upgrade cards">'+ico('cards',16)+totalCards()+'</span><span class="pill" id="enBox" title="Energy"></span></div>'
     +'<div class="content" id="content">'+body+'</div>'
     +'<nav class="nav" aria-label="Menu">'+NAVS.map(a=>'<button type="button" data-nav="'+a[0]+'" '+(UI.nav===a[0]?'aria-current="page"':'')+'>'+ico(a[2],UI.nav===a[0]?24:20)+a[1]+'</button>').join('')+'</nav>';
   armoryEl.innerHTML=h;
@@ -2046,12 +2135,15 @@ armoryEl.addEventListener('contextmenu',e=>{ if(e.target.id==='pv'||e.target.clo
 
 armoryEl.addEventListener('click',e=>{
   const ac=e.target.closest('[data-acct]'); if(ac&&window.RRcloud){ const a=ac.dataset.acct; if(a==='del'&&!confirm('Delete your account and cloud save? This cannot be undone.')) return; RRcloud.action(a); return; }
-  const t=e.target.closest('[data-act],[data-buy],[data-cm],[data-tab],[data-fuse],[data-nav],[data-mode],[data-world]'); if(!t) return;
+  const t=e.target.closest('[data-act],[data-buy],[data-cm],[data-pack],[data-sku],[data-claim],[data-tab],[data-fuse],[data-nav],[data-mode],[data-world]'); if(!t) return;
   if(t.dataset.nav){ UI.nav=t.dataset.nav; renderArmory(); return; }
   if(t.dataset.mode){ UI.elite=t.dataset.mode==='e'; renderArmory(); return; }
   if(t.dataset.world){ if(!worldOpen(WORLDS.findIndex(w=>w.id===t.dataset.world))) return; P.world=t.dataset.world; UI.elite=false; UI.nav='battle'; save(); renderArmory(); return; }
   
   if(t.dataset.tab){ tab=t.dataset.tab; renderArmory(); return; }
+  if(t.dataset.pack){ buyPack(t.dataset.pack); return; }
+  if(t.dataset.sku){ Billing.buy(t.dataset.sku); return; }
+  if(t.dataset.claim){ claim(t.dataset.claim); return; }
   if(t.dataset.cm){ if(cmBuy(t.dataset.cm)){ Music.up(); renderArmory(); } return; }
   if(t.dataset.buy){ if(buyUp(t.dataset.buy)){ Music.up(); renderArmory(); } return; }
   if(t.dataset.fuse){ const p=t.dataset.fuse.split(':'); if(fuse(p[0],+p[1])){ Music.up(); renderArmory(); } return; }
@@ -2062,7 +2154,7 @@ armoryEl.addEventListener('click',e=>{
   else if(a==='reset'){ confirmReset=true; renderArmory(); }
   else if(a==='cancel'){ confirmReset=false; renderArmory(); }
   else if(a==='reset2'){ P=newP(); UI.elite=false; confirmReset=false; save(); renderArmory(); }
-  else if(a==='ad'){ Ads.showReward(grantAdEnergy); }
+  else if(a==='ad'){ rewardFlow('energy_refill',grantAdEnergy); }
 });
 
 /* ================= upgrade cards (pick 1 of 3, reset every level) ================= */
@@ -2191,7 +2283,7 @@ function renderCards(){
       +'<span class="tx"><span class="pn">'+c.name+'</span><span class="pd">'+body+'</span></span>'
       +'<span class="side">'+(c.unlock?'<span class="nw">NEW</span>':c.evo?'<span class="nw">EVOLVE</span>':c.ult?'<span class="nw">ULTIMATE</span>':'<span class="dots">'+d+'</span>')+'<span class="key">'+(i+1)+'</span></span></button>';
   });
-  h+='</div><div class="sticky">'+(G.rerolls>0?'<button class="btn" data-pick="re" type="button" aria-label="Reroll, '+G.rerolls+' left">Reroll '+G.rerolls+'</button>':'')+'</div></div>';
+  h+='</div><div class="sticky">'+(G.rerolls>0?'<button class="btn" data-pick="re" type="button" aria-label="Reroll, '+G.rerolls+' left">Reroll '+G.rerolls+'</button>':'<button class="btn" data-pick="ad" type="button">Reroll '+(passActive()?'':'<small>(watch ad)</small>')+'</button>')+'</div></div>';
   shopEl.innerHTML=h;
 }
 /* ---- teaching pauses: a first-time mob or weapon stops the game until the player acknowledges it ---- */
@@ -2267,7 +2359,7 @@ function closeShop(){
 shopEl.addEventListener('click',e=>{
   const t=e.target.closest('[data-pick],[data-sact]'); if(!t) return;
   if(t.dataset.sact==='close'){ closeShop(); return; }
-  if(t.dataset.pick==='re') rerollCards(); else pickCard(+t.dataset.pick);
+  if(t.dataset.pick==='re') rerollCards(); else if(t.dataset.pick==='ad') adReroll(); else pickCard(+t.dataset.pick);
 });
 $('shopBtn').addEventListener('click',()=>{ if(G.state==='shop') closeShop(); else openShop(); });
 
@@ -2310,7 +2402,7 @@ toolField.addEventListener('click',()=>arm('field'));
 
 window.addEventListener('keydown',e=>{
   const k=e.key;
-  if(G.state==='cards'){ if(k==='1'||k==='2'||k==='3') pickCard(+k-1); else if(k==='r'||k==='R') rerollCards(); return; }
+  if(G.state==='cards'){ if(k==='1'||k==='2'||k==='3') pickCard(+k-1); else if(k==='r'||k==='R'){ if(G.rerolls>0) rerollCards(); else adReroll(); } return; }
   if(k==='u'||k==='U'){ if(G.state==='playing') openShop(); else if(G.state==='shop') closeShop(); return; }
   if(k==='Escape'&&G.state==='shop'){ closeShop(); return; }
   if(G.state==='playing'){
@@ -2370,10 +2462,10 @@ window.__rr={fireball:fireball,chip:chip,openTeach:openTeach,fireMortar:fireMort
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 33</div>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 34</div>
 <script>
 /* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
-(function(){ const BUILD=33; let busy=false, shown=false;
+(function(){ const BUILD=34; let busy=false, shown=false;
   const inRun=()=>{ try{ return typeof G!=='undefined'&&(G.state==='playing'||G.state==='cards'||G.state==='shop'||G.state==='paused'||G.state==='teach'); }catch(e){ return false; } };
   function wipeReload(){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
     if(n>=3) return;
