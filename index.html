@@ -1895,7 +1895,7 @@ function arsenalHtml(){
       +(maxed?'':'<div class="need'+(ok?'':' short')+'"><span>Needs '+need+'</span><span class="rtag" style="--g:'+RAR[b].color+'">'+RAR[b].name+'</span><span>'+ct.name+' \u00b7 have '+have+'</span></div>')
       +'<button class="btn sm" data-buy="'+u.id+'" type="button" style="--c:'+ct.color+'" '+(ok?'':'disabled')+'>'+(maxed?'Max':'Upgrade')+'</button></div>';
   });
-  const mc=CARDS.filter(c=>c.t===1&&!c.unlock&&c.id!=='repair'&&(c.id==='fort'?'base':c.w)===tab);
+  const mc=CARDS.filter(c=>c.t===1&&!c.unlock&&c.id!=='repair'&&c.w===tab);
   if(mc.length){
     h+='<div class="note" style="grid-column:1/-1;margin-top:6px"><b>In-run cards.</b> Cards you pick during a level start basic. Mastering a card here makes every pick stronger, and it shows up more often in your level-ups.</div>';
     mc.forEach(c=>{
@@ -2073,24 +2073,24 @@ const CMW=[0.5,0.7,0.9,1.15], CONT=new Set(['rate','dmg','slide','fort','mine','
 const cmRank=id=>(P.cm&&P.cm[id])||0, cmw=id=>CMW[cmRank(id)], bq=id=>bst(id)*cmw(id);
 const wlv=w=>CARDS.reduce((a,c)=>a+(c.w===w&&c.t===1&&!c.unlock?bst(c.id):0),0);
 const mastery=w=>UPS.reduce((a,u)=>a+(u.tab===w?L(u.id):0),0);
-const EVO_LV=5, ULT_LV=9, EVO_MST=6, ULT_MST=14;
+const EVO_LV=4, ULT_LV=8, EVO_MST=6, ULT_MST=14;
 let PICKM=1;
 const pickWave=w=>w>=2&&(w-2)%PICKM===0;
 const wcount=()=>['mine','field','chain','saw','mortar'].filter(hasTool).length;
-const WEAPN={turret:{name:'Turret',color:C.cyan},mine:{name:'Mine layer',color:'#aeb8bf'},field:{name:'Slow field',color:C.violet},chain:{name:'Chain lightning',color:C.yellow},saw:{name:'Buzz saw',color:C.lime},mortar:{name:'Mortar',color:C.amber}};
+const WEAPN={turret:{name:'Turret',color:C.cyan},base:{name:'Base',color:C.lime},mine:{name:'Mine layer',color:'#aeb8bf'},field:{name:'Slow field',color:C.violet},chain:{name:'Chain lightning',color:C.yellow},saw:{name:'Buzz saw',color:C.lime},mortar:{name:'Mortar',color:C.amber}};
 const CARDS=[
  {id:'rate',w:'turret',t:1,max:8,name:'Rapid Fire',txt:l=>'+'+Math.round((Math.pow(1/0.87,l)-1)*100)+'% fire rate'},
  {id:'dmg',w:'turret',t:1,max:8,name:'Heavy Rounds',txt:l=>'+'+Math.round((Math.pow(1.35,l)-1)*100)+'% damage'},
  {id:'barrel',w:'turret',t:1,max:3,name:'Extra Barrel',txt:l=>'+'+l+(l>1?' barrels':' barrel')},
  {id:'pierce',w:'turret',t:1,max:2,name:'Piercing Rounds',txt:l=>'+'+l+' pierce'},
  {id:'slide',w:'turret',t:1,max:4,name:'Servo Motors',txt:l=>'+'+(l*90)+' px/s turret speed'},
- {id:'fort',w:'turret',t:1,max:3,name:'Reinforced Base',txt:l=>'+'+(l*12)+'% base health'},
- {id:'repair',w:'turret',t:1,max:99,name:'Emergency Repair',txt:l=>'restore 30% base health',cond:()=>G.hp<G.maxHp*0.85,wt:6},
- {id:'arc',w:'turret',t:2,max:2,name:'Arc Rounds',txt:l=>'shots add +'+(l*35)+'% energy damage',req:{rate:4,dmg:4}},
- {id:'frag',w:'turret',t:2,max:2,name:'Explosive Rounds',txt:l=>'shots splash +'+(l*30)+' % blast damage'.replace(' %','%'),req:{dmg:4}},
- {id:'deep',w:'turret',t:2,max:1,name:'Deep Pierce',txt:l=>'+2 more pierce',req:{pierce:2}},
- {id:'crit',w:'turret',t:2,max:3,name:'Critical Strike',txt:l=>(l*15)+'% chance of 2.5x damage',req:{dmg:4}},
- {id:'super',w:'turret',t:3,max:3,name:'Supercharge',txt:l=>'every '+(22-l*3)+'s: 4s overdrive, 2x fire rate and +50% damage',req:{rate:4,barrel:2}},
+ {id:'fort',w:'base',t:1,max:3,name:'Reinforced Base',txt:l=>'+'+(l*12)+'% base health'},
+ {id:'repair',w:'base',t:1,max:99,name:'Emergency Repair',txt:l=>'restore 30% base health',cond:()=>G.hp<G.maxHp*0.85,wt:6},
+ {id:'arc',w:'turret',t:2,max:2,name:'Arc Rounds',txt:l=>'shots add +'+(l*35)+'% energy damage',lv:EVO_LV},
+ {id:'frag',w:'turret',t:2,max:2,name:'Explosive Rounds',txt:l=>'shots splash +'+(l*30)+' % blast damage'.replace(' %','%'),lv:EVO_LV},
+ {id:'deep',w:'turret',t:2,max:1,name:'Deep Pierce',txt:l=>'+2 more pierce',lv:EVO_LV},
+ {id:'crit',w:'turret',t:2,max:3,name:'Critical Strike',txt:l=>(l*15)+'% chance of 2.5x damage',lv:EVO_LV},
+ {id:'super',w:'turret',t:3,max:3,name:'Supercharge',txt:l=>'every '+(22-l*3)+'s: 4s overdrive, 2x fire rate and +50% damage',lv:ULT_LV},
  {id:'tmine',w:'mine',t:1,max:1,unlock:true,name:'Mine Layer',desc:'NEW WEAPON. Drops proximity mines that blast everything nearby. The AI places them for you, or tap the Mine button and drag to place them yourself. Blast damage.'},
  {id:'tfield',w:'field',t:1,max:1,unlock:true,name:'Slow Field',desc:'NEW WEAPON. Lays an energy bar that slows mobs and burns them while they pass through. The AI places it, or tap Field and drag to place it yourself. Energy damage.'},
  {id:'mine',w:'mine',t:1,max:5,name:'Mine Power',txt:l=>'+'+Math.round((Math.pow(1.4,l)-1)*100)+'% blast damage'},
@@ -2142,15 +2142,15 @@ function eligible(c){
   if(c.ex&&c.ex.some(k=>bst(k))) return false;
   if(c.any&&!c.any.some(k=>bst(k))) return false;
   if(c.unlock) return !hasTool(c.w)&&wcount()<4;
-  return c.w==='turret'||hasTool(c.w);
+  return c.w==='turret'||c.w==='base'||hasTool(c.w);
 }
 function offerCards(){
   const bias=(G.wd&&G.wd.bias)||{};
   const early=G.n<=5&&!G.elite;
   const pool=CARDS.filter(eligible).map(c=>({c:c,w:(c.wt||(c.evo||c.ult?9:c.unlock?(wcount()<2?14:7):c.t===1?10:c.t===2?5:4))*(bias[c.w]||1)*(early?(c.w==='turret'?2.4:c.unlock?0.45:1):1)*(c.t===1&&!c.unlock?1+0.25*cmRank(c.id):1)}));
   /* after the opening levels, every weapon you own competes on equal footing with the turret instead of the turret's longer card list swamping the offers */
-  if(!early){ const gs={}; for(const q of pool){ if(q.c.unlock||q.c.evo||q.c.ult||q.c.cond) continue; gs[q.c.w]=(gs[q.c.w]||0)+q.w; }
-    const ks=Object.keys(gs); if(ks.length>1){ const avg=ks.reduce((t,k)=>t+gs[k],0)/ks.length; for(const q of pool){ if(q.c.unlock||q.c.evo||q.c.ult||q.c.cond) continue; q.w*=Math.max(0.35,Math.min(2.5,avg/gs[q.c.w])); } } }
+  if(!early){ const gs={}; for(const q of pool){ if(q.c.unlock||q.c.evo||q.c.ult||q.c.cond||q.c.w==='base') continue; gs[q.c.w]=(gs[q.c.w]||0)+q.w; }
+    const ks=Object.keys(gs); if(ks.length>1){ const avg=ks.reduce((t,k)=>t+gs[k],0)/ks.length; for(const q of pool){ if(q.c.unlock||q.c.evo||q.c.ult||q.c.cond||q.c.w==='base') continue; q.w*=Math.max(0.35,Math.min(2.5,avg/gs[q.c.w])); } } }
   const out=[];
   while(out.length<3&&pool.length){
     const tot=pool.reduce((a,b)=>a+b.w,0); let r=Math.random()*tot, i=0;
@@ -2173,7 +2173,7 @@ const CIC={rate:'tmp',dmg:'pow',barrel:'cap',pierce:'rch',slide:'tmp',fort:'frt'
   mine:'pow',marea:'rch',mcount:'cap',mrech:'tmp',mcluster:'bolt',mchain:'bolt',mfreeze:'bolt',fpull:'bolt',cshock:'bolt',sbleed:'bolt',mortbust:'bolt',field:'pow',fwidb:'rch',fcount:'cap',fdurc:'cap',fchill:'bolt',fstorm:'bolt',
   cpow:'pow',cjump:'rch',crate:'tmp',cfork:'bolt',cstorm:'bolt',spow:'pow',scount:'cap',sspeed:'cap',sfire:'bolt',sbig:'bolt',
   mortpow:'pow',mortarea:'rch',mortcap:'cap',mortspd:'tmp',mortclu:'bolt',mortnap:'bolt'};
-const WIC={turret:'turret',mine:'mine',field:'field',chain:'chain',saw:'saw',mortar:'mortar'};
+const WIC={turret:'turret',base:'frt',mine:'mine',field:'field',chain:'chain',saw:'saw',mortar:'mortar'};
 function renderCards(){
   let h='<div class="wrap"><div class="ahead"><h1>Level up</h1><div class="cr"><span class="lbl">Weapons</span><b>'+wcount()+'/4</b></div></div>'
     +'<div class="note" style="margin-bottom:12px">Wave '+G.wave+'/'+G.NW+(G.pickQ>0?' \u00b7 +'+G.pickQ:'')+'</div><div class="pickgrid">';
@@ -2244,7 +2244,7 @@ function renderShop(){
   let h='<div class="wrap"><div class="ahead"><h1>Perks</h1><div class="cr"><span class="lbl">Weapons</span><b>'+wcount()+'/4</b></div></div>'
     +'<div class="note" style="margin-bottom:12px">You start with just the turret. Every other weapon comes from a card, and you can carry up to four.</div>';
   Object.keys(WEAPN).forEach(w=>{
-    if(w!=='turret'&&!hasTool(w)) return;
+    if(w!=='turret'&&w!=='base'&&!hasTool(w)) return;
     const own=CARDS.filter(c=>c.w===w&&!c.unlock&&bst(c.id)>0);
     h+='<div class="card" style="--c:'+WEAPN[w].color+';margin-bottom:10px"><div class="ct"><span class="cn">'+WEAPN[w].name+'</span></div>'
       +(own.length?own.map(c=>'<div class="perk"><span>'+c.name+(c.max>1?' '+bst(c.id):'')+'</span><span>'+c.txt(CONT.has(c.id)?bst(c.id)*cmw(c.id):bst(c.id)).replace(/\d+\.\d+/g,m=>Math.round(+m))+'</span></div>').join(''):'<div class="note">No cards yet.</div>')+'</div>';
@@ -2367,10 +2367,10 @@ window.__rr={fireball:fireball,chip:chip,openTeach:openTeach,fireMortar:fireMort
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 30</div>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 31</div>
 <script>
 /* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
-(function(){ const BUILD=30; let busy=false, shown=false;
+(function(){ const BUILD=31; let busy=false, shown=false;
   const inRun=()=>{ try{ return typeof G!=='undefined'&&(G.state==='playing'||G.state==='cards'||G.state==='shop'||G.state==='paused'||G.state==='teach'); }catch(e){ return false; } };
   function wipeReload(){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
     if(n>=3) return;
