@@ -60,10 +60,13 @@ else (async()=>{
       return JSON.stringify(o); }catch(e){ return score(cj)>score(lj||'{}')?cj:lj; } };
   const code=e=>(e&&e.code)||'error';
   const nice=e=>code(e).replace('auth/','').replace(/-/g,' ');
+  /* Until the new rules (stats + ledger fields) are published, fall back to the plain save so cloud sync never breaks. */
+  let slim=false;
+  const put=async(u,r)=>{ if(slim){ const {stats,ledger,...rest}=r; return F.setDoc(mine(u),rest); } try{ return await F.setDoc(mine(u),r); }catch(e){ if(code(e)==='permission-denied'){ slim=true; const {stats,ledger,...rest}=r; return F.setDoc(mine(u),rest); } throw e; } };
   let timer=null;
   R.enabled=true;
   R.push=()=>{ if(!auth.currentUser) return; clearTimeout(timer); timer=setTimeout(async()=>{
-    try{ await F.setDoc(mine(auth.currentUser),rec(localStorage.getItem(SKEY))); R.status='saved'; }catch(e){ R.status='offline'; } ping(); },1500); };
+    try{ await put(auth.currentUser,rec(localStorage.getItem(SKEY))); R.status='saved'; }catch(e){ R.status='offline'; } ping(); },1500); };
   // merge: keep whichever save (cloud vs this device) has the higher progress score.
   // This also migrates an existing pre-sign-in local save into the first account that signs in.
   async function sync(u){
@@ -71,10 +74,10 @@ else (async()=>{
       const snap=await F.getDoc(mine(u)), local=localStorage.getItem(SKEY);
       if(snap.exists()&&snap.data().data){
         const cloud=snap.data().data;
-        if(local){ const m=merge(local,cloud); if(m!==local){ localStorage.setItem(SKEY,m); await F.setDoc(mine(u),rec(m)); location.reload(); return; } }
+        if(local){ const m=merge(local,cloud); if(m!==local){ localStorage.setItem(SKEY,m); await put(u,rec(m)); location.reload(); return; } }
         else { localStorage.setItem(SKEY,cloud); location.reload(); return; }
       }
-      await F.setDoc(mine(u),rec(local)); R.status='saved';
+      await put(u,rec(local)); R.status='saved';
     }catch(e){ R.status='offline'; }
     ping();
   }
@@ -114,7 +117,7 @@ else (async()=>{
       else if(a==='out'){
         // flush the save, then clear this device's copy so the next account on this device doesn't inherit it
         clearTimeout(timer);
-        try{ await F.setDoc(mine(auth.currentUser),rec(localStorage.getItem(SKEY))); }catch(e){ if(!confirm('Could not save to the cloud (offline?). Sign out anyway and lose unsynced progress on this device?')) return; }
+        try{ await put(auth.currentUser,rec(localStorage.getItem(SKEY))); }catch(e){ if(!confirm('Could not save to the cloud (offline?). Sign out anyway and lose unsynced progress on this device?')) return; }
         await A.signOut(auth); localStorage.removeItem(SKEY); location.reload(); return;
       }
       else if(a==='del') await del();
