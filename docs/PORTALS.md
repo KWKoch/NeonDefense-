@@ -12,7 +12,7 @@ Output: `dist/<target>/` and `dist/neon-defense-<target>.zip` (index.html at zip
 
 | Target | Ads provider | Login / cloud | Notes |
 |---|---|---|---|
-| `site` | Google H5 Games Ads (`ads.js`) | Google sign-in gate + Firestore | Same as the GitHub Pages root (kwkoch.github.io). Pages keeps serving the repo root. |
+| `site` | Google H5 Games Ads (`ads.js`) | Google sign-in gate + Firestore | Same as the GitHub Pages root (neon.squatchsquad.games). Pages keeps serving the repo root. |
 | `crazygames` | CrazyGames SDK v3 | none (saves via SDK data module, falls back to localStorage) | midgame only on Next/Retry, not Home (CrazyGames forbids ads on navigation buttons) |
 | `y8` | Y8 SDK `showAd` | none | needs `Y8_APP_ID` / `Y8_GAME_ID` in `portal/y8.js`; empty = no SDK, no ads |
 | `gamepix` | GamePix SDK v3 (manual lifecycle) | none (localStorage, synced by SDK) | interstitial on Next/Retry/Home |

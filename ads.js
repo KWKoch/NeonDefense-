@@ -1,4 +1,4 @@
-/* Ad provider: h5 (Google AdSense H5 Games Ads / Ad Placement API). Used by the site build (kwkoch.github.io).
+/* Ad provider: h5 (Google AdSense H5 Games Ads / Ad Placement API). Used by the site build (neon.squatchsquad.games).
    Docs: https://developers.google.com/ad-placement/apis  https://support.google.com/adsense/answer/9955214
    All providers expose the same interface (see portal/ads-core.js):
      Ads.interstitial(name, done)  Ads.prepareReward()  Ads.rewardAvailable()  Ads.showReward(onGranted)
