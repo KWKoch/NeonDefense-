@@ -362,6 +362,22 @@ body.menu{background:radial-gradient(140% 55% at 50% -5%,rgba(255,43,214,.22),rg
 #achToast .ai{flex:none; width:32px; height:32px; border-radius:50%; display:grid; place-items:center; color:var(--c); border:1px solid var(--c); background:#04080d}
 #achToast small{display:block; white-space:nowrap; font-size:10px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--c)}
 #achToast b{font-size:15px; letter-spacing:.02em}
+
+.goals{display:flex; flex-direction:column; gap:5px; margin:2px 0 12px}
+.gl{display:flex; align-items:center; gap:7px; font-size:12px; color:var(--dim); padding:5px 10px; border-radius:10px; background:#060e16; border:1px solid rgba(120,220,255,.16)}
+.gl.on{color:#ffe14d; border-color:rgba(255,225,77,.5)}
+.srow{display:flex; justify-content:center; gap:10px; margin:6px 0}
+.sg{width:42px; height:42px; display:grid; place-items:center; border-radius:50%; color:#2a3a44; border:1px solid #1b2a31; background:#05090e}
+.sg.on{color:#ffe14d; border-color:#ffe14d; box-shadow:0 0 14px rgba(255,225,77,.5)}
+.sg.new{animation:starin .6s ease-out}
+@keyframes starin{0%{transform:scale(.3); opacity:0}70%{transform:scale(1.25)}100%{transform:scale(1); opacity:1}}
+.lgrid{display:grid; grid-template-columns:repeat(5,1fr); gap:6px; margin-bottom:12px}
+.lc{display:flex; flex-direction:column; align-items:center; gap:4px; padding:7px 0; border-radius:10px; background:#060e16; border:1px solid rgba(120,220,255,.16); font-variant-numeric:tabular-nums}
+.lc.full{border-color:#ffe14d; box-shadow:0 0 10px rgba(255,225,77,.25)}
+.lc b{font-size:13px}
+.lc span{display:flex; gap:3px}
+.lc i{width:7px; height:7px; border-radius:50%; background:#16262d}
+.lc i.on{background:#ffe14d; box-shadow:0 0 6px #ffe14d}
 .rgrid{display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin-bottom:14px}
 .rst{padding:10px 12px; border-radius:14px; background:#060e16; border:1px solid rgba(120,220,255,.25)}
 .rst b{display:block; font-size:20px; font-variant-numeric:tabular-nums}
@@ -522,6 +538,7 @@ body.menu{background:
 
 /* ================= constants ================= */
 const W=600, H=800, GROUND=732, TURRET_Y=GROUND-14, BS=640, LEVELS=50;
+const OZ_Y=Math.round(GROUND*0.6);   /* the ozone layer: defense is judged here. A mob must die above this line to count as held. */
 const C={cyan:'#00f0ff',magenta:'#ff2bd6',lime:'#b6ff00',violet:'#9d4dff',orange:'#ff8a00',amber:'#ffc400',yellow:'#fff200',red:'#ff3860',blue:'#3d8bff',mint:'#6dffb0',steel:'#dfeaf2'};
 const KIND={k:{name:'Kinetic',color:C.cyan},b:{name:'Blast',color:C.orange},e:{name:'Energy',color:C.violet}};
 /* Damage multipliers per mob. Kinetic = turret, Blast = mines, Energy = slow field. */
@@ -668,12 +685,12 @@ const TABS=[{id:'turret',name:'Turret',color:C.cyan},{id:'base',name:'Base',colo
 const SKEY='rave-rampart-v5';
 const hasTool=k=>!!(G.tools&&G.tools[k]);
 const newInv=()=>({pow:[0,0,0,0],tmp:[0,0,0,0],rch:[0,0,0,0],cap:[0,0,0,0],frt:[0,0,0,0]});
-const newPW=()=>({best:0,sel:1,perf:{},eclr:{}});
+const newPW=()=>({best:0,sel:1,perf:{},eclr:{},stars:{}});
 /* Combat record + achievements. enc/kill/leak are per mob type; w[weapon][mob]=[engaged,defeated,killingBlows,resistedEngaged,resistedDefeated,resistedKillingBlows]; world[id][mob]=1 once met there; ach[id]=unlock time. */
-const newSt=()=>({v:1,enc:{},kill:{},leak:{},w:{},world:{},ach:{}});
+const newSt=()=>({v:1,enc:{},kill:{},leak:{},rz:{},hold:{},w:{},world:{},ach:{}});
 function pw(o){ return o.prog[o.world]||(o.prog[o.world]=newPW()); }
 const newP=()=>{
-  const o={inv:newInv(),lv:{},cm:{},gems:0,pass:0,starter:0,chestDay:'',passDay:'',ledger:[],world:'belt',own:{belt:true},prog:{},seen:{},st:newSt(),intro:0,en:EN_MAX,enV:2,enT:Date.now()};
+  const o={inv:newInv(),lv:{},cm:{},gems:0,pass:0,starter:0,chestDay:'',passDay:'',ledger:[],world:'belt',own:{belt:true},prog:{},seen:{},st:newSt(),frag:{pow:0,tmp:0,rch:0,cap:0,frt:0},intro:0,en:EN_MAX,enV:2,enT:Date.now()};
   Object.defineProperty(o,'best',{get(){ return pw(o).best; },set(v){ pw(o).best=v; },enumerable:false});
   Object.defineProperty(o,'sel',{get(){ return pw(o).sel; },set(v){ pw(o).sel=v; },enumerable:false});
   return o;
@@ -687,11 +704,12 @@ try{
     const o=JSON.parse(s); P.lv=o.lv||{};
     if(o.inv) for(const t in P.inv) if(Array.isArray(o.inv[t])) for(let i=0;i<4;i++) P.inv[t][i]=Math.max(0,+o.inv[t][i]||0);
     P.en=(o.enV===2&&isFinite(+o.en))?Math.max(0,Math.min(EN_MAX,+o.en)):EN_MAX; P.enT=+o.enT||Date.now();
-    if(o.prog){ for(const k in o.prog){ const q=o.prog[k]||{}; P.prog[k]={best:+q.best||0,sel:+q.sel||1,perf:q.perf||{},eclr:q.eclr||{}}; } P.own=Object.assign({belt:true},o.own); if(WORLDS.some(w=>w.id===o.world)) P.world=o.world; }
+    if(o.prog){ for(const k in o.prog){ const q=o.prog[k]||{}; P.prog[k]={best:+q.best||0,sel:+q.sel||1,perf:q.perf||{},eclr:q.eclr||{},stars:q.stars||{}}; } P.own=Object.assign({belt:true},o.own); if(WORLDS.some(w=>w.id===o.world)) P.world=o.world; }
     else P.prog.belt={best:+o.best||0,sel:+o.sel||1,perf:{},eclr:{}};
     if(o.seenW&&typeof o.seenW==='object') P.seenW=o.seenW; if(o.cm&&typeof o.cm==='object') P.cm=o.cm;
     if(isFinite(+o.gems)) P.gems=Math.max(0,Math.floor(+o.gems)); P.pass=+o.pass||0; P.starter=o.starter?1:0; P.chestDay=o.chestDay||''; P.passDay=o.passDay||''; P.ledger=Array.isArray(o.ledger)?o.ledger.slice(-100):[];
     if(o.st&&typeof o.st==='object') P.st=Object.assign(newSt(),o.st);
+    if(o.frag&&typeof o.frag==='object') for(const t in P.frag) P.frag[t]=Math.max(0,Math.floor(+o.frag[t]||0));
     if(o.seen&&typeof o.seen==='object') P.seen=o.seen;
     else { /* old save: assume mobs up to the player's best level were seen */
       for(const wd of WORLDS){ const b=(P.prog[wd.id]||{}).best||0; if(!b) continue; const uw=wd.uw||UW; for(const k in uw) if(Math.ceil(uw[k]/20)<=b+1) P.seen[k]=1; P.seen.small=1; if(P.seen.chunk) P.seen.small=1; if(P.seen.egg) P.seen.hatch=1; if(b>=10){ P.seen.boss=1; P.seen.orb=1; } }
@@ -925,7 +943,9 @@ let achDirty=false, achLast=0, achQ=[], achEl=null, achBusy=false, ACHS=null;
 
 function stSpawn(e){
   const s=stOf(), w=(G.wd&&G.wd.id)||'belt';
-  s.enc[e.type]=(s.enc[e.type]||0)+1; (s.world[w]||(s.world[w]={}))[e.type]=1; achDirty=true; achCheck();
+  s.enc[e.type]=(s.enc[e.type]||0)+1; (s.world[w]||(s.world[w]={}))[e.type]=1;
+  if(e.y>=OZ_Y) e.ozx=1;   /* appeared below the ozone (warp-ins, formations): cannot be judged against it */
+  achDirty=true; achCheck();
 }
 function stHit(e,src,kind,m){
   (e.wh||(e.wh={}))[src]=1;
@@ -935,6 +955,9 @@ function stHit(e,src,kind,m){
 function stResolve(e,won,src){
   const s=stOf(), t=e.type;
   if(won) s.kill[t]=(s.kill[t]||0)+1; else s.leak[t]=(s.leak[t]||0)+1;
+  const held=won&&!e.oz;   /* held = destroyed above the ozone line */
+  s.rz=s.rz||{}; s.hold=s.hold||{}; s.rz[t]=(s.rz[t]||0)+1; if(held) s.hold[t]=(s.hold[t]||0)+1;
+  if(G.run){ G.run.rz[t]=(G.run.rz[t]||0)+1; if(held) G.run.hold[t]=(G.run.hold[t]||0)+1; }
   if(e.wh) for(const w in e.wh){
     const row=s.w[w]||(s.w[w]={}), a=row[t]||(row[t]=[0,0,0,0,0,0]), n=e.wn&&e.wn[w];
     a[0]++; if(n) a[3]++;
@@ -955,11 +978,11 @@ function stBackfill(){
 
 /* ---- aggregates: one pass over the record per check ---- */
 function agg(){
-  const s=stOf(), a={sight:0,kill:0,leak:0,cls:{},mob:{},wc:{},wt:{},nk:0,nkTypes:0,ne:0,nd:0}, types={};
-  for(const c in CLS) a.cls[c]={enc:0,kill:0,leak:0};
+  const s=stOf(), a={sight:0,kill:0,leak:0,rz:0,hold:0,cls:{},mob:{},wc:{},wt:{},nk:0,nkTypes:0,ne:0,nd:0}, types={};
+  for(const c in CLS) a.cls[c]={enc:0,kill:0,leak:0,rz:0,hold:0};
   for(const k in MOB){
-    const m={enc:s.enc[k]||0,kill:s.kill[k]||0,leak:s.leak[k]||0}; a.mob[k]=m; a.sight+=m.enc; a.kill+=m.kill; a.leak+=m.leak;
-    const c=a.cls[MOB[k].cls]; c.enc+=m.enc; c.kill+=m.kill; c.leak+=m.leak;
+    const m={enc:s.enc[k]||0,kill:s.kill[k]||0,leak:s.leak[k]||0,rz:(s.rz||{})[k]||0,hold:(s.hold||{})[k]||0}; a.mob[k]=m; a.sight+=m.enc; a.kill+=m.kill; a.leak+=m.leak; a.rz+=m.rz; a.hold+=m.hold;
+    const c=a.cls[MOB[k].cls]; c.enc+=m.enc; c.kill+=m.kill; c.leak+=m.leak; c.rz+=m.rz; c.hold+=m.hold;
   }
   for(const w of WLIST){
     a.wt[w]=[0,0,0,0,0,0]; a.wc[w]={}; for(const c in CLS) a.wc[w][c]=[0,0,0,0,0,0];
@@ -985,6 +1008,25 @@ function pRate(num,den,min,goal){
   return {done:r>=goal,frac:0.5+0.5*clamp01(r/goal),txt:r.toFixed(1)+'% of '+goal+'%'};
 }
 
+/* ---- economy knobs (one place) ---- */
+const ECON={achGems:[3,6,12,25],achFrag:[0,3,6,12],      /* free reward per achievement tier */
+  starGems:[0,1,1],starFrag:[2,3,5],fullGems:3,fullFrag:10, /* per newly earned level star (clear, hold, featured mob) and the all-three bonus */
+  gate:100};                                               /* stars needed in a world to open the next one */
+const FORGE=[4,15,50,160];                                 /* fragments to forge one card: Common, Rare, Epic, Legendary (same per-card value as the old pack prices) */
+/* ---- level stars: 1 = clear it, 2 = hold enough mobs above the ozone, 4 = hold 95% of the level's featured mob above the ozone ---- */
+const starHold=n=>n<=10?0.8:n<=30?0.85:0.9;
+const popc=b=>(b&1)+((b>>1)&1)+((b>>2)&1);
+function starBitsFor(run,hold,feat){
+  let rz=0,h=0; for(const k in run.rz){ rz+=run.rz[k]; h+=(run.hold||{})[k]||0; }
+  const fr=run.rz[feat]||0, fh=(run.hold||{})[feat]||0; let b=1;
+  if(!rz||h/rz>=hold) b|=2; if(!fr||fh/fr>=0.95) b|=4; return b;
+}
+function starsOfWorld(wid){ const q=((P.prog||{})[wid]||{}).stars||{}; let n=0; for(const k in q) n+=popc(q[k]|0); return n; }
+function achReward(d){
+  const g=ECON.achGems[d.tier]||0, f=ECON.achFrag[d.tier]||0; P.gems=(P.gems||0)+g;
+  if(f){ const t=typeof rollType==='function'?rollType():'pow'; P.frag=P.frag||{}; P.frag[t]=(P.frag[t]||0)+f; }
+  d.rw={g:g,f:f};
+}
 function achList(){
   if(ACHS) return ACHS;
   const A=[], add=(cat,id,name,desc,tier,fn,icon)=>A.push({cat:cat,id:id,name:name,desc:desc,tier:tier,fn:fn,icon:icon||'eye'});
@@ -1005,23 +1047,6 @@ function achList(){
   });
   [[100,'Spotter'],[1000,'Lookout'],[10000,'Watchtower'],[100000,'All-Seeing Rampart']].forEach((x,i)=>
     add('disc','sight'+i,x[1],'Encounter '+fmtN(x[0])+' mobs in total.',i,a=>pCount(a.sight,x[0]),'eye'));
-
-  /* Defense record: how many mobs you stop before they reach the base */
-  [[80,'Holding the Line'],[90,'Iron Wall'],[95,'Impenetrable'],[99,'Untouchable']].forEach((x,i)=>
-    add('rec','all'+x[0],x[1],'Stop '+x[0]+'% of all mobs before they reach the base (at least 300 mobs).',i,a=>pRate(a.kill,a.kill+a.leak,300,x[0]),'heart'));
-  const CLSR={mineral:'Stonewall',mech:'Circuit Breaker',bio:'Pest Control'};
-  for(const c in CLS) [[90,1,' I'],[97,3,' II']].forEach(x=>
-    add('rec','cr'+x[0]+'_'+c,(CLSR[c]||CLS[c].name)+x[2],'Stop '+x[0]+'% of '+CLS[c].name+' mobs before they reach the base (at least 150).',x[1],a=>pRate(a.cls[c].kill,a.cls[c].kill+a.cls[c].leak,150,x[0]),'heart'));
-
-  /* Mob hunter: per-mob kill counts and per-mob success */
-  spawnable.forEach(k=>{
-    const n=MOB[k].name;
-    add('hunt','k1_'+k,n+' Exterminator','Destroy 100 of this mob: '+n+'.',0,a=>pCount(a.mob[k].kill,100),'aim');
-    add('hunt','k2_'+k,n+' Annihilator','Destroy 1,000 of this mob: '+n+'.',2,a=>pCount(a.mob[k].kill,1000),'aim');
-    add('hunt','n_'+k,n+' Nemesis','Stop 95% of '+n+' mobs before they reach the base (at least 100).',3,a=>pRate(a.mob[k].kill,a.mob[k].kill+a.mob[k].leak,100,95),'heart');
-  });
-  [[5,'Mothership Down',0],[25,'Mothership Hunter',2],[100,'Mothership Nemesis',3]].forEach(x=>
-    add('hunt','boss'+x[0],x[1],'Destroy '+x[0]+' Motherships.',x[2],a=>pCount(a.mob.boss.kill,x[0]),'aim'));
 
   /* Weapons: success per weapon, and per weapon against each mob class */
   WLIST.forEach(w=>{
@@ -1049,8 +1074,8 @@ function achCheck(force){
   if(!force){ if(!achDirty) return; if(now-achLast<500){ if(!achPend&&typeof setTimeout!=='undefined'){ achPend=true; setTimeout(()=>{ achPend=false; achCheck(true); },600); } return; } }
   achDirty=false; achLast=now;
   const st=stOf(), a=agg(); let got=false;
-  for(const d of achList()){ if(st.ach[d.id]) continue; let r; try{ r=d.fn(a); }catch(e){ continue; } if(r&&r.done){ st.ach[d.id]=now; achQ.push(d); got=true; } }
-  if(achQ.length>3){ const n=achQ.length, tier=Math.max.apply(null,achQ.map(x=>x.tier)); achQ=[{icon:'eye',tier:tier,name:n+' achievements unlocked'}]; }
+  for(const d of achList()){ if(st.ach[d.id]) continue; let r; try{ r=d.fn(a); }catch(e){ continue; } if(r&&r.done){ st.ach[d.id]=now; achReward(d); achQ.push(d); got=true; } }
+  if(achQ.length>3){ const n=achQ.length, tier=Math.max.apply(null,achQ.map(x=>x.tier)), g=achQ.reduce((q,x)=>q+((x.rw||{}).g||0),0), f=achQ.reduce((q,x)=>q+((x.rw||{}).f||0),0); achQ=[{icon:'eye',tier:tier,name:n+' achievements unlocked',rw:{g:g,f:f}}]; }
   if(got){ try{ save(); }catch(e){} achShow(); }
 }
 function achShow(){
@@ -1058,7 +1083,7 @@ function achShow(){
   const d=achQ.shift(), t=TIER[d.tier]; achBusy=true;
   if(!achEl){ achEl=document.createElement('div'); achEl.id='achToast'; achEl.setAttribute('role','status'); document.body.appendChild(achEl); }
   achEl.style.setProperty('--c',t.c);
-  achEl.innerHTML='<span class="ai">'+ico(d.icon,18)+'</span><span><small>'+t.n+' achievement</small><b>'+d.name+'</b></span>';
+  achEl.innerHTML='<span class="ai">'+ico(d.icon,18)+'</span><span><small>'+t.n+' achievement'+(d.rw&&d.rw.g?' · +'+d.rw.g+' gems':'')+(d.rw&&d.rw.f?' · +'+d.rw.f+' fragments':'')+'</small><b>'+d.name+'</b></span>';
   achEl.classList.add('on'); try{ Music.up(); }catch(e){}
   setTimeout(()=>{ achEl.classList.remove('on'); setTimeout(()=>{ achBusy=false; achShow(); },350); },2800);
 }
@@ -1499,6 +1524,7 @@ function drawFire(f){
 }
 
 function updateEnemies(dt){
+  G.ozFlash=Math.max(0,(G.ozFlash||0)-dt);
   const forms=new Set();
   for(const e of G.enemies) if(e.form&&!e.dead) forms.add(e.form);
   for(const f of forms){
@@ -1552,6 +1578,7 @@ function updateEnemies(dt){
       if(e.x<e.r){ e.x=e.r; e.vx=Math.abs(e.vx); } else if(e.x>W-e.r){ e.x=W-e.r; e.vx=-Math.abs(e.vx); }
     }
     if(e.regen&&e.hp<e.maxhp&&G.time-e.lh>1.2) e.hp=Math.min(e.maxhp,e.hp+e.maxhp*e.regen*d);
+    if(!e.oz&&!e.ozx&&e.y>=OZ_Y){ e.oz=1; G.ozFlash=0.5; G.rings.push({x:e.x,y:OZ_Y,r:e.r*0.5,max:e.r*2.2,life:0.35,t:0,color:C.red}); }
     if(e.type!=='boss'&&e.y+e.r>=GROUND) leak(e);
   }
 }
@@ -1721,6 +1748,16 @@ function tri2(a,b,c,d,e,f){ ctx.beginPath(); ctx.moveTo(a,b); ctx.lineTo(c,d); c
 function circ2(x,y,r,fill){ ctx.beginPath(); ctx.arc(x,y,r,0,6.2832); if(fill) ctx.fill(); ctx.stroke(); }
 const ORDER=[5,2,9,0,7,3,10,1,6,11,4,8], BH=[34,52,28,46,60,38,44,30,56,40,48,32];
 const RANK=[]; ORDER.forEach((b,i)=>{ RANK[b]=i; });
+function drawOzone(){
+  const t=G.time, fl=G.ozFlash||0, y=OZ_Y, a=0.5+0.12*Math.sin(t*1.6);
+  ctx.save(); ctx.shadowBlur=0;
+  const g=ctx.createLinearGradient(0,y-26,0,y+16); g.addColorStop(0,'rgba(0,240,255,0)'); g.addColorStop(0.62,fl>0?'rgba(255,56,96,'+(0.10+0.25*fl)+')':'rgba(0,240,255,0.09)'); g.addColorStop(1,'rgba(157,77,255,0)');
+  ctx.fillStyle=g; ctx.fillRect(0,y-26,W,42);
+  ctx.strokeStyle=fl>0?'rgba(255,90,120,'+(0.55+0.4*fl)+')':'rgba(125,249,255,'+a*0.55+')'; ctx.lineWidth=1.4; ctx.setLineDash([14,9]); ctx.lineDashOffset=-t*18;
+  ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle='rgba(125,249,255,.38)'; ctx.font='600 10px "Chakra Petch", monospace'; ctx.textAlign='right'; ctx.fillText('OZONE',W-8,y-6); ctx.textAlign='left';
+  ctx.restore();
+}
 function drawGround(pulse){
   const t=G.time;
   /* distant skyline for depth */
@@ -1850,7 +1887,7 @@ function render(dt){
     ctx.fillStyle='rgba(170,215,255,'+(0.18+0.22*Math.sin(G.time*1.5+s.ph)+0.25*pulse)+')';
     ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,6.2832); ctx.fill();
   }
-  drawGround(pulse);
+  drawOzone(); drawGround(pulse);
   if(G.state==='playing'||G.state==='paused'||G.state==='shop'||G.state==='cards'||G.state==='teach'){
     for(const f of G.fires) drawFire(f);
     for(const f of G.fields) drawField(f,false);
@@ -2005,7 +2042,7 @@ function startWave(w){
 function startLevel(n,world,elite){
   G.wd=WORLDS.find(w=>w.id===(world||P.world))||WORLDS[0]; G.elite=!!elite; UI.elite=G.elite;
   G.n=n; G.hpS=hpScale(n)*(G.elite?1.6:1)*(G.wd.hp||1); G.spS=1+n*0.01; G.NW=waveCount(n); G.wave=0;
-  G.maxHp=ST.armor(L('armor')); G.hp=G.maxHp; G.earned=0; G.kills=0; G.pot=0; G.credits=0; G.boost={}; G.pity={}; G.sinceW=0; G.revived=false; G.shieldUntil=0; G.tools={}; G.pickQ=0; G.rerolls=1; G.offer=[]; G.superOn=0; G.superCd=10; G.chainT=2; G.blobs=[]; G.chips=[]; G.teachQ=[]; { const to=document.getElementById('teachov'); if(to) to.remove(); } G.cpend=null; G.flashA=0; G.sawCd=0; G.stormT=12; G.mort=2; G.mortT=0; G.saws=[]; G.bolts=[]; G.shells=[]; G.fires=[]; G.delay=[]; lastCred=0;
+  G.run={rz:{},hold:{}}; G.ozFlash=0; G.maxHp=ST.armor(L('armor')); G.hp=G.maxHp; G.earned=0; G.kills=0; G.pot=0; G.credits=0; G.boost={}; G.pity={}; G.sinceW=0; G.revived=false; G.shieldUntil=0; G.tools={}; G.pickQ=0; G.rerolls=1; G.offer=[]; G.superOn=0; G.superCd=10; G.chainT=2; G.blobs=[]; G.chips=[]; G.teachQ=[]; { const to=document.getElementById('teachov'); if(to) to.remove(); } G.cpend=null; G.flashA=0; G.sawCd=0; G.stormT=12; G.mort=2; G.mortT=0; G.saws=[]; G.bolts=[]; G.shells=[]; G.fires=[]; G.delay=[]; lastCred=0;
   G.enemies=[]; G.bullets=[]; G.parts=[]; G.rings=[]; G.floats=[]; G.mines=[]; G.fields=[]; G.boss=null; G.tag=null; G.warps=[];
   { const pf=profileFor(G.wd,n,G.elite); G.prof=pf; G.mutHp=pf.mut==='armored'?1.3:pf.mut==='dense'?0.8:pf.mut==='swift'?0.85:1; G.mutSp=pf.mut==='swift'?1.25:1; if(pf.mut||n>1) setTimeout(()=>{ if(G.state==='playing'&&G.n===n&&G.wave<=1) say(pf.name,pf.mut?MUTS[pf.mut].note:(BRIEF[pf.feat]||'')); },1400); }
   G.waveT=0; G.shake=0; G.armed=null; G.ghost.show=false; G.placing=false; G.autoT=0.5;
@@ -2030,7 +2067,8 @@ function win(){
   Ads.gameplayStop(); G.state='won'; G.armed=null; achCheck(true);
   const pr=pw(P), el=G.elite, replay=el?!!pr.eclr[G.n]:G.n<=pr.best, frac=G.hp/G.maxHp, perfect=frac>=0.999, hadPerf=!!pr.perf[G.n];
   const got=awardCards(dropCount(G.n,frac,replay,el),G.n,(isBoss(G.n)?(replay?1:2):0)+(el&&!replay?1:0),el);
-  const gem=Math.max(1,Math.ceil((4+Math.floor(G.n/3)+(perfect?2:0))*(el?2:1)*(replay?0.5:1))); P.gems=(P.gems||0)+gem; G.lastGot=got; G.lastGems=gem; G.doubled=false;
+  const gem=replay?1:Math.max(2,Math.ceil((2+Math.floor(G.n/6)+(perfect?1:0))*(el?2:1))); P.gems=(P.gems||0)+gem; G.lastGot=got; G.lastGems=gem; G.doubled=false;
+  let sInfo=null; if(!el){ const q=pr.stars||(pr.stars={}), had=q[G.n]|0, sb=starBitsFor(G.run||{rz:{},hold:{}},starHold(G.n),(G.prof||{}).feat); q[G.n]=had|sb; sInfo=starPay(sb&~had,had|sb,had); }
   logEv(el?'elite':'clear',G.n+(perfect?' perfect':'')+' '+G.wd.id);
   if(el) pr.eclr[G.n]=true;
   else { pr.best=Math.max(pr.best,G.n); pr.sel=Math.min(G.n+1,LEVELS); if(perfect) pr.perf[G.n]=true; }
@@ -2038,7 +2076,7 @@ function win(){
   const last=G.n>=LEVELS, nx=G.n+1, canNext=!last&&(!el||!!pr.perf[nx]);
   const tx=(!el&&G.wd.id==='belt'&&STORY.win[G.n])||'';
   let h='<h1>'+(last?'Installment clear':(el?'Elite ':'Level ')+(el?G.n+' ':G.n+' ')+'clear')+'</h1>'
-    +(tx?'<p class="sub">'+tx+'</p>':'')+dropsHtml(got)+gemLine(gem)+'<div id="dblrow"><button class="btn dbl" data-o="double" type="button">'+ico('cards',16)+' Double rewards '+(passActive()?'':'<small>(watch ad)</small>')+'</button></div>'
+    +(tx?'<p class="sub">'+tx+'</p>':'')+dropsHtml(got)+gemLine(gem)+(sInfo?starsRow(sInfo):'')+'<div id="dblrow"><button class="btn dbl" data-o="double" type="button">'+ico('cards',16)+' Double rewards '+(passActive()?'':'<small>(watch ad)</small>')+'</button></div>'
     +'<div class="stat1"><span style="color:var(--red)" title="Base health left">'+ico('heart',16)+Math.round(frac*100)+'%</span>'
     +(!el&&perfect?'<span style="color:var(--yellow)" title="Perfect">'+ico('pow',16)+(hadPerf?'':' Elite unlocked')+'</span>':'')+'</div>'
     +enLine()
@@ -2050,9 +2088,9 @@ function gameOver(){
   Ads.gameplayStop(); G.state='over'; G.armed=null; achCheck(true);
   const pr=pw(P), done=Math.max(0,G.wave-1), rep=G.elite?!!pr.eclr[G.n]:G.n<=pr.best, full=dropCount(G.n,1,rep,G.elite);
   const cnt=Math.max(done>=3?1:0,Math.round(full*0.5*done/G.NW));
-  const got=awardCards(cnt,G.n,0,G.elite); const gem=1+Math.floor(done/3); P.gems=(P.gems||0)+gem; G.lastGot=got; G.lastGems=gem; G.doubled=false; save();
+  const got=awardCards(cnt,G.n,0,G.elite); const gem=done>=5?1:0; P.gems=(P.gems||0)+gem; G.lastGot=got; G.lastGems=gem; G.doubled=false; save();
   overlay.innerHTML='<h1>Base lost</h1><p class="sub">'+(G.elite?'Elite ':'Level ')+G.n+' \u00b7 wave '+G.wave+'/'+G.NW+'</p>'
-    +dropsHtml(got)+gemLine(gem)
+    +dropsHtml(got)+(gem?gemLine(gem):'')
     +(G.revived?'':'<div id="dblrow"><button class="btn dbl" data-o="revive" type="button">'+ico('heart',16)+' Revive \u00b7 keep fighting '+(passActive()?'':'<small>(watch ad)</small>')+'</button></div>')
     +enLine()
     +'<div class="obtns"><button class="btn big" data-o="armory" type="button">Home</button><button class="btn" data-o="retry" type="button" aria-label="Retry">Retry '+ico('bolt',14)+(G.elite?EN_COST*2:EN_COST)+'</button></div>';
@@ -2131,6 +2169,22 @@ function rewardFlow(name,grant){
   rwBusy=true; toast('Loading ad\u2026'); Ads.prepareReward(name); let n=0;
   const iv=setInterval(()=>{ n++; if(Ads.rewardAvailable()){ clearInterval(iv); rwBusy=false; Ads.showReward(grant); } else if(n>28){ clearInterval(iv); rwBusy=false; toast('No ad is ready right now. Try again in a moment.'); } },300);
 }
+function goalsFor(wd,n){ const f=profileFor(wd,n,false).feat; return ['Clear the level','Hold '+Math.round(starHold(n)*100)+'% of mobs above the ozone','Hold 95% of '+MOB[f].name+' mobs above the ozone']; }
+/* pay the free rewards for newly earned stars; returns what the win screen shows */
+function starPay(nb,bits,had){
+  let g=0,f=0,t=null; const q=[];
+  for(let i=0;i<3;i++) if(nb&(1<<i)){ g+=ECON.starGems[i]; f+=ECON.starFrag[i]; }
+  if(bits===7&&had!==7){ g+=ECON.fullGems; f+=ECON.fullFrag; }
+  if(g) P.gems=(P.gems||0)+g;
+  if(f){ const ty=rollType(); P.frag=P.frag||{}; P.frag[ty]=(P.frag[ty]||0)+f; t=ty; }
+  return {bits:bits,nb:nb,g:g,f:f,t:t,n:G.n,wd:G.wd};
+}
+function starsRow(i){
+  const gl=goalsFor(i.wd||curWorld(),i.n);
+  return '<div class="srow">'+[0,1,2].map(k=>'<span class="sg'+((i.bits>>k)&1?' on':'')+((i.nb>>k)&1?' new':'')+'" title="'+gl[k]+'">'+ico('pow',22)+'</span>').join('')+'</div>'
+    +'<div class="note">'+(i.nb?'New star'+(popc(i.nb)>1?'s':'')+'! ':'')+gl.map((t,k)=>((i.bits>>k)&1?'\u2713 ':'\u2022 ')+t).join(' \u00b7 ')+'</div>'
+    +(i.g||i.f?'<div class="stat1" style="color:#7df9ff">'+(i.g?ico('gem',16)+' +'+i.g+' gems ':'')+(i.f?ico('cards',16)+' +'+i.f+' '+CT[i.t].name+' fragments':'')+'</div>':'');
+}
 function doubleRewards(){
   if(!G.lastGot||G.doubled) return;
   rewardFlow('double_rewards',()=>{
@@ -2153,9 +2207,16 @@ function reviveRun(){
   });
 }
 function adReroll(){ if(G.state!=='cards') return; rewardFlow('card_reroll',()=>{ if(G.state==='cards'){ G.offer=offerCards(); renderCards(); } }); }
-const PACKP=[12,45,150,480];
-function buyPack(k){ const p=k.split(':'), t=p[0], r=+p[1]; if(!CT[t]||!(r>=0&&r<4)) return; const cost=PACKP[r]; if((P.gems||0)<cost){ toast('Not enough gems'); return; }
-  P.gems-=cost; P.inv[t][r]+=3; logEv('pack',t+':'+r); save(); Music.up(); toast('Opened: 3\u00d7 '+RAR[r].name+' '+CT[t].name+' cards'); renderArmory(); }
+const FRAG_BUY=25;   /* gems per fragment bundle (1 gem = 1 fragment: the same per-card value the old packs had) */
+function forge(t,r){
+  if(!CT[t]||!(r>=0&&r<4)) return; P.frag=P.frag||{};
+  if((P.frag[t]||0)<FORGE[r]){ toast('Not enough '+CT[t].name+' fragments'); return; }
+  P.frag[t]-=FORGE[r]; P.inv[t][r]++; logEv('forge',t+':'+r); save(); Music.up(); toast('Forged: 1\u00d7 '+RAR[r].name+' '+CT[t].name+' card'); renderArmory();
+}
+function buyFrags(t){
+  if(!CT[t]) return; if((P.gems||0)<FRAG_BUY){ toast('Not enough gems'); return; }
+  P.frag=P.frag||{}; P.gems-=FRAG_BUY; P.frag[t]=(P.frag[t]||0)+FRAG_BUY; logEv('frags',t); save(); Music.up(); toast('+'+FRAG_BUY+' '+CT[t].name+' fragments'); renderArmory();
+}
 function claim(k){
   if(k==='chest'){ if(P.chestDay===today()) return; rewardFlow('daily_chest',()=>{ if(P.chestDay===today()) return; P.chestDay=today(); logEv('chest',''); const m=passActive()?2:1, g=8*m; P.gems+=g; let txt='';
       for(let i=0;i<3*m;i++){ const t=rollType(), r=Math.random()<0.7?0:1; P.inv[t][r]++; } save(); Music.up(); toast('Daily chest: +'+g+' gems and '+3*m+' cards'); renderArmory(); }); }
@@ -2172,10 +2233,13 @@ function shopHtml(){
     +'<button class="btn big" data-sku="pass" type="button" style="--c:#9d4dff">'+(pa?'Extend 30 days \u00b7 ':'Get Neon Pass \u00b7 ')+PRICES.pass+'</button></div>';
   if(!P.starter) h+='<div class="card" style="--c:#00f0ff"><div class="ct"><span class="cn">Starter pack</span><span class="chip" style="--c:#00f0ff">One time</span></div><div class="cv">150 gems, 2 Rare cards of every type and 25 energy.</div>'
     +'<button class="btn big" data-sku="starter" type="button" style="--c:#00f0ff">'+PRICES.starter+'</button></div>';
-  h+='<div class="note" style="margin:10px 0 4px"><b>Card packs.</b> Each pack holds 3 cards of one type and one rarity. Pay with gems you earn by playing.</div>';
+  h+='<div class="note" style="margin:10px 0 4px"><b>Card fragments.</b> Forge a card of any rarity: '+RAR.map((r,i)=>r.name+' '+FORGE[i]).join(', ')+'. Level stars and achievements pay fragments for free; you can also buy '+FRAG_BUY+' for '+FRAG_BUY+' gems.</div>';
   Object.keys(CT).forEach(t=>{
-    h+='<div class="card prow" style="--c:'+CT[t].color+'"><div class="ct"><span class="cn">'+ico(t,18)+' '+CT[t].name+' packs</span></div><div class="pbs">'
-      +PACKP.map((c,r)=>'<button class="pbtn" type="button" data-pack="'+t+':'+r+'" style="--g:'+RAR[r].color+'" '+(g<c?'disabled':'')+'><span>'+RAR[r].name+'</span><b>'+ico('gem',12)+c+'</b></button>').join('')+'</div></div>';
+    const f=(P.frag||{})[t]||0, nx=FORGE.find(c=>c>f)||FORGE[3];
+    h+='<div class="card prow" style="--c:'+CT[t].color+'"><div class="ct"><span class="cn">'+ico(t,18)+' '+CT[t].name+'</span><span class="chip" style="--c:'+CT[t].color+'">'+f+' fragments</span></div>'
+      +'<div class="abar"><i style="width:'+Math.round(Math.min(1,f/nx)*100)+'%"></i></div><div class="pbs">'
+      +FORGE.map((c,r)=>'<button class="pbtn" type="button" data-forge="'+t+':'+r+'" style="--g:'+RAR[r].color+'" '+(f<c?'disabled':'')+'><span>'+RAR[r].name+'</span><b>'+ico('cards',12)+c+'</b></button>').join('')+'</div>'
+      +'<button class="mini" type="button" data-frag="'+t+'" '+(g<FRAG_BUY?'disabled':'')+'>+'+FRAG_BUY+' fragments \u00b7 '+FRAG_BUY+' gems</button></div>';
   });
   h+='<div class="note" style="margin:10px 0 4px"><b>Gem bundles.</b></div><div class="card"><div class="pbs">'
     +[['g100',100],['g550',550],['g1200',1200]].map(b=>'<button class="pbtn" type="button" data-sku="'+b[0]+'" style="--g:#7df9ff"><span>'+b[1]+' gems</span><b>'+PRICES[b[0]]+'</b></button>').join('')+'</div></div>';
@@ -2202,9 +2266,9 @@ function cmBuy(id){ const c=CARDBY[id]; if(!c) return false; const r=cmRank(id),
 function fuse(t,r){ if(r>=3||P.inv[t][r]<3) return false; P.inv[t][r]-=3; P.inv[t][r+1]++; save(); return true; }
 
 /* ================= home (armory) ================= */
-const UI={nav:'battle',elite:false,cx:'mobs',ac:'disc'};
+const UI={nav:'battle',elite:false,cx:'mobs',ac:'lvl'};
 let tab='turret', confirmReset=false;
-const worldOpen=i=>i===0||(((P.prog[WORLDS[i-1].id]||{}).best||0)>=LEVELS);
+const worldOpen=i=>{ if(i===0) return true; if((((P.prog[WORLDS[i].id])||{}).best||0)>0) return true; /* already played: stays open */ return (((P.prog[WORLDS[i-1].id]||{}).best||0)>=LEVELS)&&starsOfWorld(WORLDS[i-1].id)>=ECON.gate; };
 const curWorld=()=>WORLDS.find(w=>w.id===P.world)||WORLDS[0];
 const uwFor=wd=>(wd&&wd.uw)||UW;
 function levelMobs(n){ return profileFor(curWorld(),n,UI.elite).roster; }
@@ -2244,6 +2308,7 @@ function battleHtml(){
     +(lockElite?'<div class="pvlock">'+ico('lock',30)+'<span>Clear level '+n+' with no base damage to unlock Elite</span></div>':'')+'</div>'
     +'<button class="chev r" data-act="next" type="button" aria-label="Next level" '+(n>=maxSel?'disabled':'')+'>'+ico('chev',30)+'</button></div>'
     +'<div class="brief">'+briefFor(wd,n,el)+'</div>'
+    +(el?'':'<div class="goals">'+goalsFor(wd,n).map((t,k)=>'<span class="gl'+(((pr.stars||{})[n]|0)>>k&1?' on':'')+'">'+ico('pow',13)+t+'</span>').join('')+'</div>')
     +'<div class="facts"><span title="Waves">'+ico('wave',18)+waveCount(n)+'</span><span title="Cards per clear">'+ico('cards',18)+'~'+cnt+'</span>'+(el?'<span style="color:var(--red)" title="Elite costs double energy">'+ico('bolt',18)+'x2</span>':'')+'</div>'
     +'<button class="btn big go" data-act="deploy" type="button" data-lock="'+(lockElite?1:0)+'">Battle</button>'+(P.en<(el?EN_COST*2:EN_COST)?'<button class="mini" data-act="ad" type="button">Watch ad: +'+EN_AD+' energy</button>':'')+'</div>';
   return h;
@@ -2284,30 +2349,40 @@ function arsenalHtml(){
   return h;
 }
 /* ---- Codex tabs: Bestiary / Awards / Record ---- */
-const ACATS=[['disc','Discovery'],['rec','Defense'],['hunt','Hunter'],['wpn','Weapons'],['odds','Underdog']];
+const ACATS=[['lvl','Levels'],['disc','Discovery'],['wpn','Weapons'],['odds','Underdog']];
 function codexHtml(){
   const st=stOf(), tot=achList().length, un=Object.keys(st.ach).filter(id=>achList().some(d=>d.id===id)).length;
   const tabs=[['mobs','Bestiary'],['awards','Awards <small>'+un+'/'+tot+'</small>'],['record','Record']];
   return '<div class="seg cxseg" role="group" aria-label="Codex section" style="--c:#00f0ff">'+tabs.map(t=>'<button type="button" data-cx="'+t[0]+'" aria-pressed="'+(UI.cx===t[0])+'">'+t[1]+'</button>').join('')+'</div>'
     +(UI.cx==='awards'?awardsHtml():UI.cx==='record'?recordHtml():bestiaryHtml());
 }
+function levelsHtml(){
+  const wd=curWorld(), q=pw(P).stars||{}, tot=LEVELS*3;
+  let h='<div class="note" style="margin-bottom:10px">Every level has three stars: clear it, hold enough mobs above the ozone line, and hold its featured mob. Stars pay free gems and card fragments, and '+ECON.gate+' stars in a world open the next one.</div><div class="cards">'
+    +WORLDS.map(w=>{ const n=starsOfWorld(w.id); return '<div class="card" style="--c:'+w.color+'"><div class="ah"><span class="ai">'+ico('world',18)+'</span><div class="at2"><div class="cn">'+w.name+'</div><div class="note">'+n+' / '+tot+' stars</div></div></div><div class="abar"><i style="width:'+Math.round(n/tot*100)+'%"></i></div></div>'; }).join('')
+    +'</div><div class="cn rh" style="margin-top:14px">'+wd.name+' levels</div><div class="lgrid">';
+  for(let n=1;n<=LEVELS;n++){ const b=q[n]|0; h+='<div class="lc'+(b===7?' full':'')+'" title="'+goalsFor(wd,n).join(' | ')+'"><b>'+n+'</b><span>'+[0,1,2].map(k=>'<i'+((b>>k)&1?' class="on"':'')+'></i>').join('')+'</span></div>'; }
+  return h+'</div>';
+}
 function awardsHtml(){
   const st=stOf(), list=achList(), a=agg(), un=list.filter(d=>st.ach[d.id]).length;
-  let h='<div class="note" style="margin-bottom:10px">'+un+' of '+list.length+' unlocked. A mob counts as stopped when it is destroyed before it reaches your base.</div>'
-    +'<div class="acats">'+ACATS.map(c=>{ const l=list.filter(d=>d.cat===c[0]); return '<button type="button" class="acat" data-ac="'+c[0]+'" aria-pressed="'+(UI.ac===c[0])+'">'+c[1]+' <small>'+l.filter(d=>st.ach[d.id]).length+'/'+l.length+'</small></button>'; }).join('')+'</div><div class="cards">';
+  const stars=WORLDS.reduce((q,w)=>q+starsOfWorld(w.id),0);
+  let h='<div class="acats">'+ACATS.map(c=>{ const l=list.filter(d=>d.cat===c[0]); return '<button type="button" class="acat" data-ac="'+c[0]+'" aria-pressed="'+(UI.ac===c[0])+'">'+c[1]+' <small>'+(c[0]==='lvl'?stars:l.filter(d=>st.ach[d.id]).length+'/'+l.length)+'</small></button>'; }).join('')+'</div>';
+  if(UI.ac==='lvl') return h+levelsHtml();
+  h+='<div class="note" style="margin-bottom:10px">'+un+' of '+list.length+' unlocked. Each one pays free gems, and higher tiers add card fragments.</div><div class="cards">';
   list.filter(d=>d.cat===UI.ac).forEach(d=>{
     const t=TIER[d.tier], got=st.ach[d.id], r=d.fn(a), frac=got?1:r.frac;
     h+='<div class="card acard'+(got?' got':'')+'" style="--c:'+t.c+'"><div class="ah"><span class="ai">'+ico(d.icon,18)+'</span><div class="at2"><div class="cn">'+d.name+'</div><div class="note">'+d.desc+'</div></div><span class="rtag" style="--g:'+t.c+'">'+t.n+'</span></div>'
-      +'<div class="abar"><i style="width:'+Math.round(frac*100)+'%"></i></div><div class="note">'+(got?'Unlocked '+new Date(got).toLocaleDateString():r.txt)+'</div></div>';
+      +'<div class="abar"><i style="width:'+Math.round(frac*100)+'%"></i></div><div class="note">'+(got?'Unlocked '+new Date(got).toLocaleDateString():r.txt+' · reward '+ECON.achGems[d.tier]+' gems'+(ECON.achFrag[d.tier]?' + '+ECON.achFrag[d.tier]+' fragments':''))+'</div></div>';
   });
   return h+'</div>';
 }
 function recordHtml(){
   const a=agg(), s=stOf(), res=a.kill+a.leak, R=(n,d)=>d?(n/d*100).toFixed(1)+'%':'--', RC=(n,d)=>d?Math.round(n/d*100)+'%':'--';
   const stat=(l,v)=>'<div class="rst"><b>'+v+'</b><span>'+l+'</span></div>';
-  let h='<div class="note" style="margin-bottom:10px">Your record since tracking began. Success means the mob was destroyed before it reached the base. Weapon success is the share of mobs a weapon hit that ended up destroyed.</div>'
-    +'<div class="rgrid">'+stat('Mobs met',fmtN(a.sight))+stat('Stopped',fmtN(a.kill))+stat('Got through',fmtN(a.leak))+stat('Success',R(a.kill,res))+'</div>';
-  h+='<div class="cn rh">By class</div><div class="wtab">'+Object.keys(CLS).map(c=>{ const k=a.cls[c]; return '<div class="wr c3"><span class="wn" style="color:'+CLS[c].color+'">'+CLS[c].name+'</span><span>'+RC(k.kill,k.kill+k.leak)+'<small>success</small></span><span>'+fmtN(k.enc)+'<small>met</small></span></div>'; }).join('')+'</div>';
+  let h='<div class="note" style="margin-bottom:10px">Defense is judged at the ozone line: a mob is held if it dies above it, and breaches if it crosses it. Weapon success is the share of mobs a weapon hit that ended up destroyed.</div>'
+    +'<div class="rgrid">'+stat('Mobs met',fmtN(a.sight))+stat('Held at ozone',fmtN(a.hold))+stat('Breached',fmtN(a.rz-a.hold))+stat('Defense',R(a.hold,a.rz))+'</div>';
+  h+='<div class="cn rh">By class</div><div class="wtab">'+Object.keys(CLS).map(c=>{ const k=a.cls[c]; return '<div class="wr c3"><span class="wn" style="color:'+CLS[c].color+'">'+CLS[c].name+'</span><span>'+RC(k.hold,k.rz)+'<small>held</small></span><span>'+fmtN(k.enc)+'<small>met</small></span></div>'; }).join('')+'</div>';
   h+='<div class="cn rh">Weapon success</div><div class="wtab"><div class="wr hd"><span></span>'+Object.keys(CLS).map(c=>'<span style="color:'+CLS[c].color+'">'+CLS[c].name+'</span>').join('')+'<span title="Mobs that resist this weapon">Resisted</span></div>'
     +WLIST.map(w=>{
       const cell=r=>r[0]?Math.round(r[1]/r[0]*100)+'%<small>'+fmtN(r[0])+'</small>':'<small>--</small>';
@@ -2316,11 +2391,11 @@ function recordHtml(){
   const met=Object.keys(MOB).filter(k=>a.mob[k].enc>0);
   h+='<div class="cn rh">By mob</div>'+(met.length?'<div class="cards">':'<div class="note">Play a level and your record starts here.</div>');
   met.forEach(k=>{
-    const m=MOB[k], x=a.mob[k], r=x.kill+x.leak, p=r?x.kill/r:0, col=p>=0.9?'#6dffb0':p>=0.75?'#ffc400':'#ff3860';
+    const m=MOB[k], x=a.mob[k], r=x.rz, p=r?x.hold/r:0, col=p>=0.9?'#6dffb0':p>=0.75?'#ffc400':'#ff3860';
     const ws=WLIST.map(w=>{ const q=(s.w[w]||{})[k]; return q&&q[0]?'<span title="'+WNAME[w]+': hit '+q[0]+', destroyed '+q[1]+'">'+ico(w,12)+Math.round(q[1]/q[0]*100)+'%</span>':''; }).join('');
     h+='<div class="card" style="--c:'+m.color+'"><div class="mob"><canvas width="120" height="120" data-t="'+k+'"></canvas><div><div class="cn">'+m.name+'</div>'
-      +'<div class="note">Met '+fmtN(x.enc)+' · stopped '+fmtN(x.kill)+' · through '+fmtN(x.leak)+'</div></div></div>'
-      +'<div class="abar" style="--c:'+col+'"><i style="width:'+Math.round(p*100)+'%"></i></div><div class="note">'+(r?'Success '+R(x.kill,r):'No resolved fights yet')+'</div>'+(ws?'<div class="wch">'+ws+'</div>':'')+'</div>';
+      +'<div class="note">Met '+fmtN(x.enc)+' · held '+fmtN(x.hold)+' · breached '+fmtN(x.rz-x.hold)+'</div></div></div>'
+      +'<div class="abar" style="--c:'+col+'"><i style="width:'+Math.round(p*100)+'%"></i></div><div class="note">'+(r?'Held '+R(x.hold,r):'No fights since the ozone line was added')+'</div>'+(ws?'<div class="wch">'+ws+'</div>':'')+'</div>';
   });
   return h+(met.length?'</div>':'');
 }
@@ -2344,8 +2419,8 @@ function worldsHtml(){
     h+='<div class="wcard'+(active?' on':'')+'" style="--wc:'+wd.color+'"><div class="wh"><span class="wi">'+ico('world',22)+'</span><div class="wt"><b>'+wd.name+'</b><span>'+wd.sub+'</span></div>'+(own?'':'<span class="wlock">'+ico('lock',20)+'</span>')+'</div>'
       +'<div class="wm">'+sig.map(k=>'<canvas width="120" height="120" data-t="'+k+'" aria-label="'+MOB[k].name+'"></canvas>').join('')
       +Object.keys(wd.bias).map(w=>'<span class="bw" title="Favoured weapon">'+ico(WIC[w]||'pow',13)+'x'+wd.bias[w]+'</span>').join('')
-      +'<span class="pr" title="Levels cleared">'+pr.best+'/'+LEVELS+'</span></div>'
-      +'<div class="wa">'+(active?'<span class="act">'+ico('aim',16)+'Active</span>':own?'<button class="btn sm" data-world="'+wd.id+'" type="button" style="--c:'+wd.color+'">Enter</button>':'<span class="act" style="color:var(--dim)">'+ico('lock',14)+'Clear level '+LEVELS+' of '+WORLDS[wi-1].name+'</span>')+'</div></div>';
+      +'<span class="pr" title="Levels cleared">'+pr.best+'/'+LEVELS+'</span><span class="pr" title="Stars">'+ico('pow',12)+starsOfWorld(wd.id)+'/'+LEVELS*3+'</span></div>'
+      +'<div class="wa">'+(active?'<span class="act">'+ico('aim',16)+'Active</span>':own?'<button class="btn sm" data-world="'+wd.id+'" type="button" style="--c:'+wd.color+'">Enter</button>':'<span class="act" style="color:var(--dim)">'+ico('lock',14)+'Clear level '+LEVELS+' and earn '+ECON.gate+' stars in '+WORLDS[wi-1].name+' ('+starsOfWorld(WORLDS[wi-1].id)+'/'+ECON.gate+')</span>')+'</div></div>';
   });
   return h+'</div>';
 }
@@ -2459,7 +2534,7 @@ armoryEl.addEventListener('contextmenu',e=>{ if(e.target.id==='pv'||e.target.clo
 
 armoryEl.addEventListener('click',e=>{
   const ac=e.target.closest('[data-acct]'); if(ac&&window.RRcloud){ const a=ac.dataset.acct; if(a==='del'&&!confirm('Delete your account and cloud save? This cannot be undone.')) return; RRcloud.action(a); return; }
-  const t=e.target.closest('[data-act],[data-buy],[data-cm],[data-pack],[data-sku],[data-claim],[data-tab],[data-fuse],[data-nav],[data-mode],[data-world],[data-cx],[data-ac]'); if(!t) return;
+  const t=e.target.closest('[data-act],[data-buy],[data-cm],[data-pack],[data-sku],[data-claim],[data-tab],[data-fuse],[data-nav],[data-mode],[data-world],[data-cx],[data-ac],[data-forge],[data-frag]'); if(!t) return;
   if(t.dataset.cx){ UI.cx=t.dataset.cx; renderArmory(); const c0=$('content'); if(c0) c0.scrollTop=0; return; }
   if(t.dataset.ac){ UI.ac=t.dataset.ac; renderArmory(); const c1=$('content'); if(c1) c1.scrollTop=0; return; }
   if(t.dataset.nav){ UI.nav=t.dataset.nav; renderArmory(); return; }
@@ -2467,7 +2542,8 @@ armoryEl.addEventListener('click',e=>{
   if(t.dataset.world){ if(!worldOpen(WORLDS.findIndex(w=>w.id===t.dataset.world))) return; P.world=t.dataset.world; UI.elite=false; UI.nav='battle'; save(); renderArmory(); return; }
   
   if(t.dataset.tab){ tab=t.dataset.tab; renderArmory(); return; }
-  if(t.dataset.pack){ buyPack(t.dataset.pack); return; }
+  if(t.dataset.forge){ const q=t.dataset.forge.split(':'); forge(q[0],+q[1]); return; }
+  if(t.dataset.frag){ buyFrags(t.dataset.frag); return; }
   if(t.dataset.sku){ Billing.buy(t.dataset.sku); return; }
   if(t.dataset.claim){ claim(t.dataset.claim); return; }
   if(t.dataset.cm){ if(cmBuy(t.dataset.cm)){ Music.up(); renderArmory(); } return; }
@@ -2788,10 +2864,10 @@ window.__rr={fireball:fireball,chip:chip,openTeach:openTeach,fireMortar:fireMort
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 38</div>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 39</div>
 <script>
 /* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
-(function(){ const BUILD=38; let busy=false, shown=false;
+(function(){ const BUILD=39; let busy=false, shown=false;
   const inRun=()=>{ try{ return typeof G!=='undefined'&&(G.state==='playing'||G.state==='cards'||G.state==='shop'||G.state==='paused'||G.state==='teach'); }catch(e){ return false; } };
   function wipeReload(){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
     if(n>=3) return;
