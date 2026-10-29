@@ -345,6 +345,93 @@ body.menu{background:radial-gradient(140% 55% at 50% -5%,rgba(255,43,214,.22),rg
 .pbtn{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 4px;border-radius:10px;background:#04101a;border:1px solid var(--g,#789);color:var(--g,#cde);font-weight:700;font-size:12px;cursor:pointer}
 .pbtn b{font-size:14px;color:#e6fbff;display:inline-flex;align-items:center;gap:4px}
 .pbtn:disabled{opacity:.4;cursor:default}
+
+/* ================= MENU SKIN v2: glass panels, bevels, depth ================= */
+body.menu{background:
+  radial-gradient(60% 38% at 82% 6%,rgba(157,77,255,.30),transparent 70%),
+  radial-gradient(70% 42% at 12% 0%,rgba(255,43,214,.22),transparent 72%),
+  radial-gradient(90% 40% at 50% 112%,rgba(0,240,255,.16),transparent 70%),
+  radial-gradient(1.2px 1.2px at 12% 22%,rgba(255,255,255,.75),transparent 60%),radial-gradient(1px 1px at 78% 14%,rgba(255,255,255,.6),transparent 60%),
+  radial-gradient(1.4px 1.4px at 38% 64%,rgba(180,220,255,.65),transparent 60%),radial-gradient(1px 1px at 90% 72%,rgba(255,255,255,.55),transparent 60%),
+  radial-gradient(1px 1px at 22% 88%,rgba(255,200,255,.6),transparent 60%),radial-gradient(1.2px 1.2px at 62% 36%,rgba(255,255,255,.5),transparent 60%),
+  linear-gradient(180deg,#07040f 0%,#04060e 55%,#010305 100%); background-attachment:fixed}
+#armory{--bev-hi:rgba(255,255,255,.16); --bev-lo:rgba(0,0,0,.55)}
+/* top bar */
+#armory .topbar{padding:6px 0 12px}
+#armory .pill{background:linear-gradient(180deg,#0d2230 0%,#050f18 100%); border:1px solid rgba(120,220,255,.38); box-shadow:inset 0 1px 0 rgba(255,255,255,.18),inset 0 -2px 4px rgba(0,0,0,.55),0 3px 8px rgba(0,0,0,.6),0 0 10px rgba(0,240,255,.12); text-shadow:0 1px 2px rgba(0,0,0,.8)}
+#armory .pill .ic{filter:drop-shadow(0 0 4px currentColor)}
+#armory #enBox{border-color:rgba(255,242,0,.5); box-shadow:inset 0 1px 0 rgba(255,255,255,.2),inset 0 -2px 4px rgba(0,0,0,.55),0 3px 8px rgba(0,0,0,.6),0 0 12px rgba(255,242,0,.18)}
+#armory .wchip{background:linear-gradient(180deg,#101a28,#04070d); box-shadow:inset 0 1px 0 rgba(255,255,255,.2),inset 0 -2px 4px rgba(0,0,0,.6),0 3px 8px rgba(0,0,0,.6),0 0 14px color-mix(in srgb,var(--wc) 45%,transparent)}
+#armory .wchip .dot{background:radial-gradient(circle at 35% 30%,color-mix(in srgb,var(--wc) 40%,#fff) 0,color-mix(in srgb,var(--wc) 16%,#000) 55%,#000 100%); box-shadow:inset 0 1px 2px rgba(255,255,255,.35),0 0 8px color-mix(in srgb,var(--wc) 60%,transparent)}
+/* glass panels */
+#armory .card,#armory .inv,#armory .wcard{position:relative; border:1px solid color-mix(in srgb,var(--c,#6fd8ff) 55%,#0a1620); background:linear-gradient(165deg,color-mix(in srgb,var(--c,#6fd8ff) 11%,#0c1722) 0%,#060c14 48%,#03070c 100%);
+  box-shadow:inset 0 1px 0 var(--bev-hi),inset 0 0 0 1px rgba(255,255,255,.03),inset 0 -14px 22px -10px rgba(0,0,0,.65),0 10px 22px -8px rgba(0,0,0,.8),0 0 20px -6px color-mix(in srgb,var(--c,#6fd8ff) 38%,transparent)}
+#armory .card::before,#armory .inv::before{content:''; position:absolute; left:14px; right:14px; top:0; height:1px; background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--c,#9fe8ff) 80%,#fff),transparent); opacity:.75; pointer-events:none}
+#armory .card .cn{font-size:17px; text-shadow:0 0 12px color-mix(in srgb,var(--c) 55%,transparent)}
+#armory .chip{background:linear-gradient(180deg,color-mix(in srgb,var(--c) 22%,#000),color-mix(in srgb,var(--c) 6%,#000)); box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 0 8px color-mix(in srgb,var(--c) 30%,transparent)}
+#armory .pips i{height:6px; border-radius:2px; background:linear-gradient(180deg,#0b1519,#1b2a31); box-shadow:inset 0 1px 2px rgba(0,0,0,.8)}
+#armory .pips i.on{background:linear-gradient(180deg,color-mix(in srgb,var(--c) 70%,#fff),var(--c) 60%,color-mix(in srgb,var(--c) 70%,#000)); box-shadow:0 0 8px var(--c),inset 0 1px 0 rgba(255,255,255,.55)}
+/* buttons: raised, pressable */
+#armory .btn,#armory .mini{position:relative; overflow:hidden; border:1px solid color-mix(in srgb,var(--c,#7ee8ff) 70%,#000); color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.7);
+  background:linear-gradient(180deg,color-mix(in srgb,var(--c,#7ee8ff) 38%,#14202c) 0%,color-mix(in srgb,var(--c,#7ee8ff) 14%,#060b12) 52%,color-mix(in srgb,var(--c,#7ee8ff) 8%,#02050a) 100%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.34),inset 0 -3px 0 rgba(0,0,0,.45),0 4px 0 color-mix(in srgb,var(--c,#7ee8ff) 28%,#000),0 8px 14px -2px rgba(0,0,0,.7),0 0 14px -2px color-mix(in srgb,var(--c,#7ee8ff) 35%,transparent); transition:transform .08s,box-shadow .08s,filter .15s}
+#armory .btn::after,#armory .mini::after{content:''; position:absolute; inset:0 0 55% 0; background:linear-gradient(180deg,rgba(255,255,255,.2),transparent); border-radius:inherit; pointer-events:none}
+#armory .btn:hover:not(:disabled){filter:brightness(1.12); background:linear-gradient(180deg,color-mix(in srgb,var(--c,#7ee8ff) 44%,#14202c) 0%,color-mix(in srgb,var(--c,#7ee8ff) 18%,#060b12) 52%,color-mix(in srgb,var(--c,#7ee8ff) 8%,#02050a) 100%)}
+#armory .btn:active:not(:disabled),#armory .mini:active{transform:translateY(3px); box-shadow:inset 0 1px 0 rgba(255,255,255,.2),inset 0 -1px 0 rgba(0,0,0,.45),0 1px 0 color-mix(in srgb,var(--c,#7ee8ff) 28%,#000),0 3px 6px rgba(0,0,0,.6)}
+#armory .btn:disabled{filter:saturate(.35) brightness(.7); box-shadow:inset 0 1px 0 rgba(255,255,255,.1),inset 0 -2px 0 rgba(0,0,0,.4),0 2px 0 #05080b; border-color:#1c2a33}
+#armory .btn.big,#armory .btn.go{--c:#ff2bd6; background:linear-gradient(180deg,#ff5fe0 0%,#c21fb0 34%,#5a1a8c 78%,#2a0f55 100%); border-color:#ff9af0;
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.55),inset 0 -4px 0 rgba(30,0,60,.55),0 5px 0 #5a1070,0 14px 22px -4px rgba(0,0,0,.8),0 0 26px -2px rgba(255,43,214,.55)}
+#armory .btn.go{font-size:22px; padding:16px 20px; letter-spacing:.16em}
+#armory .btn.go::before{content:''; position:absolute; top:0; bottom:0; width:38%; left:-60%; background:linear-gradient(100deg,transparent,rgba(255,255,255,.45),transparent); transform:skewX(-18deg); animation:shine 3.6s ease-in-out infinite; pointer-events:none}
+@keyframes shine{0%,55%{left:-60%}100%{left:130%}}
+@media (prefers-reduced-motion:reduce){ #armory .btn.go::before{animation:none} }
+#armory .mini{border-radius:999px; padding:9px 14px; --c:#ffe14d; color:#fff6c2}
+/* segmented, tabs */
+#armory .mseg button{background:linear-gradient(180deg,#0e1822,#04080d); box-shadow:inset 0 1px 0 rgba(255,255,255,.14),inset 0 -2px 4px rgba(0,0,0,.6),0 3px 6px rgba(0,0,0,.5)}
+#armory .mseg button[aria-pressed="true"]{background:linear-gradient(180deg,color-mix(in srgb,var(--c) 55%,#0a1018),color-mix(in srgb,var(--c) 18%,#02050a)); text-shadow:0 0 10px var(--c); box-shadow:inset 0 1px 0 rgba(255,255,255,.35),inset 0 -2px 4px rgba(0,0,0,.5),0 0 18px color-mix(in srgb,var(--c) 55%,transparent)}
+#armory .tab{background:linear-gradient(180deg,#101c27,#04080d); box-shadow:inset 0 1px 0 rgba(255,255,255,.14),inset 0 -2px 4px rgba(0,0,0,.6),0 3px 6px rgba(0,0,0,.5)}
+#armory .tab[aria-selected="true"]{background:linear-gradient(180deg,color-mix(in srgb,var(--c) 45%,#0a1018),color-mix(in srgb,var(--c) 14%,#02050a)); box-shadow:inset 0 1px 0 rgba(255,255,255,.3),inset 0 -2px 4px rgba(0,0,0,.5),0 0 16px color-mix(in srgb,var(--c) 50%,transparent)}
+/* hero: level title + preview bezel */
+#armory .ttl h1{font-size:clamp(34px,11vw,52px); letter-spacing:.02em; background:linear-gradient(180deg,#fff 0%,#dff8ff 40%,color-mix(in srgb,var(--wc) 70%,#fff) 100%); -webkit-background-clip:text; background-clip:text; color:transparent; filter:drop-shadow(0 2px 0 rgba(0,0,0,.6)) drop-shadow(0 0 16px color-mix(in srgb,var(--wc) 70%,transparent))}
+#armory .ttl .wsub{text-shadow:0 0 12px var(--wc)}
+#armory .pvwrap{border:0; border-radius:28px; padding:0;
+  box-shadow:0 0 0 2px #0b141c,0 0 0 3px color-mix(in srgb,var(--wc) 80%,#fff),0 0 0 7px #05090e,0 0 0 8px color-mix(in srgb,var(--wc) 35%,#000),inset 0 0 40px rgba(0,0,0,.7),inset 0 0 0 1px rgba(255,255,255,.08),0 18px 30px -8px rgba(0,0,0,.85),0 0 34px -2px color-mix(in srgb,var(--wc) 50%,transparent)}
+#armory .pvwrap::after{content:''; position:absolute; inset:0; border-radius:inherit; pointer-events:none; background:linear-gradient(160deg,rgba(255,255,255,.10) 0%,transparent 28%),radial-gradient(120% 90% at 50% 120%,rgba(0,0,0,.45),transparent 60%)}
+#armory .pvtag,#armory .pvstar{z-index:2}
+#armory .chev{color:#9fefff; filter:drop-shadow(0 0 6px rgba(0,240,255,.7))}
+#armory .facts span{padding:6px 12px; border-radius:999px; background:linear-gradient(180deg,#0d1822,#04080d); border:1px solid rgba(120,220,255,.25); box-shadow:inset 0 1px 0 rgba(255,255,255,.12),inset 0 -2px 3px rgba(0,0,0,.5)}
+#armory .brief{text-shadow:0 1px 2px #000}
+/* headers */
+#armory .ahead{border-bottom:0; position:relative}
+#armory .ahead::after{content:''; position:absolute; left:0; right:0; bottom:0; height:2px; background:linear-gradient(90deg,var(--cyan),var(--magenta) 55%,transparent); box-shadow:0 0 12px rgba(0,240,255,.6); border-radius:2px}
+#armory .ahead h1{background:linear-gradient(180deg,#fff,#8ff3ff 60%,#38cfe6); -webkit-background-clip:text; background-clip:text; color:transparent; filter:drop-shadow(0 0 12px rgba(0,240,255,.55)) drop-shadow(0 2px 0 rgba(0,0,0,.6))}
+/* card-stack orbs: spherical gems */
+#armory .gem{background:radial-gradient(circle at 34% 26%,color-mix(in srgb,var(--g,#b8c4cc) 38%,#fff) 0,color-mix(in srgb,var(--g,#b8c4cc) 26%,#0b141b) 34%,#03070a 100%); border:1px solid color-mix(in srgb,var(--g,#b8c4cc) 80%,#000);
+  box-shadow:inset 0 2px 3px rgba(255,255,255,.4),inset 0 -5px 8px rgba(0,0,0,.65),0 4px 8px rgba(0,0,0,.7),0 0 12px color-mix(in srgb,var(--g,#b8c4cc) 35%,transparent)}
+/* shop pack buttons */
+#armory .pbtn{background:linear-gradient(180deg,color-mix(in srgb,var(--g) 30%,#101a24),color-mix(in srgb,var(--g) 8%,#03070b)); border:1px solid color-mix(in srgb,var(--g) 75%,#000);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.3),inset 0 -3px 0 rgba(0,0,0,.45),0 3px 0 color-mix(in srgb,var(--g) 25%,#000),0 6px 10px -2px rgba(0,0,0,.7); transition:transform .08s,box-shadow .08s}
+#armory .pbtn:active:not(:disabled){transform:translateY(2px); box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 1px 0 color-mix(in srgb,var(--g) 25%,#000)}
+#armory .pbtn span{text-shadow:0 1px 2px #000}
+/* world cards, mob medallions */
+#armory .wcard{border-color:var(--wc); background:linear-gradient(150deg,color-mix(in srgb,var(--wc) 18%,#0c1722),#04080d 60%)}
+#armory .wi{background:radial-gradient(circle at 35% 28%,color-mix(in srgb,var(--wc) 42%,#fff),color-mix(in srgb,var(--wc) 16%,#000) 55%,#000); box-shadow:inset 0 2px 2px rgba(255,255,255,.4),0 0 12px color-mix(in srgb,var(--wc) 55%,transparent)}
+#armory .mb{background:radial-gradient(circle at 35% 28%,color-mix(in srgb,var(--c) 22%,#0c141a),#000 72%); box-shadow:inset 0 2px 2px rgba(255,255,255,.2),inset 0 -4px 6px rgba(0,0,0,.6),0 3px 6px rgba(0,0,0,.6),0 0 12px color-mix(in srgb,var(--c) 40%,transparent)}
+#armory .ahead h1{filter:none; text-shadow:none}
+#armory .ahead h1{-webkit-text-stroke:0; paint-order:normal}
+#armory .shop .card{margin-bottom:12px}
+#armory .topbar{gap:6px}
+#armory .pill{padding:6px 10px; font-size:13px}
+#armory .wchip{max-width:none; flex:1 1 auto; min-width:0}
+#armory .tabs{padding:4px 2px}
+#armory .mob canvas{border-radius:18px; background:radial-gradient(circle at 35% 25%,#13202b,#02050a 75%); border:1px solid rgba(140,225,255,.25); box-shadow:inset 0 2px 3px rgba(255,255,255,.12),inset 0 -6px 10px rgba(0,0,0,.7),0 4px 8px rgba(0,0,0,.6)}
+/* floating glass dock */
+#armory .nav{margin:8px 2px 4px; padding:7px; gap:4px; border:1px solid rgba(140,225,255,.28); border-radius:26px; background:linear-gradient(180deg,rgba(18,34,48,.88),rgba(4,9,15,.94)); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.2),inset 0 -2px 6px rgba(0,0,0,.6),0 12px 24px -6px rgba(0,0,0,.85),0 0 20px -6px rgba(0,240,255,.35)}
+#armory .nav button{border-radius:20px; transition:background .15s,transform .1s}
+#armory .nav button:active{transform:scale(.95)}
+#armory .nav button[aria-current="page"]{color:#fff; border-color:rgba(160,240,255,.8); background:linear-gradient(180deg,rgba(0,240,255,.34),rgba(0,120,160,.16)); box-shadow:inset 0 1px 0 rgba(255,255,255,.4),inset 0 -2px 4px rgba(0,0,0,.4),0 0 18px rgba(0,240,255,.5); text-shadow:0 0 8px rgba(0,240,255,.9)}
+#armory .nav button[aria-current="page"] .ic{filter:drop-shadow(0 0 6px #00f0ff)}
 </style></head><body>
 <div id="gate" role="dialog" aria-modal="true" aria-label="Sign in"><h1>Neon Defense</h1><p class="gmsg" id="gateMsg">Loading…</p><div class="gbtns" id="gateBtns"></div><p class="gmsg gerr" id="gateErr"></p><p class="gmsg"><a href="https://kwkoch.github.io/privacy.html" target="_blank" rel="noopener" style="color:var(--cyan)">Privacy Policy</a></p></div>
 
@@ -2465,10 +2552,10 @@ window.__rr={fireball:fireball,chip:chip,openTeach:openTeach,fireMortar:fireMort
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 36</div>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 37</div>
 <script>
 /* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
-(function(){ const BUILD=36; let busy=false, shown=false;
+(function(){ const BUILD=37; let busy=false, shown=false;
   const inRun=()=>{ try{ return typeof G!=='undefined'&&(G.state==='playing'||G.state==='cards'||G.state==='shop'||G.state==='paused'||G.state==='teach'); }catch(e){ return false; } };
   function wipeReload(){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
     if(n>=3) return;
