@@ -7,13 +7,15 @@ service cloud.firestore {
     match /users/{uid} {
       allow read, delete: if me(uid);
       allow create, update: if me(uid)
-        && request.resource.data.keys().hasOnly(['data', 'score', 'updated', 'displayName', 'createdAt'])
+        && request.resource.data.keys().hasOnly(['data', 'score', 'updated', 'displayName', 'createdAt', 'stats', 'ledger'])
         && request.resource.data.keys().hasAll(['data', 'score', 'updated'])
         && request.resource.data.data is string
         && request.resource.data.data.size() < 200000
         && request.resource.data.score is int
         && request.resource.data.score >= 0
         && request.resource.data.updated is int
+        && (!('stats' in request.resource.data) || (request.resource.data.stats is map && request.resource.data.stats.size() <= 30))
+        && (!('ledger' in request.resource.data) || (request.resource.data.ledger is list && request.resource.data.ledger.size() <= 100))
         && (!('displayName' in request.resource.data) || (request.resource.data.displayName is string && request.resource.data.displayName.size() <= 40))
         && (!('createdAt' in request.resource.data) || request.resource.data.createdAt is int);
 

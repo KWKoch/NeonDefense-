@@ -548,7 +548,7 @@ const newInv=()=>({pow:[0,0,0,0],tmp:[0,0,0,0],rch:[0,0,0,0],cap:[0,0,0,0],frt:[
 const newPW=()=>({best:0,sel:1,perf:{},eclr:{}});
 function pw(o){ return o.prog[o.world]||(o.prog[o.world]=newPW()); }
 const newP=()=>{
-  const o={inv:newInv(),lv:{},cm:{},gems:0,pass:0,starter:0,chestDay:'',passDay:'',world:'belt',own:{belt:true},prog:{},seen:{},intro:0,en:EN_MAX,enV:2,enT:Date.now()};
+  const o={inv:newInv(),lv:{},cm:{},gems:0,pass:0,starter:0,chestDay:'',passDay:'',ledger:[],world:'belt',own:{belt:true},prog:{},seen:{},intro:0,en:EN_MAX,enV:2,enT:Date.now()};
   Object.defineProperty(o,'best',{get(){ return pw(o).best; },set(v){ pw(o).best=v; },enumerable:false});
   Object.defineProperty(o,'sel',{get(){ return pw(o).sel; },set(v){ pw(o).sel=v; },enumerable:false});
   return o;
@@ -565,7 +565,7 @@ try{
     if(o.prog){ for(const k in o.prog){ const q=o.prog[k]||{}; P.prog[k]={best:+q.best||0,sel:+q.sel||1,perf:q.perf||{},eclr:q.eclr||{}}; } P.own=Object.assign({belt:true},o.own); if(WORLDS.some(w=>w.id===o.world)) P.world=o.world; }
     else P.prog.belt={best:+o.best||0,sel:+o.sel||1,perf:{},eclr:{}};
     if(o.seenW&&typeof o.seenW==='object') P.seenW=o.seenW; if(o.cm&&typeof o.cm==='object') P.cm=o.cm;
-    if(isFinite(+o.gems)) P.gems=Math.max(0,Math.floor(+o.gems)); P.pass=+o.pass||0; P.starter=o.starter?1:0; P.chestDay=o.chestDay||''; P.passDay=o.passDay||'';
+    if(isFinite(+o.gems)) P.gems=Math.max(0,Math.floor(+o.gems)); P.pass=+o.pass||0; P.starter=o.starter?1:0; P.chestDay=o.chestDay||''; P.passDay=o.passDay||''; P.ledger=Array.isArray(o.ledger)?o.ledger.slice(-100):[];
     if(o.seen&&typeof o.seen==='object') P.seen=o.seen;
     else { /* old save: assume mobs up to the player's best level were seen */
       for(const wd of WORLDS){ const b=(P.prog[wd.id]||{}).best||0; if(!b) continue; const uw=wd.uw||UW; for(const k in uw) if(Math.ceil(uw[k]/20)<=b+1) P.seen[k]=1; P.seen.small=1; if(P.seen.chunk) P.seen.small=1; if(P.seen.egg) P.seen.hatch=1; if(b>=10){ P.seen.boss=1; P.seen.orb=1; } }
@@ -1751,6 +1751,7 @@ function win(){
   const pr=pw(P), el=G.elite, replay=el?!!pr.eclr[G.n]:G.n<=pr.best, frac=G.hp/G.maxHp, perfect=frac>=0.999, hadPerf=!!pr.perf[G.n];
   const got=awardCards(dropCount(G.n,frac,replay,el),G.n,(isBoss(G.n)?(replay?1:2):0)+(el&&!replay?1:0),el);
   const gem=Math.max(1,Math.ceil((4+Math.floor(G.n/3)+(perfect?2:0))*(el?2:1)*(replay?0.5:1))); P.gems=(P.gems||0)+gem; G.lastGot=got; G.lastGems=gem; G.doubled=false;
+  logEv(el?'elite':'clear',G.n+(perfect?' perfect':'')+' '+G.wd.id);
   if(el) pr.eclr[G.n]=true;
   else { pr.best=Math.max(pr.best,G.n); pr.sel=Math.min(G.n+1,LEVELS); if(perfect) pr.perf[G.n]=true; }
   save();
@@ -1826,6 +1827,8 @@ function rollType(){ let x=Math.random()*100; for(const t of CTYPES){ x-=CW[t]; 
 function topRar(n,e){ const w=rarW(n,e); let t=0; for(let i=0;i<4;i++) if(w[i]>0) t=i; return t; }
 const dropCount=(n,frac,rep,el)=>Math.max(1,Math.round((CDROP0+CDROPG*n)*(rep?0.5:1)*(el?1.6:1)*Math.max(0.4,frac)));
 /* ================= gems, shop, rewarded ads, season pass ================= */
+/* account ledger: a short history of purchases, claims and clears, synced with the save and mirrored into the cloud profile */
+function logEv(k,d){ try{ (P.ledger=P.ledger||[]).push({t:Date.now(),k:k,d:String(d||'')}); if(P.ledger.length>100) P.ledger.splice(0,P.ledger.length-100); }catch(e){} }
 const today=()=>{ const d=new Date(); return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); };
 const passActive=()=>(P.pass||0)>Date.now();
 const gemLine=g=>'<div class="stat1" style="color:#7df9ff" title="Gems">'+ico('gem',16)+' +'+g+' gems</div>';
@@ -1838,7 +1841,7 @@ function grantSku(sku){
   if(sku==='g100') P.gems+=100; else if(sku==='g550') P.gems+=550; else if(sku==='g1200') P.gems+=1200;
   else if(sku==='pass'){ P.pass=Math.max(Date.now(),P.pass||0)+30*864e5; }
   else if(sku==='starter'&&!P.starter){ P.starter=1; P.gems+=150; for(const t in CT){ P.inv[t][1]+=2; } enTick(); P.en=Math.min(EN_MAX,P.en+25); }
-  save(); renderArmory();
+  logEv('sku',sku); save(); renderArmory();
 }
 let rwBusy=false;
 function rewardFlow(name,grant){
@@ -1872,11 +1875,11 @@ function reviveRun(){
 function adReroll(){ if(G.state!=='cards') return; rewardFlow('card_reroll',()=>{ if(G.state==='cards'){ G.offer=offerCards(); renderCards(); } }); }
 const PACKP=[12,45,150,480];
 function buyPack(k){ const p=k.split(':'), t=p[0], r=+p[1]; if(!CT[t]||!(r>=0&&r<4)) return; const cost=PACKP[r]; if((P.gems||0)<cost){ toast('Not enough gems'); return; }
-  P.gems-=cost; P.inv[t][r]+=3; save(); Music.up(); toast('Opened: 3\u00d7 '+RAR[r].name+' '+CT[t].name+' cards'); renderArmory(); }
+  P.gems-=cost; P.inv[t][r]+=3; logEv('pack',t+':'+r); save(); Music.up(); toast('Opened: 3\u00d7 '+RAR[r].name+' '+CT[t].name+' cards'); renderArmory(); }
 function claim(k){
-  if(k==='chest'){ if(P.chestDay===today()) return; rewardFlow('daily_chest',()=>{ if(P.chestDay===today()) return; P.chestDay=today(); const m=passActive()?2:1, g=8*m; P.gems+=g; let txt='';
+  if(k==='chest'){ if(P.chestDay===today()) return; rewardFlow('daily_chest',()=>{ if(P.chestDay===today()) return; P.chestDay=today(); logEv('chest',''); const m=passActive()?2:1, g=8*m; P.gems+=g; let txt='';
       for(let i=0;i<3*m;i++){ const t=rollType(), r=Math.random()<0.7?0:1; P.inv[t][r]++; } save(); Music.up(); toast('Daily chest: +'+g+' gems and '+3*m+' cards'); renderArmory(); }); }
-  else if(k==='pass'){ if(!passActive()||P.passDay===today()) return; P.passDay=today(); P.gems+=15; save(); Music.up(); toast('Pass bonus: +15 gems'); renderArmory(); }
+  else if(k==='pass'){ if(!passActive()||P.passDay===today()) return; P.passDay=today(); P.gems+=15; logEv('passday',''); save(); Music.up(); toast('Pass bonus: +15 gems'); renderArmory(); }
 }
 function shopHtml(){
   const g=P.gems||0, can=P.chestDay!==today(), pa=passActive(), days=Math.ceil(((P.pass||0)-Date.now())/864e5);
@@ -2462,10 +2465,10 @@ window.__rr={fireball:fireball,chip:chip,openTeach:openTeach,fireMortar:fireMort
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 34</div>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 35</div>
 <script>
 /* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
-(function(){ const BUILD=34; let busy=false, shown=false;
+(function(){ const BUILD=35; let busy=false, shown=false;
   const inRun=()=>{ try{ return typeof G!=='undefined'&&(G.state==='playing'||G.state==='cards'||G.state==='shop'||G.state==='paused'||G.state==='teach'); }catch(e){ return false; } };
   function wipeReload(){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
     if(n>=3) return;

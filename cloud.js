@@ -42,7 +42,22 @@ else (async()=>{
   // progress score: more levels + more upgrades wins when local and cloud differ (integer, rules require int)
   const score=j=>{ try{ const o=JSON.parse(j); let n=0; for(const k in (o.prog||{})) n+=(o.prog[k].best||0)*10+Object.keys(o.prog[k].perf||{}).length+Object.keys(o.prog[k].eclr||{}).length*2; for(const k in (o.lv||{})) n+=o.lv[k]; return Math.round(n)||0; }catch(e){ return -1; } };
   const mine=u=>F.doc(db,'users',u.uid);
-  const rec=j=>({data:j||'{}',score:Math.max(0,score(j||'{}')),updated:Date.now()});
+  /* Structured, queryable summary of the account (levels, accomplishments, wallet, entitlements) stored next to the full save blob. Client-reported: the blob stays the source of truth until purchases are verified server-side. */
+  const summary=j=>{ try{ const o=JSON.parse(j||'{}'), best={}; let perfect=0, elite=0, cards=0;
+      for(const k in (o.prog||{})){ const q=o.prog[k]||{}; best[k]=Math.max(0,Math.floor(+q.best||0)); perfect+=Object.keys(q.perf||{}).length; elite+=Object.keys(q.eclr||{}).length; }
+      for(const t in (o.inv||{})) for(const n of (o.inv[t]||[])) cards+=Math.max(0,Math.floor(+n||0));
+      return {best,perfect,elite,cards,gems:Math.max(0,Math.floor(+o.gems||0)),pass:Math.max(0,Math.floor(+o.pass||0)),starter:o.starter?1:0,
+        upgrades:Object.values(o.lv||{}).reduce((a,b)=>a+(+b||0),0),mastery:Object.values(o.cm||{}).reduce((a,b)=>a+(+b||0),0),worlds:Object.keys(o.own||{}).length,build:+o.build||0}; }catch(e){ return {}; } };
+  const ledger=j=>{ try{ const l=JSON.parse(j||'{}').ledger; return Array.isArray(l)?l.slice(-100).map(x=>({t:Math.floor(+x.t||0),k:String(x.k||'').slice(0,24),d:String(x.d||'').slice(0,60)})):[]; }catch(e){ return []; } };
+  const rec=j=>({data:j||'{}',score:Math.max(0,score(j||'{}')),updated:Date.now(),stats:summary(j),ledger:ledger(j)});
+  /* Field-level merge for first sign-in on a device: take the save with more progress as the base, then keep anything the other one has that must never be lost. */
+  const merge=(lj,cj)=>{ try{
+      const l=JSON.parse(lj||'{}'), c=JSON.parse(cj||'{}'), cloudWins=score(cj)>score(lj||'{}'), a=cloudWins?c:l, b=cloudWins?l:c, o=JSON.parse(JSON.stringify(a));
+      const maxMap=(k)=>{ o[k]=Object.assign({},b[k]||{},a[k]||{}); for(const i in (b[k]||{})) o[k][i]=Math.max(+(a[k]||{})[i]||0,+(b[k]||{})[i]||0); };
+      maxMap('lv'); maxMap('cm'); o.seen=Object.assign({},b.seen||{},a.seen||{}); o.seenW=Object.assign({},b.seenW||{},a.seenW||{}); o.own=Object.assign({},b.own||{},a.own||{});
+      o.pass=Math.max(+a.pass||0,+b.pass||0); o.starter=(a.starter||b.starter)?1:0; o.chestDay=[a.chestDay||'',b.chestDay||''].sort().pop(); o.passDay=[a.passDay||'',b.passDay||''].sort().pop();
+      o.ledger=[].concat(a.ledger||[],(b.ledger||[]).filter(x=>!(a.ledger||[]).some(y=>y.t===x.t&&y.k===x.k))).sort((x,y)=>x.t-y.t).slice(-100);
+      return JSON.stringify(o); }catch(e){ return score(cj)>score(lj||'{}')?cj:lj; } };
   const code=e=>(e&&e.code)||'error';
   const nice=e=>code(e).replace('auth/','').replace(/-/g,' ');
   let timer=null;
@@ -56,7 +71,8 @@ else (async()=>{
       const snap=await F.getDoc(mine(u)), local=localStorage.getItem(SKEY);
       if(snap.exists()&&snap.data().data){
         const cloud=snap.data().data;
-        if(score(cloud)>score(local||'{}')){ localStorage.setItem(SKEY,cloud); location.reload(); return; }
+        if(local){ const m=merge(local,cloud); if(m!==local){ localStorage.setItem(SKEY,m); await F.setDoc(mine(u),rec(m)); location.reload(); return; } }
+        else { localStorage.setItem(SKEY,cloud); location.reload(); return; }
       }
       await F.setDoc(mine(u),rec(local)); R.status='saved';
     }catch(e){ R.status='offline'; }
