@@ -38,7 +38,10 @@ const fight=(type,won,{weapons=['turret'],src='turret',resKind=null,m=1}={})=>{
   assert.equal(new Set(list.map(d=>d.id)).size,list.length,'duplicate achievement ids');
   const a=A.agg();
   for(const d of list){ const r=d.fn(a); assert(r&&typeof r.done==='boolean'&&r.frac>=0&&r.frac<=1&&typeof r.txt==='string',d.id+' bad progress '+JSON.stringify(r)); assert(!r.done,d.id+' unlocked on an empty record'); assert(d.tier>=0&&d.tier<=3,d.id+' bad tier'); }
-  assert.equal(list.filter(d=>d.cat==='disc').length,4+3+A.WORLDS.length+4);
+  assert.equal(list.filter(d=>d.cat==='disc').length,4+3+4);
+  assert.equal(list.filter(d=>d.cat==='world').length,A.WORLDS.length,'one survey per world');
+  assert(list.filter(d=>d.cat==='wpn').every(d=>d.grp&&d.icon===d.grp)&&list.filter(d=>d.cat==='wpn').length===36,'six awards per weapon');
+  assert(list.every(d=>d.grp),'every award belongs to a sub-group');
   assert(!list.some(d=>d.id==='all80'||d.id==='all99'||d.id.startsWith('k1_')||d.id.startsWith('cr')||d.id.startsWith('n_')),'removed global achievements are gone');
 }
 
