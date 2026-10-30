@@ -2317,7 +2317,8 @@ function toast(t){ if(!toastEl){ toastEl=document.createElement('div'); toastEl.
 /* Real-money purchases need the store's billing (Google Play / App Store). On the web build nothing is charged; the Android/iOS builds replace Billing.buy and call grantSku on success. */
 const PRICES={starter:'$2.99',pass:'$4.99',g100:'$0.99',g550:'$4.99',g1200:'$9.99'};   /* kept for the store release; not shown while PAID_SOON is on */
 const COST={pass:600};   /* gem price of the pass (30 days); only the pass can be bought with gems */
-const AD_GEMS=3, AD_GEMS_DAY=3;   /* free gems per watched ad, and how many ads per day pay out */
+const ADS_LIVE=false;   /* flip to true once a rewarded-ad provider is approved; until then Free gems is one plain claim a day */
+const AD_GEMS=3, AD_GEMS_DAY=ADS_LIVE?3:1;   /* free gems per watched ad, and how many ads per day pay out */
 const PAID_SOON=true;   /* real-money items show "Coming soon" with no price until store billing is connected */
 const adLeft=()=>Math.max(0,AD_GEMS_DAY-(P.adDay===today()?(P.adN||0):0));
 /* two ways to buy: gems, or real money (locked until store billing is connected) */
@@ -2328,7 +2329,8 @@ function buyGems(sku){
   P.gems-=COST[sku]; grantSku(sku); Music.up(); toast('Neon Pass active: +30 days'); }
 function adGems(){
   if(adLeft()<=0) return;
-  rewardFlow('free_gems',()=>{ if(adLeft()<=0) return; if(P.adDay!==today()){ P.adDay=today(); P.adN=0; } P.adN++; P.gems=(P.gems||0)+AD_GEMS; logEv('adgems',''); save(); Music.up(); toast('+'+AD_GEMS+' gems'); renderArmory(); });
+  const pay=()=>{ if(adLeft()<=0) return; if(P.adDay!==today()){ P.adDay=today(); P.adN=0; } P.adN++; P.gems=(P.gems||0)+AD_GEMS; logEv('adgems',''); save(); Music.up(); toast('+'+AD_GEMS+' gems'); renderArmory(); };
+  if(ADS_LIVE) rewardFlow('free_gems',pay); else pay();
 }
 const Billing={ready:false, buy(sku){ if(PAID_SOON){ toast('Coming soon'); return; } if(Billing.ready&&Billing.native) return Billing.native(sku,()=>grantSku(sku)); toast('Store purchases open with the Android and iOS release. Nothing was charged.'); }};
 function grantSku(sku){
@@ -2403,8 +2405,8 @@ function shopHtml(){
   let h='<div class="wrap shop"><div class="ahead"><h1>Shop</h1><div class="cr"><span class="lbl">Gems</span><b style="color:#7df9ff">'+g+'</b></div></div>';
   h+='<div class="card" style="--c:#ffc400"><div class="ct"><span class="cn">Daily chest</span><span class="chip" style="--c:#ffc400">Free</span></div><div class="cv">8 gems and 3 cards'+(pa?' (doubled by your pass)':'')+'</div>'
     +'<button class="btn" data-claim="chest" type="button" style="--c:#ffc400" '+(can?'':'disabled')+'>'+(can?'Open chest'+(pa?'':' <small>(watch ad)</small>'):'Come back tomorrow')+'</button></div>';
-  h+='<div class="card" style="--c:#7df9ff"><div class="ct"><span class="cn">Free gems</span><span class="chip" style="--c:#7df9ff">'+adLeft()+' left today</span></div><div class="cv">Watch an ad for '+AD_GEMS+' gems.</div>'
-    +'<button class="btn" data-adgems="1" type="button" style="--c:#7df9ff" '+(adLeft()?'':'disabled')+'>'+(adLeft()?'+'+AD_GEMS+' gems <small>'+(passActive()?'':'(watch ad)')+'</small>':'Come back tomorrow')+'</button></div>';
+  h+='<div class="card" style="--c:#7df9ff"><div class="ct"><span class="cn">Free gems</span><span class="chip" style="--c:#7df9ff">'+adLeft()+' left today</span></div><div class="cv">'+(ADS_LIVE?'Watch an ad for '+AD_GEMS+' gems.':'Claim '+AD_GEMS+' free gems every day.')+'</div>'
+    +'<button class="btn" data-adgems="1" type="button" style="--c:#7df9ff" '+(adLeft()?'':'disabled')+'>'+(adLeft()?'+'+AD_GEMS+' gems <small>'+(passActive()||!ADS_LIVE?'':'(watch ad)')+'</small>':'Come back tomorrow')+'</button></div>';
   h+='<div class="card" style="--c:#9d4dff"><div class="ct"><span class="cn">Neon Pass</span><span class="chip" style="--c:#9d4dff">'+(pa?days+' days left':'30 days')+'</span></div>'
     +'<div class="cv">The only way to remove ads. Every reward ad is granted instantly with no waiting, 15 gems every day, and double daily chests.</div>'
     +(pa?'<button class="btn" data-claim="pass" type="button" style="--c:#9d4dff" '+(P.passDay===today()?'disabled':'')+'>'+(P.passDay===today()?'Daily 15 gems claimed':'Claim 15 gems')+'</button>':'')
@@ -3042,10 +3044,10 @@ window.__rr={fireball:fireball,chip:chip,openTeach:openTeach,fireMortar:fireMort
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 48</div>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 49</div>
 <script>
 /* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
-(function(){ const BUILD=48; let busy=false, shown=false;
+(function(){ const BUILD=49; let busy=false, shown=false;
   const inRun=()=>{ try{ return typeof G!=='undefined'&&(G.state==='playing'||G.state==='cards'||G.state==='shop'||G.state==='paused'||G.state==='teach'); }catch(e){ return false; } };
   function wipeReload(){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
     if(n>=3) return;
