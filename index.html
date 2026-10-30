@@ -2316,16 +2316,16 @@ let toastEl=null, toastT=0;
 function toast(t){ if(!toastEl){ toastEl=document.createElement('div'); toastEl.className='toast'; toastEl.setAttribute('role','status'); document.body.appendChild(toastEl); } toastEl.textContent=t; toastEl.classList.add('on'); clearTimeout(toastT); toastT=setTimeout(()=>toastEl.classList.remove('on'),2600); }
 /* Real-money purchases need the store's billing (Google Play / App Store). On the web build nothing is charged; the Android/iOS builds replace Billing.buy and call grantSku on success. */
 const PRICES={starter:'$2.99',pass:'$4.99',g100:'$0.99',g550:'$4.99',g1200:'$9.99'};   /* kept for the store release; not shown while PAID_SOON is on */
-const COST={pass:600,starter:200};   /* gem price of the pass (30 days) and the one-time starter pack */
+const COST={pass:600};   /* gem price of the pass (30 days); only the pass can be bought with gems */
 const AD_GEMS=3, AD_GEMS_DAY=3;   /* free gems per watched ad, and how many ads per day pay out */
 const PAID_SOON=true;   /* real-money items show "Coming soon" with no price until store billing is connected */
 const adLeft=()=>Math.max(0,AD_GEMS_DAY-(P.adDay===today()?(P.adN||0):0));
 /* two ways to buy: gems, or real money (locked until store billing is connected) */
 const payBtns=(sku,done)=>'<div class="paytwo"><button class="btn big" type="button" data-gem="'+sku+'" '+(done?'disabled':'')+'>'+ico('gem',15)+' '+COST[sku]+'</button><button class="btn" type="button" disabled aria-label="Pay with money: coming soon">'+ico('lock',14)+' Money</button></div>';
 function buyGems(sku){
-  if(!COST[sku]) return; if(sku==='starter'&&P.starter) return;
+  if(!COST[sku]) return;
   if((P.gems||0)<COST[sku]){ toast('Not enough gems. Watch ads or play levels to earn more.'); return; }
-  P.gems-=COST[sku]; grantSku(sku); Music.up(); toast(sku==='pass'?'Neon Pass active: +30 days':'Starter pack unlocked'); }
+  P.gems-=COST[sku]; grantSku(sku); Music.up(); toast('Neon Pass active: +30 days'); }
 function adGems(){
   if(adLeft()<=0) return;
   rewardFlow('free_gems',()=>{ if(adLeft()<=0) return; if(P.adDay!==today()){ P.adDay=today(); P.adN=0; } P.adN++; P.gems=(P.gems||0)+AD_GEMS; logEv('adgems',''); save(); Music.up(); toast('+'+AD_GEMS+' gems'); renderArmory(); });
@@ -2409,8 +2409,6 @@ function shopHtml(){
     +'<div class="cv">The only way to remove ads. Every reward ad is granted instantly with no waiting, 15 gems every day, and double daily chests.</div>'
     +(pa?'<button class="btn" data-claim="pass" type="button" style="--c:#9d4dff" '+(P.passDay===today()?'disabled':'')+'>'+(P.passDay===today()?'Daily 15 gems claimed':'Claim 15 gems')+'</button>':'')
     +payBtns('pass',false)+'</div>';
-  if(!P.starter) h+='<div class="card" style="--c:#00f0ff"><div class="ct"><span class="cn">Starter pack</span><span class="chip" style="--c:#00f0ff">One time</span></div><div class="cv">150 gems, 2 Rare cards of every type and 25 energy.</div>'
-    +payBtns('starter',false)+'</div>';
   h+='<div class="note" style="margin:10px 0 4px"><b>Card fragments.</b> Forge a card of any rarity: '+RAR.map((r,i)=>r.name+' '+FORGE[i]).join(', ')+'. Level stars and achievements pay fragments for free; you can also buy '+FRAG_BUY+' for '+FRAG_BUY+' gems.</div>';
   Object.keys(CT).forEach(t=>{
     const f=(P.frag||{})[t]||0, nx=FORGE.find(c=>c>f)||FORGE[3];
@@ -3044,10 +3042,10 @@ window.__rr={fireball:fireball,chip:chip,openTeach:openTeach,fireMortar:fireMort
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 43</div>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 44</div>
 <script>
 /* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
-(function(){ const BUILD=43; let busy=false, shown=false;
+(function(){ const BUILD=44; let busy=false, shown=false;
   const inRun=()=>{ try{ return typeof G!=='undefined'&&(G.state==='playing'||G.state==='cards'||G.state==='shop'||G.state==='paused'||G.state==='teach'); }catch(e){ return false; } };
   function wipeReload(){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
     if(n>=3) return;
