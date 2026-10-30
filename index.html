@@ -351,8 +351,8 @@ body.menu{background:radial-gradient(140% 55% at 50% -5%,rgba(255,43,214,.22),rg
 .cxseg{margin-bottom:12px; width:100%}
 .cxseg button{flex:1; white-space:nowrap}
 .cxseg button small{opacity:.7; font-weight:600; letter-spacing:0; margin-left:3px}
-.acats{display:flex; flex-wrap:wrap; gap:6px; margin:0 0 12px}
-.acat{font:inherit; font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; padding:6px 11px; border-radius:999px; border:1px solid var(--line); background:#04101a; color:var(--dim); cursor:pointer}
+.acats{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:4px; margin:0 0 6px}
+.acat{font:inherit; font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; padding:5px 2px; border-radius:14px; border:1px solid var(--line); background:#04101a; color:var(--dim); cursor:pointer; display:flex; flex-direction:column; align-items:center; font-size:10px; letter-spacing:.04em; min-width:0}
 .acat[aria-pressed="true"]{color:#fff; border-color:#00f0ff; background:color-mix(in srgb,#00f0ff 18%,#000); box-shadow:0 0 10px rgba(0,240,255,.35)}
 .acat small{opacity:.75; letter-spacing:0}
 .acard{gap:7px}
@@ -423,9 +423,9 @@ body.menu{background:
 #armory .wchip{background:linear-gradient(180deg,#101a28,#04070d); box-shadow:inset 0 1px 0 rgba(255,255,255,.2),inset 0 -2px 4px rgba(0,0,0,.6),0 3px 8px rgba(0,0,0,.6),0 0 14px color-mix(in srgb,var(--wc) 45%,transparent)}
 #armory .wchip .dot{background:radial-gradient(circle at 35% 30%,color-mix(in srgb,var(--wc) 40%,#fff) 0,color-mix(in srgb,var(--wc) 16%,#000) 55%,#000 100%); box-shadow:inset 0 1px 2px rgba(255,255,255,.35),0 0 8px color-mix(in srgb,var(--wc) 60%,transparent)}
 /* glass panels */
-#armory .card,#armory .inv,#armory .wcard,#armory .ucat{position:relative; border:1px solid color-mix(in srgb,var(--c,#6fd8ff) 55%,#0a1620); background:linear-gradient(165deg,color-mix(in srgb,var(--c,#6fd8ff) 11%,#0c1722) 0%,#060c14 48%,#03070c 100%);
+#armory .card,#armory .inv,#armory .wcard,#armory .ucat,#armory .atile{position:relative; border:1px solid color-mix(in srgb,var(--c,#6fd8ff) 55%,#0a1620); background:linear-gradient(165deg,color-mix(in srgb,var(--c,#6fd8ff) 11%,#0c1722) 0%,#060c14 48%,#03070c 100%);
   box-shadow:inset 0 1px 0 var(--bev-hi),inset 0 0 0 1px rgba(255,255,255,.03),inset 0 -14px 22px -10px rgba(0,0,0,.65),0 10px 22px -8px rgba(0,0,0,.8),0 0 20px -6px color-mix(in srgb,var(--c,#6fd8ff) 38%,transparent)}
-#armory .card::before,#armory .inv::before,#armory .ucat::before{content:''; position:absolute; left:14px; right:14px; top:0; height:1px; background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--c,#9fe8ff) 80%,#fff),transparent); opacity:.75; pointer-events:none}
+#armory .card::before,#armory .inv::before,#armory .ucat::before,#armory .atile::before{content:''; position:absolute; left:14px; right:14px; top:0; height:1px; background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--c,#9fe8ff) 80%,#fff),transparent); opacity:.75; pointer-events:none}
 #armory .card .cn{font-size:17px; text-shadow:0 0 12px color-mix(in srgb,var(--c) 55%,transparent)}
 #armory .chip{background:linear-gradient(180deg,color-mix(in srgb,var(--c) 22%,#000),color-mix(in srgb,var(--c) 6%,#000)); box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 0 8px color-mix(in srgb,var(--c) 30%,transparent)}
 #armory .pips i{height:6px; border-radius:2px; background:linear-gradient(180deg,#0b1519,#1b2a31); box-shadow:inset 0 1px 2px rgba(0,0,0,.8)}
@@ -517,6 +517,19 @@ body.menu{background:
 .ufrg{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:4px}
 .ufrg .pbtn{padding:2px 0; border-radius:10px; gap:0; font-size:9px; height:34px; justify-content:center}
 .ufrg .pbtn b{font-size:12px; display:block; line-height:1.05}
+.wpns.six{grid-template-columns:repeat(6,minmax(0,1fr)); gap:4px}
+.wpns.six .wpn{flex-direction:column; gap:1px; padding:6px 0 5px; font-size:10px; letter-spacing:.02em}
+.wpns.six .wpn small{font-size:10px; opacity:.8; letter-spacing:0; text-transform:none}
+.wpn .wl{display:inline-flex; align-items:center; justify-content:center; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.awgrid{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px}
+.atile{position:relative; display:grid; grid-template-rows:auto 1fr auto auto; gap:4px; padding:8px 9px; border-radius:16px; min-width:0}
+.atile .ath{display:flex; align-items:center; gap:6px}
+.atile .an{flex:1 1 0; min-width:0; font-size:13px; line-height:1.15; color:var(--fg)}
+.atile .ad{font-size:11px; color:var(--dim); line-height:1.2}
+.atile .ap{display:flex; justify-content:space-between; align-items:center; gap:6px; font-size:10px; color:var(--dim)}
+.atile .rw{display:inline-flex; align-items:center; gap:2px; color:#7df9ff; white-space:nowrap}
+.atile.got .an{color:var(--c)}
+.atile .rtag{font-size:8px; padding:1px 5px}
 .mast{margin:0 0 8px; padding:8px 10px; border:1px solid var(--line); border-radius:16px; background:var(--panel)}
 .mast summary{cursor:pointer; font-size:12px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--fg)}
 .mast summary small{color:var(--dim); margin-left:6px}
@@ -1378,13 +1391,21 @@ function achList(){
   [[100,'Spotter'],[1000,'Lookout'],[10000,'Watchtower'],[100000,'All-Seeing Rampart']].forEach((x,i)=>
     add('disc','sight'+i,x[1],'Encounter '+fmtN(x[0])+' mobs in total.',i,a=>pCount(a.sight,x[0]),'eye'));
 
-  /* Weapons: success per weapon, and per weapon against each mob class */
+  /* Weapons: six awards per weapon (two overall rates, one per mob class, one misfit). Numbers show on each tile's progress line. */
+  const WAW={
+    turret:{p:["Steady Hand","Take down 80% of the mobs your Turret hits."],m:["Dead Eye","Take down 92% of the mobs your Turret hits. Nothing slips by."],mineral:["Stonecutter","Bullets glance off rock. Still drop 90% of the Minerals you hit."],mech:["Scrap Sniper","Drop 90% of the Mechs your bullets find."],bio:["Pest Control","Squash 90% of the Bios your bullets hit before they regrow."],x:["Pop Gun Hero","Win 60% of fights against mobs that shrug off bullets."]},
+    mine:{p:["Tripwire Pro","Blow up 80% of the mobs your mines catch."],m:["Boom Architect","Blow up 92% of the mobs your mines catch. The perfect trap."],mineral:["Quarry Master","Blasts crack rock best. Bring down 90% of the Minerals you catch."],mech:["Demolition Crew","Flatten 90% of the Mechs your mines catch."],bio:["Exterminator","Wipe out 90% of the Bios your mines catch."],x:["Dud Defier","Win 60% of fights against mobs that shrug off blasts."]},
+    field:{p:["Time Dilator","Slow and finish 80% of the mobs your field catches."],m:["Stasis Sovereign","Slow and finish 92% of the mobs your field catches."],mineral:["Heat Haze","Rock shrugs off energy. Still finish 90% of the Minerals in the field."],mech:["Short Circuit","Energy overloads machines. Finish 90% of the Mechs in the field."],bio:["Cold Snap","Freeze and finish 90% of the Bios that drift into the field."],x:["Against the Grain","Win 60% of fights against mobs that resist the field."]},
+    chain:{p:["Spark Gap","Finish 80% of the mobs your lightning touches."],m:["Storm Caller","Finish 92% of the mobs your lightning touches."],mineral:["Rock Shock","Fry 90% of the Minerals your lightning touches."],mech:["Circuit Breaker","Machines hate lightning. Fry 90% of the Mechs it touches."],bio:["Bug Zapper","Zap 90% of the Bios your lightning touches."],x:["Static Rebel","Win 60% of fights against mobs that resist lightning."]},
+    saw:{p:["Sharp Edge","Shred 80% of the mobs your saw cuts."],m:["Razor's Edge","Shred 92% of the mobs your saw cuts."],mineral:["Gravel Grinder","Grind down 90% of the Minerals your saw cuts."],mech:["Chop Shop","Carve up 90% of the Mechs your saw cuts."],bio:["Filleter","Carve up 90% of the Bios your saw cuts before they heal."],x:["Blunt Instrument","Win 60% of fights against mobs that resist the saw."]},
+    mortar:{p:["Lobber","Bring down 80% of the mobs your shells hit."],m:["Artillery Ace","Bring down 92% of the mobs your shells hit."],mineral:["Crater Maker","Shells crack rock. Bring down 90% of the Minerals you hit."],mech:["Siege Breaker","Level 90% of the Mechs your shells hit."],bio:["Hive Hammer","Pound 90% of the Bios your shells hit."],x:["Shell Game","Win 60% of fights against mobs that resist the mortar."]}
+  };
   WLIST.forEach(w=>{
-    const nm=WNAME[w];
-    [[80,1,' Proven'],[92,2,' Master']].forEach(x=>
-      add('wpn','w'+x[0]+'_'+w,nm+x[2],'Of the mobs the '+nm+' hits, '+x[0]+'% end up destroyed (at least 200 mobs).',x[1],a=>pRate(a.wt[w][1],a.wt[w][0],200,x[0]),w));
-    for(const c in CLS)
-      add('wpn','ws_'+w+'_'+c,nm+' vs '+CLS[c].name,'Of the '+CLS[c].name+' mobs the '+nm+' hits, 90% end up destroyed (at least 100).',2,a=>pRate(a.wc[w][c][1],a.wc[w][c][0],100,90),w);
+    const T=WAW[w];
+    add('wpn','w80_'+w,T.p[0],T.p[1],1,a=>pRate(a.wt[w][1],a.wt[w][0],200,80),w);
+    add('wpn','w92_'+w,T.m[0],T.m[1],2,a=>pRate(a.wt[w][1],a.wt[w][0],200,92),w);
+    for(const c in CLS) add('wpn','ws_'+w+'_'+c,T[c][0],T[c][1],2,a=>pRate(a.wc[w][c][1],a.wc[w][c][0],100,90),w);
+    add('wpn','mis_'+w,T.x[0],T.x[1],1,a=>pRate(a.wt[w][4],a.wt[w][3],50,60),w);
   });
 
   /* Underdog: weapons used against mobs that resist them */
@@ -1394,7 +1415,6 @@ function achList(){
     add('odds','nk'+x[0],x[1],'Land '+fmtN(x[0])+' killing blows with a weapon the mob resists.',i,a=>pCount(a.nk,x[0]),'bolt'));
   [[3,'Improviser'],[6,'Wild Card'],[10,'Anything Goes']].forEach((x,i)=>
     add('odds','nt'+x[0],x[1],'Land a killing blow with a resisted weapon on '+x[0]+' different mob types.',i,a=>pCount(a.nkTypes,x[0]),'bolt'));
-  WLIST.forEach(w=>add('odds','mis_'+w,'Misfit '+WNAME[w],'Use '+WNAME[w]+' against mobs that resist it and win 60% of those fights (at least 50).',1,a=>pRate(a.wt[w][4],a.wt[w][3],50,60),w));
   return ACHS=A;
 }
 
@@ -2670,7 +2690,7 @@ function cmBuy(id){ const c=CARDBY[id]; if(!c) return false; const r=cmRank(id),
 function fuse(t,r){ if(r>=3||P.inv[t][r]<3) return false; P.inv[t][r]-=3; P.inv[t][r+1]++; save(); return true; }
 
 /* ================= home (armory) ================= */
-const UI={nav:'battle',elite:false,cx:'mobs',ac:'lvl',uc:''};
+const UI={nav:'battle',elite:false,cx:'mobs',ac:'lvl',uc:'',aw:'turret'};
 let tab='turret', confirmReset=false;
 const worldOpen=i=>{ if(i===0) return true; if((((P.prog[WORLDS[i].id])||{}).best||0)>0) return true; /* already played: stays open */ return (((P.prog[WORLDS[i-1].id]||{}).best||0)>=LEVELS)&&starsOfWorld(WORLDS[i-1].id)>=ECON.gate; };
 const curWorld=()=>WORLDS.find(w=>w.id===P.world)||WORLDS[0];
@@ -2767,11 +2787,23 @@ function levelsHtml(){
   for(let n=1;n<=LEVELS;n++){ const b=q[n]|0; h+='<div class="lc'+(b===7?' full':'')+'" title="'+goalsFor(wd,n).join(' | ')+'"><b>'+n+'</b><span>'+[0,1,2].map(k=>'<i'+((b>>k)&1?' class="on"':'')+'></i>').join('')+'</span></div>'; }
   return h+'</div>';
 }
+function weaponAwardsHtml(list,st,a){
+  const sel=WLIST.includes(UI.aw)?UI.aw:'turret', short=Object.fromEntries(TABS.map(t=>[t.id,t.name])), col=Object.fromEntries(TABS.map(t=>[t.id,t.color]));
+  let h='<div class="wpns six" role="tablist" aria-label="Weapon awards">'+WLIST.map(w=>{ const l=list.filter(d=>d.cat==='wpn'&&d.icon===w); return '<button class="wpn" role="tab" data-aw="'+w+'" style="--c:'+(col[w]||'#00f0ff')+'" aria-selected="'+(sel===w)+'" type="button"><span class="wl">'+ico(w,16)+'</span><span class="wl">'+(short[w]||WNAME[w])+'</span><small>'+l.filter(d=>st.ach[d.id]).length+'/'+l.length+'</small></button>'; }).join('')+'</div><div class="awgrid">';
+  list.filter(d=>d.cat==='wpn'&&d.icon===sel).forEach(d=>{
+    const t=TIER[d.tier], got=st.ach[d.id], r=d.fn(a), frac=got?1:r.frac, rw=ico('gem',11)+ECON.achGems[d.tier]+(ECON.achFrag[d.tier]?' '+ico('cards',11)+ECON.achFrag[d.tier]:'');
+    h+='<div class="atile'+(got?' got':'')+'" style="--c:'+t.c+'"><div class="ath"><span class="ai">'+ico(d.icon,16)+'</span><b class="an">'+d.name+'</b><span class="rtag" style="--g:'+t.c+'">'+t.n+'</span></div>'
+      +'<div class="ad">'+d.desc+'</div><div class="abar"><i style="width:'+Math.round(frac*100)+'%"></i></div>'
+      +'<div class="ap"><span>'+(got?'Unlocked '+new Date(got).toLocaleDateString():r.txt)+'</span><span class="rw">'+rw+'</span></div></div>';
+  });
+  return h+'</div>';
+}
 function awardsHtml(){
   const st=stOf(), list=achList(), a=agg(), un=list.filter(d=>st.ach[d.id]).length;
   const stars=WORLDS.reduce((q,w)=>q+starsOfWorld(w.id),0);
   let h='<div class="acats">'+ACATS.map(c=>{ const l=list.filter(d=>d.cat===c[0]); return '<button type="button" class="acat" data-ac="'+c[0]+'" aria-pressed="'+(UI.ac===c[0])+'">'+c[1]+' <small>'+(c[0]==='lvl'?stars:l.filter(d=>st.ach[d.id]).length+'/'+l.length)+'</small></button>'; }).join('')+'</div>';
   if(UI.ac==='lvl') return h+levelsHtml();
+  if(UI.ac==='wpn') return h+weaponAwardsHtml(list,st,a);
   h+='<div class="note" style="margin-bottom:10px">'+un+' of '+list.length+' unlocked. Each one pays free gems, and higher tiers add card fragments.</div><div class="cards">';
   list.filter(d=>d.cat===UI.ac).forEach(d=>{
     const t=TIER[d.tier], got=st.ach[d.id], r=d.fn(a), frac=got?1:r.frac;
@@ -2938,7 +2970,7 @@ armoryEl.addEventListener('contextmenu',e=>{ if(e.target.id==='pv'||e.target.clo
 armoryEl.addEventListener('click',e=>{
   if(e.target.closest('[data-orb]')){ if(orbOpen) closeOrb(); else openOrb(); return; }
   const ac=e.target.closest('[data-acct]'); if(ac&&window.RRcloud){ const a=ac.dataset.acct; if(a==='del'&&!confirm('Delete your account and cloud save? This cannot be undone.')) return; RRcloud.action(a); return; }
-  const t=e.target.closest('[data-act],[data-buy],[data-cm],[data-pack],[data-sku],[data-claim],[data-tab],[data-uc],[data-fuse],[data-nav],[data-mode],[data-world],[data-cx],[data-ac],[data-forge],[data-gem],[data-adgems],[data-pack]'); if(!t) return;
+  const t=e.target.closest('[data-act],[data-buy],[data-cm],[data-pack],[data-sku],[data-claim],[data-tab],[data-uc],[data-aw],[data-fuse],[data-nav],[data-mode],[data-world],[data-cx],[data-ac],[data-forge],[data-gem],[data-adgems],[data-pack]'); if(!t) return;
   if(t.dataset.cx){ UI.cx=t.dataset.cx; renderArmory(); const c0=$('content'); if(c0) c0.scrollTop=0; return; }
   if(t.dataset.ac){ UI.ac=t.dataset.ac; renderArmory(); const c1=$('content'); if(c1) c1.scrollTop=0; return; }
   if(t.dataset.nav){ UI.nav=t.dataset.nav; renderArmory(); return; }
@@ -2946,6 +2978,7 @@ armoryEl.addEventListener('click',e=>{
   if(t.dataset.world){ if(!worldOpen(WORLDS.findIndex(w=>w.id===t.dataset.world))) return; P.world=t.dataset.world; UI.elite=false; UI.nav='battle'; save(); renderArmory(); return; }
   
   if(t.dataset.tab){ tab=t.dataset.tab; UI.uc=''; renderArmory(); return; }
+  if(t.dataset.aw){ UI.aw=t.dataset.aw; renderArmory(); return; }
   if(t.dataset.uc){ UI.uc=UI.uc===t.dataset.uc?'':t.dataset.uc; renderArmory(); return; }
   if(t.dataset.forge){ const q=t.dataset.forge.split(':'); forge(q[0],+q[1]); return; }
   if(t.dataset.gem){ buyGems(t.dataset.gem); return; }
@@ -3272,10 +3305,10 @@ window.__rr={fireball:fireball,chip:chip,openTeach:openTeach,fireMortar:fireMort
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 54</div>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 55</div>
 <script>
 /* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
-(function(){ const BUILD=54; let busy=false, shown=false;
+(function(){ const BUILD=55; let busy=false, shown=false;
   const inRun=()=>{ try{ return typeof G!=='undefined'&&(G.state==='playing'||G.state==='cards'||G.state==='shop'||G.state==='paused'||G.state==='teach'); }catch(e){ return false; } };
   function wipeReload(){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
     if(n>=3) return;
