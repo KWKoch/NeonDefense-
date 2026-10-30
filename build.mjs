@@ -4,7 +4,7 @@
 import fs from 'node:fs'; import path from 'node:path'; import zlib from 'node:zlib';
 const ROOT=path.dirname(new URL(import.meta.url).pathname);
 const PORTALS=['crazygames','y8','gamepix','kongregate','none'];
-const SITE_FILES=['index.html','ads.js','cloud.js','firebase-config.js','sw.js','manifest.webmanifest','icon-180.png','icon-192.png','icon-512.png'];
+const SITE_FILES=['index.html','ads.txt','ads.js','cloud.js','firebase-config.js','sw.js','manifest.webmanifest','icon-180.png','icon-192.png','icon-512.png'];
 const rd=f=>fs.readFileSync(path.join(ROOT,f),'utf8');
 function must(s,a,b){ if(typeof a==='string'?!s.includes(a):!a.test(s)) throw new Error('build: pattern not found: '+a); return s.replace(a,b); }
 
