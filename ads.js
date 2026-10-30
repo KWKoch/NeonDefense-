@@ -52,18 +52,3 @@
   A.rewardAvailable=()=>ready;
   A.showReward=onGranted=>{ if(!show) return false; grant=onGranted; const f=show; show=null; ready=false; f(); return true; };
 })();
-
-/* Monetag In-Page Push banner (zone 12150901), live site only. Loaded once per visit, the first time the shop opens
-   (Ads.shopBanner()). Not loaded on localhost, portal builds, during play, or with ?monetag=off. */
-(function(){
-  let done=false;
-  window.Ads=window.Ads||{};
-  window.Ads.shopBanner=function(){
-    try{
-      if(done||location.hostname!=='neon.squatchsquad.games') return;
-      if(new URLSearchParams(location.search).get('monetag')==='off') return;
-      done=true;
-      setTimeout(()=>{ const s=document.createElement('script'); s.dataset.zone='12150901'; s.src='https://nap5k.com/tag.min.js'; s.async=true; (document.body||document.documentElement).appendChild(s); },1200);
-    }catch(e){}
-  };
-})();
