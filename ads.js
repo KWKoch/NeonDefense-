@@ -53,13 +53,17 @@
   A.showReward=onGranted=>{ if(!show) return false; grant=onGranted; const f=show; show=null; ready=false; f(); return true; };
 })();
 
-/* Monetag In-Page Push banner (zone 12150901), live site only. Not loaded on localhost, portal builds or with ?monetag=off. */
+/* Monetag In-Page Push banner (zone 12150901), live site only. Loaded once per visit, the first time the shop opens
+   (Ads.shopBanner()). Not loaded on localhost, portal builds, during play, or with ?monetag=off. */
 (function(){
-  try{
-    const h=location.hostname;
-    if(h!=='neon.squatchsquad.games') return;
-    if(new URLSearchParams(location.search).get('monetag')==='off') return;
-    const go=()=>{ const s=document.createElement('script'); s.dataset.zone='12150901'; s.src='https://nap5k.com/tag.min.js'; s.async=true; (document.body||document.documentElement).appendChild(s); };
-    if(document.readyState==='complete') setTimeout(go,2500); else addEventListener('load',()=>setTimeout(go,2500));
-  }catch(e){}
+  let done=false;
+  window.Ads=window.Ads||{};
+  window.Ads.shopBanner=function(){
+    try{
+      if(done||location.hostname!=='neon.squatchsquad.games') return;
+      if(new URLSearchParams(location.search).get('monetag')==='off') return;
+      done=true;
+      setTimeout(()=>{ const s=document.createElement('script'); s.dataset.zone='12150901'; s.src='https://nap5k.com/tag.min.js'; s.async=true; (document.body||document.documentElement).appendChild(s); },1200);
+    }catch(e){}
+  };
 })();
