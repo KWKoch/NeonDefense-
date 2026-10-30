@@ -423,9 +423,9 @@ body.menu{background:
 #armory .wchip{background:linear-gradient(180deg,#101a28,#04070d); box-shadow:inset 0 1px 0 rgba(255,255,255,.2),inset 0 -2px 4px rgba(0,0,0,.6),0 3px 8px rgba(0,0,0,.6),0 0 14px color-mix(in srgb,var(--wc) 45%,transparent)}
 #armory .wchip .dot{background:radial-gradient(circle at 35% 30%,color-mix(in srgb,var(--wc) 40%,#fff) 0,color-mix(in srgb,var(--wc) 16%,#000) 55%,#000 100%); box-shadow:inset 0 1px 2px rgba(255,255,255,.35),0 0 8px color-mix(in srgb,var(--wc) 60%,transparent)}
 /* glass panels */
-#armory .card,#armory .inv,#armory .wcard{position:relative; border:1px solid color-mix(in srgb,var(--c,#6fd8ff) 55%,#0a1620); background:linear-gradient(165deg,color-mix(in srgb,var(--c,#6fd8ff) 11%,#0c1722) 0%,#060c14 48%,#03070c 100%);
+#armory .card,#armory .inv,#armory .wcard,#armory .ucat{position:relative; border:1px solid color-mix(in srgb,var(--c,#6fd8ff) 55%,#0a1620); background:linear-gradient(165deg,color-mix(in srgb,var(--c,#6fd8ff) 11%,#0c1722) 0%,#060c14 48%,#03070c 100%);
   box-shadow:inset 0 1px 0 var(--bev-hi),inset 0 0 0 1px rgba(255,255,255,.03),inset 0 -14px 22px -10px rgba(0,0,0,.65),0 10px 22px -8px rgba(0,0,0,.8),0 0 20px -6px color-mix(in srgb,var(--c,#6fd8ff) 38%,transparent)}
-#armory .card::before,#armory .inv::before{content:''; position:absolute; left:14px; right:14px; top:0; height:1px; background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--c,#9fe8ff) 80%,#fff),transparent); opacity:.75; pointer-events:none}
+#armory .card::before,#armory .inv::before,#armory .ucat::before{content:''; position:absolute; left:14px; right:14px; top:0; height:1px; background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--c,#9fe8ff) 80%,#fff),transparent); opacity:.75; pointer-events:none}
 #armory .card .cn{font-size:17px; text-shadow:0 0 12px color-mix(in srgb,var(--c) 55%,transparent)}
 #armory .chip{background:linear-gradient(180deg,color-mix(in srgb,var(--c) 22%,#000),color-mix(in srgb,var(--c) 6%,#000)); box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 0 8px color-mix(in srgb,var(--c) 30%,transparent)}
 #armory .pips i{height:6px; border-radius:2px; background:linear-gradient(180deg,#0b1519,#1b2a31); box-shadow:inset 0 1px 2px rgba(0,0,0,.8)}
@@ -484,6 +484,38 @@ body.menu{background:
 #armory .wchip{max-width:none; flex:1 1 auto; min-width:0}
 #armory .tabs{padding:4px 2px}
 #armory .mob canvas{border-radius:18px; background:radial-gradient(circle at 35% 25%,#13202b,#02050a 75%); border:1px solid rgba(140,225,255,.25); box-shadow:inset 0 2px 3px rgba(255,255,255,.12),inset 0 -6px 10px rgba(0,0,0,.7),0 4px 8px rgba(0,0,0,.6)}
+
+/* arsenal: one screen per weapon */
+.wtabs{display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:4px; margin-bottom:4px}
+.wtab{display:flex; flex-direction:column; align-items:center; gap:2px; padding:6px 0 5px; font:inherit; font-size:10px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--dim); background:#000; border:1px solid var(--line); border-radius:14px; cursor:pointer; min-width:0}
+.wtab span{max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.wtab[aria-selected="true"]{color:var(--fg); border-color:var(--c); background:color-mix(in srgb,var(--c) 22%,#000); box-shadow:0 0 12px color-mix(in srgb,var(--c) 45%,transparent)}
+.wnote{font-size:11px; color:var(--dim); margin:0 2px 6px}
+.ucats{display:grid; gap:6px; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); margin-bottom:8px}
+.ucat{display:grid; gap:4px; padding:7px 9px; border-radius:16px; min-width:0}
+.uh{display:flex; justify-content:space-between; align-items:baseline; gap:8px}
+.un{display:inline-flex; align-items:center; gap:6px; font-size:15px; font-weight:800; color:var(--c); letter-spacing:.04em; text-transform:uppercase}
+.un small{font-size:11px; font-weight:600; color:var(--fg); opacity:.8; text-transform:none; letter-spacing:0}
+.ul{font-size:12px; font-weight:700; color:var(--fg); font-variant-numeric:tabular-nums; white-space:nowrap}
+.urow{display:grid; grid-template-columns:minmax(0,1fr) auto; gap:8px; align-items:center}
+.uv{font-size:11px; color:var(--dim); line-height:1.2; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden}
+.uv em{color:var(--c); font-style:normal}
+.ubody{display:grid; grid-template-columns:1fr 1fr; gap:8px}
+.ucol{display:grid; gap:5px; align-content:start; min-width:0}
+.ulab{font-size:10px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--dim); display:flex; justify-content:space-between; align-items:baseline}
+.ulab b{font-size:14px; color:var(--fg); letter-spacing:0; font-variant-numeric:tabular-nums}
+.ugems{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:4px}
+.ugems .gem{max-width:none; width:100%; aspect-ratio:auto; height:30px; border-radius:10px; padding:2px 0; gap:0}
+.ugems .gem b{font-size:13px} .ugems .gem small{font-size:8px}
+.ugems .gem.cur{outline:2px solid var(--c); outline-offset:2px}
+.ubuy{width:auto; min-width:104px; padding:4px 12px; min-height:0; font-size:12px; margin-top:0; white-space:nowrap}
+.ubuy small{font-size:10px; opacity:.85; margin-left:3px}
+.ufrg{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:4px}
+.ufrg .pbtn{padding:2px 0; border-radius:10px; gap:0; font-size:9px; height:30px; justify-content:center}
+.ufrg .pbtn b{font-size:12px; display:block; line-height:1.05}
+.mast{margin:0 0 8px; padding:8px 10px; border:1px solid var(--line); border-radius:16px; background:var(--panel)}
+.mast summary{cursor:pointer; font-size:12px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--fg)}
+.mast summary small{color:var(--dim); margin-left:6px}
 /* floating glass dock */
 #armory .nav{margin:8px 2px 4px; padding:7px; gap:4px; border:1px solid rgba(140,225,255,.28); border-radius:26px; background:linear-gradient(180deg,rgba(18,34,48,.88),rgba(4,9,15,.94)); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.2),inset 0 -2px 6px rgba(0,0,0,.6),0 12px 24px -6px rgba(0,0,0,.85),0 0 20px -6px rgba(0,240,255,.35)}
@@ -2604,18 +2636,11 @@ function shopHtml(){
     +'<button class="btn" data-claim="chest" type="button" style="--c:#ffc400" '+(can?'':'disabled')+'>'+(can?'Open chest'+(pa?'':' <small>(watch ad)</small>'):'Come back tomorrow')+'</button></div>';
   h+='<div class="card" style="--c:#7df9ff"><div class="ct"><span class="cn">Free gems</span><span class="chip" style="--c:#7df9ff">'+adLeft()+' left today</span></div><div class="cv">'+(ADS_LIVE?'Watch an ad for '+AD_GEMS+' gems.':'Claim '+AD_GEMS+' free gems every day.')+'</div>'
     +'<button class="btn" data-adgems="1" type="button" style="--c:#7df9ff" '+(adLeft()?'':'disabled')+'>'+(adLeft()?'+'+AD_GEMS+' gems <small>'+(passActive()||!ADS_LIVE?'':'(watch ad)')+'</small>':'Come back tomorrow')+'</button></div>';
-  h+='<div class="note" style="margin:10px 0 4px"><b>Card packs.</b> Every pull is fragments of one specialty, sized by rarity: '+RAR.map((r,i)=>r.name+' '+FORGE[i]).join(', ')+'. Forge fragments into cards below. Bigger packs hold more pulls and better odds, and every pack lists its drop rates.</div>'+PACKS.map(packCardHtml).join('');
+  h+='<div class="note" style="margin:10px 0 4px"><b>Card packs.</b> Every pull is fragments of one specialty, sized by rarity: '+RAR.map((r,i)=>r.name+' '+FORGE[i]).join(', ')+'. Forge fragments into cards on the Arsenal screen, under each upgrade. Bigger packs hold more pulls and better odds, and every pack lists its drop rates.</div>'+PACKS.map(packCardHtml).join('');
   h+='<div class="card" style="--c:#9d4dff"><div class="ct"><span class="cn">Neon Pass</span><span class="chip" style="--c:#9d4dff">'+(pa?days+' days left':'30 days')+'</span></div>'
     +'<div class="cv">The only way to remove ads. Every reward ad is granted instantly with no waiting, 15 gems every day, and double daily chests.</div>'
     +(pa?'<button class="btn" data-claim="pass" type="button" style="--c:#9d4dff" '+(P.passDay===today()?'disabled':'')+'>'+(P.passDay===today()?'Daily 15 gems claimed':'Claim 15 gems')+'</button>':'')
     +payBtns('pass',false)+'</div>';
-  h+='<div class="note" style="margin:10px 0 4px"><b>Card fragments.</b> Forge a card of any rarity: '+RAR.map((r,i)=>r.name+' '+FORGE[i]).join(', ')+'. Fragments come from card packs, level stars and achievements.</div>';
-  Object.keys(CT).forEach(t=>{
-    const f=(P.frag||{})[t]||0, nx=FORGE.find(c=>c>f)||FORGE[3];
-    h+='<div class="card prow" style="--c:'+CT[t].color+'"><div class="ct"><span class="cn">'+ico(t,18)+' '+CT[t].name+'</span><span class="chip" style="--c:'+CT[t].color+'">'+f+' fragments</span></div>'
-      +'<div class="abar"><i style="width:'+Math.round(Math.min(1,f/nx)*100)+'%"></i></div><div class="pbs">'
-      +FORGE.map((c,r)=>'<button class="pbtn" type="button" data-forge="'+t+':'+r+'" style="--g:'+RAR[r].color+'" '+(f<c?'disabled':'')+'><span>'+RAR[r].name+'</span><b>'+ico('cards',12)+c+'</b></button>').join('')+'</div>'+'</div>';
-  });
   h+='<div class="note" style="margin:10px 0 4px"><b>Gem bundles.</b>'+(PAID_SOON?' Coming soon.':'')+'</div><div class="card'+(PAID_SOON?' soon':'')+'"><div class="pbs">'
     +[['g100',100],['g550',550],['g1200',1200]].map(b=>PAID_SOON?'<button class="pbtn" type="button" disabled style="--g:#7df9ff"><span>'+b[1]+' gems</span><b>Soon</b></button>':'<button class="pbtn" type="button" data-sku="'+b[0]+'" style="--g:#7df9ff"><span>'+b[1]+' gems</span><b>'+PRICES[b[0]]+'</b></button>').join('')+'</div></div>';
   return h+'</div>';
@@ -2658,19 +2683,6 @@ function fillEnergy(){
 }
 setInterval(()=>{ if(!armoryEl.hidden) fillEnergy(); },1000);
 addEventListener('rrcloud',()=>{ if(!armoryEl.hidden&&UI.nav==='arsenal') renderArmory(); });
-function invHtml(){
-  let h='<section class="inv"><div class="ct"><span class="cn" style="color:var(--fg)">Upgrade cards</span></div>'
-    +'<div class="note">Cards are universal. Pick any weapon\'s upgrade and spend the matching type. Rarity sets how deep an upgrade can go; a higher rarity can stand in for a lower one. Tap a stack of 3 or more to fuse it into the next rarity.</div><div class="invg">';
-  CTYPES.forEach(t=>{
-    h+='<div class="invr" style="--c:'+CT[t].color+'"><span class="it">'+ico(t,15)+CT[t].name+'</span>';
-    RAR.forEach((r,i)=>{
-      const n=P.inv[t][i], f=n>=3&&i<3;
-      h+=(f?'<button type="button" class="gem fuse'+(i===3?' leg':'')+'" data-fuse="'+t+':'+i+'" title="Fuse 3 '+r.name+' into 1 '+RAR[i+1].name+'"':'<span class="gem'+(n?'':' zero')+(i===3?' leg':'')+'"')+' style="--g:'+r.color+'"><b>'+n+'</b><small>'+r.ab+'</small>'+(f?'</button>':'</span>');
-    });
-    h+='</div>';
-  });
-  return h+'</div></section>';
-}
 function battleHtml(){
   const wd=curWorld(), pr=pw(P), n=P.sel, maxSel=Math.min(pr.best+1,LEVELS), el=UI.elite, eOk=!!pr.perf[n];
   const lockElite=el&&!eOk, rep=el?!!pr.eclr[n]:n<=pr.best, cnt=dropCount(n,1,rep,el);
@@ -2697,30 +2709,39 @@ function accountHtml(){
     +'</section>';
 }
 function arsenalHtml(){
-  let h=accountHtml()+invHtml()+'<div class="tabs" role="tablist">'+TABS.filter(t=>t.id!=='bestiary').map(t=>'<button class="tab" role="tab" data-tab="'+t.id+'" style="--c:'+t.color+'" aria-selected="'+(tab===t.id)+'" type="button">'+ico(TABICO[t.id],14)+t.name+'</button>').join('')+'</div><div class="cards">';
-  if(tab!=='turret'&&tab!=='base') h+='<div class="note" style="grid-column:1/-1">Mastery '+mastery(tab)+' \u00b7 evolutions unlock in-run at '+EVO_MST+', ultimates at '+ULT_MST+'. Balance your weapons: every level punishes a different weakness.</div>';
+  /* One screen per weapon: weapon buttons on top, then one row per upgrade category with the cards you hold and the fragments that forge more. */
+  let h='<div class="wtabs" role="tablist" aria-label="Weapon">'+TABS.filter(t=>t.id!=='bestiary').map(t=>'<button class="wtab" role="tab" data-tab="'+t.id+'" style="--c:'+t.color+'" aria-selected="'+(tab===t.id)+'" type="button">'+ico(TABICO[t.id],20)+'<span>'+t.name+'</span></button>').join('')+'</div>';
+  h+='<div class="ucats">';
   UPS.filter(u=>u.tab===tab).forEach(u=>{
-    const lv=L(u.id), maxed=lv>=u.max, ct=CT[u.ty], b=bandOf(lv,u.max), need=cardNeed(u,lv), have=avail(u.ty,b), ok=!maxed&&have>=need;
-    let pips=''; for(let i=0;i<u.max;i++) pips+='<i'+(i<lv?' class="on"':'')+'></i>';
-    h+='<div class="card" style="--c:'+ct.color+'"><div class="ct"><span class="cn">'+u.name+'</span><span class="chip" style="--c:'+ct.color+'">'+ct.name+'</span></div>'
-      +'<div class="cv">'+u.txt(lv)+(maxed?'':' <em>\u2192</em> '+u.txt(lv+1))+'</div><div class="pips">'+pips+'</div>'
-      +(maxed?'':'<div class="need'+(ok?'':' short')+'"><span>Needs '+need+'</span><span class="rtag" style="--g:'+RAR[b].color+'">'+RAR[b].name+'</span><span>'+ct.name+' \u00b7 have '+have+'</span></div>')
-      +'<button class="btn sm" data-buy="'+u.id+'" type="button" style="--c:'+ct.color+'" '+(ok?'':'disabled')+'>'+(maxed?'Max':'Upgrade')+'</button></div>';
+    const lv=L(u.id), maxed=lv>=u.max, ct=CT[u.ty], b=bandOf(lv,u.max), need=cardNeed(u,lv), have=avail(u.ty,b), ok=!maxed&&have>=need, f=(P.frag||{})[u.ty]||0;
+    h+='<div class="ucat" style="--c:'+ct.color+'">'
+      +'<div class="uh"><span class="un">'+ico(u.ty,16)+ct.name+' <small>'+u.name+'</small></span><span class="ul">'+(maxed?'MAX':'Lv '+lv+'/'+u.max)+'</span></div>'
+      +'<div class="urow"><div class="uv">'+u.txt(lv)+(maxed?'':' <em>\u2192</em> '+u.txt(lv+1))+'</div>'
+        +'<button class="btn sm ubuy" data-buy="'+u.id+'" type="button" style="--c:'+ct.color+'" title="'+(maxed?'Max level':'Needs '+need+' '+RAR[b].name+' or better '+ct.name+' cards; you have '+have)+'" '+(ok?'':'disabled')+'>'+(maxed?'Max':'Upgrade <small>'+need+' '+RAR[b].ab+'+</small>')+'</button></div>'
+      +'<div class="ubody"><div class="ucol"><div class="ulab">Cards <b>'+avail(u.ty,0)+'</b></div><div class="ugems">'
+      +RAR.map((r,i)=>{ const n=P.inv[u.ty][i], fz=n>=3&&i<3, cur=!maxed&&i===b;
+        return (fz?'<button type="button" class="gem fuse'+(i===3?' leg':'')+(cur?' cur':'')+'" data-fuse="'+u.ty+':'+i+'" title="Fuse 3 '+r.name+' into 1 '+RAR[i+1].name+'"':'<span class="gem'+(n?'':' zero')+(i===3?' leg':'')+(cur?' cur':'')+'" title="'+r.name+'"')+' style="--g:'+r.color+'"><b>'+n+'</b><small>'+r.ab+'</small>'+(fz?'</button>':'</span>'); }).join('')
+      +'</div></div>'
+      +'<div class="ucol"><div class="ulab">Fragments <b>'+f+'</b></div><div class="ufrg">'
+      +FORGE.map((c,r)=>'<button class="pbtn" type="button" data-forge="'+u.ty+':'+r+'" style="--g:'+RAR[r].color+'" title="Forge 1 '+RAR[r].name+' card" '+(f<c?'disabled':'')+'><span>'+RAR[r].ab+'</span><b>'+c+'</b></button>').join('')
+      +'</div></div></div></div>';
   });
+  h+='</div>';
   const mc=CARDS.filter(c=>c.t===1&&!c.unlock&&c.id!=='repair'&&c.w===tab);
   if(mc.length){
-    h+='<div class="note" style="grid-column:1/-1;margin-top:6px"><b>In-run cards.</b> Cards you pick during a level start basic. Mastering a card here makes every pick stronger, and it shows up more often in your level-ups.</div>';
+    h+='<details class="mast"><summary>In-run card mastery <small>'+mc.length+(tab!=='turret'&&tab!=='base'?' \u00b7 weapon mastery '+mastery(tab)+' (evolutions at '+EVO_MST+', ultimates at '+ULT_MST+')':'')+'</small></summary><div class="note" style="margin:6px 0">Cards you pick during a level start basic. Mastering one here makes every pick stronger and shows it more often in your level-ups.</div><div class="cards">';
     mc.forEach(c=>{
       const r=cmRank(c.id), ty=CIC[c.id], ct=CT[ty], maxed=r>=3, need=NEEDB[Math.min(r,3)], have=avail(ty,Math.min(r,2)), ok=!maxed&&have>=need;
       const fmt=k=>COUNTC.has(c.id)?(()=>{const n=Math.min(c.max,1+k);return 'up to '+n+(n>1?' picks':' pick')+' per run'})():CONT.has(c.id)?c.txt(CMW[k]).replace(/\d+\.\d+/g,m=>Math.round(+m))+' per pick':c.txt(1);
       let pips=''; for(let i=0;i<3;i++) pips+='<i'+(i<r?' class="on"':'')+'></i>';
-      h+='<div class="card" style="--c:'+ct.color+'"><div class="ct"><span class="cn">'+c.name+'</span><span class="chip" style="--c:'+ct.color+'">Card \u00b7 '+ct.name+'</span></div>'
-        +'<div class="cv">'+fmt(r)+(maxed?'':' <em>\u2192</em> '+fmt(r+1))+'</div><div class="pips">'+pips+'</div>'
-        +(maxed?'':'<div class="need'+(ok?'':' short')+'"><span>Needs '+need+'</span><span class="rtag" style="--g:'+RAR[r].color+'">'+RAR[r].name+'</span><span>'+ct.name+' \u00b7 have '+have+'</span></div>')
+      h+='<div class="card" style="--c:'+ct.color+'"><div class="ct"><span class="cn">'+c.name+'</span><span class="chip" style="--c:'+ct.color+'">Card · '+ct.name+'</span></div>'
+        +'<div class="cv">'+fmt(r)+(maxed?'':' <em>→</em> '+fmt(r+1))+'</div><div class="pips">'+pips+'</div>'
+        +(maxed?'':'<div class="need'+(ok?'':' short')+'"><span>Needs '+need+'</span><span class="rtag" style="--g:'+RAR[r].color+'">'+RAR[r].name+'</span><span>'+ct.name+' · have '+have+'</span></div>')
         +'<button class="btn sm" data-cm="'+c.id+'" type="button" style="--c:'+ct.color+'" '+(ok?'':'disabled')+'>'+(maxed?'Mastered':'Master')+'</button></div>';
     });
+    h+='</div></details>';
   }
-  h+='</div><div class="foot">'+(confirmReset?'<span class="note">Erase all upgrades, cards and progress?</span><button class="btn sm" data-act="reset2" type="button" style="--c:var(--red)">Erase</button><button class="btn sm" data-act="cancel" type="button">Cancel</button>':'<button class="mini" data-act="reset" type="button">Reset progress</button><button class="mini" data-act="ad" type="button" title="Placeholder for a rewarded ad">Demo: ad +5 energy</button>')+'</div>';
+  h+='<div class="foot">'+(confirmReset?'<span class="note">Erase all upgrades, cards and progress?</span><button class="btn sm" data-act="reset2" type="button" style="--c:var(--red)">Erase</button><button class="btn sm" data-act="cancel" type="button">Cancel</button>':'<button class="mini" data-act="reset" type="button">Reset progress</button><button class="mini" data-act="ad" type="button" title="Placeholder for a rewarded ad">Demo: ad +5 energy</button>')+'</div>'+accountHtml();
   return h;
 }
 /* ---- Codex tabs: Bestiary / Awards / Record ---- */
@@ -3243,10 +3264,10 @@ window.__rr={fireball:fireball,chip:chip,openTeach:openTeach,fireMortar:fireMort
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 52</div>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 53</div>
 <script>
 /* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
-(function(){ const BUILD=52; let busy=false, shown=false;
+(function(){ const BUILD=53; let busy=false, shown=false;
   const inRun=()=>{ try{ return typeof G!=='undefined'&&(G.state==='playing'||G.state==='cards'||G.state==='shop'||G.state==='paused'||G.state==='teach'); }catch(e){ return false; } };
   function wipeReload(){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
     if(n>=3) return;
