@@ -528,6 +528,35 @@ body.menu{background:
 #orb input[type=range]:focus-visible{outline:2px solid var(--c); outline-offset:3px; border-radius:6px}
 #orb .odone{position:relative; display:block; width:100%; margin-top:8px; padding:10px 0; border-radius:999px; border:1px solid rgba(160,240,255,.6); background:linear-gradient(180deg,rgba(0,240,255,.28),rgba(0,120,160,.14)); color:#fff; font:700 13px var(--ui); letter-spacing:.14em; text-transform:uppercase; cursor:pointer}
 @media (prefers-reduced-motion:reduce){ #orb,#orb::before,#orb::after,.gear[aria-expanded="true"] .ic{animation:none} }
+
+/* ===== card packs ===== */
+.pkrow{display:flex; align-items:center; gap:12px}
+.pkart{flex:none; width:54px; height:54px}
+.pkodds{display:flex; flex-wrap:wrap; gap:3px 12px; font-size:11px; margin-top:8px}
+.pkodds b{font-weight:700}
+#packov{position:fixed; inset:0; z-index:120; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px; padding:16px; box-sizing:border-box; overflow:auto;
+  background:radial-gradient(90% 60% at 50% 25%,color-mix(in srgb,var(--pc) 28%,#000),#000 78%); animation:pkfade .25s both}
+@keyframes pkfade{from{opacity:0}to{opacity:1}}
+#packov.flash::before{content:''; position:fixed; inset:0; background:#fff; pointer-events:none; animation:pkflash .55s ease-out forwards}
+@keyframes pkflash{from{opacity:.7}to{opacity:0}}
+.pkh{text-align:center}
+.pkn{font-family:var(--display); font-size:clamp(24px,8vw,34px); color:var(--fg); text-shadow:0 0 16px var(--pc)}
+.pks{min-height:20px; margin-top:4px; color:var(--dim); font-size:13px; font-weight:700; letter-spacing:.08em; text-transform:uppercase}
+.pkg{display:grid; gap:8px; width:100%; max-width:360px}
+.pkg.c5{grid-template-columns:repeat(5,1fr)} .pkg.c4{grid-template-columns:repeat(4,1fr)}
+.pkc{position:relative; aspect-ratio:3/4; perspective:700px}
+.pkc>div{position:absolute; inset:0; border-radius:12px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; backface-visibility:hidden; -webkit-backface-visibility:hidden; transition:transform .4s cubic-bezier(.2,.9,.3,1.15)}
+.pkc .bk{background:linear-gradient(160deg,#101a28,#04070d); border:1px solid rgba(140,225,255,.3); color:var(--dim); font-weight:700; font-size:18px}
+.pkc .fr{transform:rotateY(180deg); border:1.5px solid var(--rc); color:var(--tc); background:radial-gradient(circle at 50% 30%,color-mix(in srgb,var(--rc) 26%,#000),#02050a 82%); box-shadow:0 0 8px color-mix(in srgb,var(--rc) 45%,transparent)}
+.pkc .fr small{font-size:8.500px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--rc)}
+.pkc.on .bk{transform:rotateY(-180deg)} .pkc.on .fr{transform:rotateY(0)}
+.pkc.r2.on .fr,.pkc.r3.on .fr{animation:pkglow 1s ease-in-out infinite alternate}
+@keyframes pkglow{to{box-shadow:0 0 22px var(--rc)}}
+.pkx{display:flex; flex-direction:column; gap:10px; align-items:center; width:100%; max-width:360px; min-height:44px}
+.pksum{display:flex; flex-wrap:wrap; gap:6px; justify-content:center}
+.pksum span{padding:3px 10px; border-radius:999px; border:1px solid var(--c); color:var(--c); font-size:12px; font-weight:700}
+.pkbt{display:flex; gap:8px; width:100%} .pkbt .btn{flex:1}
+@media (prefers-reduced-motion:reduce){ #packov,#packov.flash::before,.pkc>div,.pkc.r2.on .fr,.pkc.r3.on .fr{animation:none; transition:none} }
 </style></head><body>
 <div id="gate" role="dialog" aria-modal="true" aria-label="Sign in"><h1>Neon Defense</h1><p class="gmsg" id="gateMsg">Loading…</p><div class="gbtns" id="gateBtns"></div><p class="gmsg gerr" id="gateErr"></p><p class="gmsg"><a href="https://kwkoch.github.io/privacy.html" target="_blank" rel="noopener" style="color:var(--cyan)">Privacy Policy</a></p></div>
 
@@ -734,7 +763,7 @@ const newPW=()=>({best:0,sel:1,perf:{},eclr:{},stars:{}});
 const newSt=()=>({v:1,enc:{},kill:{},leak:{},rz:{},hold:{},w:{},world:{},ach:{}});
 function pw(o){ return o.prog[o.world]||(o.prog[o.world]=newPW()); }
 const newP=()=>{
-  const o={inv:newInv(),lv:{},cm:{},gems:0,pass:0,starter:0,chestDay:'',passDay:'',adDay:'',adN:0,ledger:[],world:'belt',own:{belt:true},prog:{},seen:{},st:newSt(),frag:{pow:0,tmp:0,rch:0,cap:0,frt:0},intro:0,en:EN_MAX,enV:2,enT:Date.now()};
+  const o={inv:newInv(),lv:{},cm:{},gems:0,pass:0,starter:0,chestDay:'',passDay:'',adDay:'',adN:0,ledger:[],world:'belt',own:{belt:true},prog:{},seen:{},st:newSt(),frag:{pow:0,tmp:0,rch:0,cap:0,frt:0},pk:{s:0,m:0,l:0,f:0},intro:0,en:EN_MAX,enV:2,enT:Date.now()};
   Object.defineProperty(o,'best',{get(){ return pw(o).best; },set(v){ pw(o).best=v; },enumerable:false});
   Object.defineProperty(o,'sel',{get(){ return pw(o).sel; },set(v){ pw(o).sel=v; },enumerable:false});
   return o;
@@ -754,6 +783,7 @@ try{
     if(isFinite(+o.gems)) P.gems=Math.max(0,Math.floor(+o.gems)); P.pass=+o.pass||0; P.starter=o.starter?1:0; P.chestDay=o.chestDay||''; P.passDay=o.passDay||''; P.adDay=o.adDay||''; P.adN=Math.max(0,Math.floor(+o.adN||0)); P.ledger=Array.isArray(o.ledger)?o.ledger.slice(-100):[];
     if(o.st&&typeof o.st==='object') P.st=Object.assign(newSt(),o.st);
     if(o.frag&&typeof o.frag==='object') for(const t in P.frag) P.frag[t]=Math.max(0,Math.floor(+o.frag[t]||0));
+    if(o.pk&&typeof o.pk==='object') for(const k in P.pk) P.pk[k]=Math.max(0,Math.floor(+o.pk[k]||0));
     if(o.seen&&typeof o.seen==='object') P.seen=o.seen;
     else { /* old save: assume mobs up to the player's best level were seen */
       for(const wd of WORLDS){ const b=(P.prog[wd.id]||{}).best||0; if(!b) continue; const uw=wd.uw||UW; for(const k in uw) if(Math.ceil(uw[k]/20)<=b+1) P.seen[k]=1; P.seen.small=1; if(P.seen.chunk) P.seen.small=1; if(P.seen.egg) P.seen.hatch=1; if(b>=10){ P.seen.boss=1; P.seen.orb=1; } }
@@ -1050,6 +1080,12 @@ const Music=(function(){
       const o=ac.createOscillator(); o.type='sawtooth'; o.frequency.setValueAtTime(110,t); o.frequency.exponentialRampToValueAtTime(1400,t+0.8);
       const lp=ac.createBiquadFilter(); lp.type='lowpass'; lp.frequency.setValueAtTime(400,t); lp.frequency.exponentialRampToValueAtTime(5000,t+0.8);
       o.connect(lp); lp.connect(env(t,0.08,0.85,sfx,0.5)); o.start(t); o.stop(t+0.9);
+    },
+    /* pack reveal: each rarity rings brighter than the last */
+    reveal(r){
+      if(!on()) return; const t=ac.currentTime, b=[440,523.25,659.25,880][r]||440, k=[1,1.25,1.5,2,2.5].slice(0,r===0?1:r===1?2:r===2?4:5);
+      k.forEach((m,i)=>{ const o=ac.createOscillator(); o.type=r>1?'triangle':'sine'; o.frequency.value=b*m; o.connect(env(t+i*0.05,0.07+0.03*r,0.16+0.1*r,sfx)); o.start(t+i*0.05); o.stop(t+i*0.05+0.3+0.15*r); });
+      if(r>=2){ const o=ac.createOscillator(); o.type='sawtooth'; o.frequency.setValueAtTime(110,t); o.frequency.exponentialRampToValueAtTime(r===3?1800:900,t+0.5); const lp=ac.createBiquadFilter(); lp.type='lowpass'; lp.frequency.setValueAtTime(400,t); lp.frequency.exponentialRampToValueAtTime(4500,t+0.5); o.connect(lp); lp.connect(env(t,r===3?0.1:0.06,0.6,sfx,0.3)); o.start(t); o.stop(t+0.65); }
     },
     place(field){
       if(!on()) return; const t=ac.currentTime;
@@ -2483,15 +2519,82 @@ function reviveRun(){
   });
 }
 function adReroll(){ if(G.state!=='cards') return; rewardFlow('card_reroll',()=>{ if(G.state==='cards'){ G.offer=offerCards(); renderCards(); } }); }
-const FRAG_BUY=25;   /* gems per fragment bundle (1 gem = 1 fragment: the same per-card value the old packs had) */
+const FRAG_BUY=25, FRAG_GEMS=50;   /* a fragment bundle and its gem price: 2 gems per fragment. Picking the exact card costs double what packs average, so packs are the main gem sink */
 function forge(t,r){
   if(!CT[t]||!(r>=0&&r<4)) return; P.frag=P.frag||{};
   if((P.frag[t]||0)<FORGE[r]){ toast('Not enough '+CT[t].name+' fragments'); return; }
   P.frag[t]-=FORGE[r]; P.inv[t][r]++; logEv('forge',t+':'+r); save(); Music.up(); toast('Forged: 1\u00d7 '+RAR[r].name+' '+CT[t].name+' card'); renderArmory();
 }
 function buyFrags(t){
-  if(!CT[t]) return; if((P.gems||0)<FRAG_BUY){ toast('Not enough gems'); return; }
-  P.frag=P.frag||{}; P.gems-=FRAG_BUY; P.frag[t]=(P.frag[t]||0)+FRAG_BUY; logEv('frags',t); save(); Music.up(); toast('+'+FRAG_BUY+' '+CT[t].name+' fragments'); renderArmory();
+  if(!CT[t]) return; if((P.gems||0)<FRAG_GEMS){ toast('Not enough gems'); return; }
+  P.frag=P.frag||{}; P.gems-=FRAG_GEMS; P.frag[t]=(P.frag[t]||0)+FRAG_BUY; logEv('frags',t); save(); Music.up(); toast('+'+FRAG_BUY+' '+CT[t].name+' fragments'); renderArmory();
+}
+
+/* ================= card packs ================= */
+/* Packs replace buying fragments one-for-one. Odds are per card: [Common, Rare, Epic, Legendary] in percent.
+   gar = this many cards are at least that rarity (0 Common, 1 Rare, 2 Epic, 3 Legendary); pity = after this many packs without one, the next pack is forced to include one.
+   Price anchor: a card is worth what it costs to forge (FORGE: 4/15/50/160 fragments), so Spark ~0.88x, Surge ~1.0x, Supernova ~1.1x of its gem price on average, with real spread either side. */
+const PACKS=[
+  {id:'s',name:'Spark Pack',cost:40,n:5,odds:[82,15.5,2.3,0.2],color:'#3d8bff',gar:null,pity:null,blurb:'Five cards, mostly Common, with a shot at something better.'},
+  {id:'m',name:'Surge Pack',cost:150,n:12,odds:[64,25,10.2,0.8],color:'#ff2bd6',gar:{min:1,cnt:1},pity:{min:2,every:3},blurb:'Twelve cards. At least one Rare, and an Epic is guaranteed within 3 packs.'},
+  {id:'l',name:'Supernova Pack',cost:450,n:25,odds:[44,34,20,2],color:'#fff200',gar:{min:2,cnt:3},pity:{min:3,every:5},blurb:'Twenty-five cards. At least three Epic or better, and a Legendary is guaranteed within 5 packs.'}
+];
+const PACK_TW={pow:31,tmp:22,rch:16.5,cap:16.5,frt:14};   /* flatter than level drops (CW) so packs fill the gaps levels leave, especially Fortify */
+function rollPackType(){ let x=Math.random()*100; for(const t of CTYPES){ x-=PACK_TW[t]; if(x<=0) return t; } return 'pow'; }
+function rollPackRar(o){ let x=Math.random()*(o[0]+o[1]+o[2]+o[3]); for(let i=0;i<4;i++){ x-=o[i]; if(x<=0) return i; } return 0; }
+function rollPack(pk,free){
+  const pks=P.pk||(P.pk={s:0,m:0,l:0,f:0}), r=[]; for(let i=0;i<pk.n;i++) r.push(rollPackRar(pk.odds));
+  const lift=(min)=>{ let j=0; for(let i=1;i<r.length;i++) if(r[i]<r[j]) j=i; r[j]=min; };
+  const gar=pk.gar||(free?{min:1,cnt:1}:null);
+  if(gar) for(let c=r.filter(x=>x>=gar.min).length;c<gar.cnt;c++) lift(gar.min);
+  if(pk.pity){ if(r.some(x=>x>=pk.pity.min)) pks[pk.id]=0; else { pks[pk.id]=(pks[pk.id]|0)+1; if(pks[pk.id]>=pk.pity.every){ lift(pk.pity.min); pks[pk.id]=0; } } }
+  return r.map(x=>({t:rollPackType(),r:x}));
+}
+const packLeft=pk=>pk.pity?pk.pity.every-((P.pk||{})[pk.id]|0):0;
+function openPack(id){
+  const pk=PACKS.find(x=>x.id===id); if(!pk) return; P.pk=P.pk||{s:0,m:0,l:0,f:0};
+  const free=id==='s'&&!P.pk.f, cost=free?0:pk.cost;
+  if((P.gems||0)<cost){ toast('Not enough gems. Play levels and claim daily rewards to earn more.'); return; }
+  P.gems-=cost; if(free) P.pk.f=1;
+  const got=rollPack(pk,free); got.forEach(c=>{ P.inv[c.t][c.r]++; });
+  logEv('pack',id+(free?':free':'')); save(); showPackReveal(pk,got); renderArmory();
+}
+let pkT=null;
+function closePack(){ clearTimeout(pkT); const o=document.getElementById('packov'); if(o) o.remove(); renderArmory(); }
+function showPackReveal(pk,got){
+  clearTimeout(pkT); const old=document.getElementById('packov'); if(old) old.remove();
+  const s=got.slice().sort((a,b)=>a.r-b.r||CTYPES.indexOf(a.t)-CTYPES.indexOf(b.t)), best=s[s.length-1].r;
+  const o=document.createElement('div'); o.id='packov'; o.setAttribute('role','dialog'); o.setAttribute('aria-label',pk.name+' opening'); o.style.setProperty('--pc',pk.color);
+  o.innerHTML='<div class="pkh"><div class="pkn">'+pk.name+'</div><div class="pks" aria-live="polite" id="pkSub">Opening…</div></div>'
+    +'<div class="pkg c'+(pk.n===12?4:5)+'">'+s.map(c=>'<div class="pkc r'+c.r+'" style="--rc:'+RAR[c.r].color+';--tc:'+CT[c.t].color+'"><div class="bk">?</div><div class="fr">'+ico(c.t,24)+'<small>'+RAR[c.r].name+'</small></div></div>').join('')+'</div>'
+    +'<div class="pkx" id="pkx"><button type="button" class="btn" id="pkSkip">Skip</button></div>';
+  document.body.appendChild(o);
+  const tiles=[...o.querySelectorAll('.pkc')]; let i=0;
+  const finish=()=>{
+    clearTimeout(pkT); tiles.forEach(t=>t.classList.add('on'));
+    const cnt=[0,0,0,0]; s.forEach(c=>cnt[c.r]++);
+    const again=P.gems>=pk.cost;
+    document.getElementById('pkSub').textContent=best===3?'LEGENDARY!':best===2?'Epic pull':'Added to your collection';
+    document.getElementById('pkx').innerHTML='<div class="pksum">'+cnt.map((n,r)=>n?'<span style="--c:'+RAR[r].color+'">'+n+' '+RAR[r].name+'</span>':'').join('')+'</div>'
+      +'<div class="pkbt"><button type="button" class="btn" id="pkDone">Collect</button><button type="button" class="btn big" id="pkAgain" '+(again?'':'disabled')+'>'+ico('gem',15)+' '+pk.cost+' again</button></div>';
+    document.getElementById('pkDone').onclick=closePack; document.getElementById('pkAgain').onclick=()=>openPack(pk.id);
+  };
+  const step=()=>{
+    if(i>=tiles.length){ finish(); return; }
+    const c=s[i]; tiles[i].classList.add('on'); try{ Music.reveal(c.r); }catch(e){}
+    if(c.r>=2){ o.classList.remove('flash'); void o.offsetWidth; o.classList.add('flash'); }
+    i++; const nx=s[i]; pkT=setTimeout(step,nx&&nx.r>=3?650:nx&&nx.r>=2?420:c.r>=1?170:85);
+  };
+  document.getElementById('pkSkip').onclick=finish; pkT=setTimeout(step,350);
+}
+function packCardHtml(pk){
+  const g=P.gems||0, free=pk.id==='s'&&!(P.pk||{}).f, cost=free?0:pk.cost, left=packLeft(pk), nm=['Common','Rare','Epic','Legendary'];
+  const odds='<div class="pkodds">'+pk.odds.map((p,r)=>'<span style="color:'+RAR[r].color+'"><b>'+p+'%</b> '+nm[r]+'</span>').join('')+'</div>';
+  const pity=pk.pity?'<div class="note" style="margin-top:4px">'+(left<=1?'Next pack is guaranteed to include '+(pk.pity.min===3?'a Legendary':'an Epic or better')+'.':(pk.pity.min===3?'Legendary':'Epic')+' guaranteed in '+left+' packs.')+'</div>':'';
+  const art='<svg class="pkart" viewBox="0 0 48 48" aria-hidden="true" fill="none" stroke="'+pk.color+'" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" style="filter:drop-shadow(0 0 6px '+pk.color+')"><rect x="11" y="5" width="26" height="38" rx="5"/><path d="M24 15l3 6 6.500.900-4.700 4.500 1.200 6.500L24 29.800 18 33l1.200-6.500-4.700-4.500L21 21z"/>'+(pk.id!=='s'?'<path d="M4 14v20M44 14v20"/>':'')+(pk.id==='l'?'<path d="M-1 20v8M49 20v8"/>':'')+'</svg>';
+  return '<div class="card pkcard" style="--c:'+pk.color+'"><div class="pkrow">'+art+'<div style="flex:1;min-width:0"><div class="ct"><span class="cn">'+pk.name+'</span><span class="chip" style="--c:'+pk.color+'">'+pk.n+' cards</span></div><div class="cv">'+pk.blurb+'</div></div></div>'
+    +odds+pity
+    +'<button class="btn big" type="button" data-pack="'+pk.id+'" style="--c:'+pk.color+';width:100%;margin-top:8px" '+(g<cost?'disabled':'')+'>'+(free?'Open free welcome pack':ico('gem',15)+' '+cost+(g<cost?' <small>(need '+(cost-g)+' more)</small>':''))+'</button></div>';
 }
 function claim(k){
   if(k==='chest'){ if(P.chestDay===today()) return; rewardFlow('daily_chest',()=>{ if(P.chestDay===today()) return; P.chestDay=today(); logEv('chest',''); const m=passActive()?2:1, g=8*m; P.gems+=g; let txt='';
@@ -2505,17 +2608,18 @@ function shopHtml(){
     +'<button class="btn" data-claim="chest" type="button" style="--c:#ffc400" '+(can?'':'disabled')+'>'+(can?'Open chest'+(pa?'':' <small>(watch ad)</small>'):'Come back tomorrow')+'</button></div>';
   h+='<div class="card" style="--c:#7df9ff"><div class="ct"><span class="cn">Free gems</span><span class="chip" style="--c:#7df9ff">'+adLeft()+' left today</span></div><div class="cv">'+(ADS_LIVE?'Watch an ad for '+AD_GEMS+' gems.':'Claim '+AD_GEMS+' free gems every day.')+'</div>'
     +'<button class="btn" data-adgems="1" type="button" style="--c:#7df9ff" '+(adLeft()?'':'disabled')+'>'+(adLeft()?'+'+AD_GEMS+' gems <small>'+(passActive()||!ADS_LIVE?'':'(watch ad)')+'</small>':'Come back tomorrow')+'</button></div>';
+  h+='<div class="note" style="margin:10px 0 4px"><b>Card packs.</b> Any specialty, any rarity. Bigger packs hold more cards and better odds, and every pack tells you its drop rates.</div>'+PACKS.map(packCardHtml).join('');
   h+='<div class="card" style="--c:#9d4dff"><div class="ct"><span class="cn">Neon Pass</span><span class="chip" style="--c:#9d4dff">'+(pa?days+' days left':'30 days')+'</span></div>'
     +'<div class="cv">The only way to remove ads. Every reward ad is granted instantly with no waiting, 15 gems every day, and double daily chests.</div>'
     +(pa?'<button class="btn" data-claim="pass" type="button" style="--c:#9d4dff" '+(P.passDay===today()?'disabled':'')+'>'+(P.passDay===today()?'Daily 15 gems claimed':'Claim 15 gems')+'</button>':'')
     +payBtns('pass',false)+'</div>';
-  h+='<div class="note" style="margin:10px 0 4px"><b>Card fragments.</b> Forge a card of any rarity: '+RAR.map((r,i)=>r.name+' '+FORGE[i]).join(', ')+'. Level stars and achievements pay fragments for free; you can also buy '+FRAG_BUY+' for '+FRAG_BUY+' gems.</div>';
+  h+='<div class="note" style="margin:10px 0 4px"><b>Card fragments.</b> Forge a card of any rarity: '+RAR.map((r,i)=>r.name+' '+FORGE[i]).join(', ')+'. Level stars and achievements pay fragments for free; you can also buy '+FRAG_BUY+' for '+FRAG_GEMS+' gems when you need one exact card. Packs are better value on average.</div>';
   Object.keys(CT).forEach(t=>{
     const f=(P.frag||{})[t]||0, nx=FORGE.find(c=>c>f)||FORGE[3];
     h+='<div class="card prow" style="--c:'+CT[t].color+'"><div class="ct"><span class="cn">'+ico(t,18)+' '+CT[t].name+'</span><span class="chip" style="--c:'+CT[t].color+'">'+f+' fragments</span></div>'
       +'<div class="abar"><i style="width:'+Math.round(Math.min(1,f/nx)*100)+'%"></i></div><div class="pbs">'
       +FORGE.map((c,r)=>'<button class="pbtn" type="button" data-forge="'+t+':'+r+'" style="--g:'+RAR[r].color+'" '+(f<c?'disabled':'')+'><span>'+RAR[r].name+'</span><b>'+ico('cards',12)+c+'</b></button>').join('')+'</div>'
-      +'<button class="mini" type="button" data-frag="'+t+'" '+(g<FRAG_BUY?'disabled':'')+'>+'+FRAG_BUY+' fragments \u00b7 '+FRAG_BUY+' gems</button></div>';
+      +'<button class="mini" type="button" data-frag="'+t+'" '+(g<FRAG_GEMS?'disabled':'')+'>+'+FRAG_BUY+' fragments \u00b7 '+FRAG_GEMS+' gems</button></div>';
   });
   h+='<div class="note" style="margin:10px 0 4px"><b>Gem bundles.</b>'+(PAID_SOON?' Coming soon.':'')+'</div><div class="card'+(PAID_SOON?' soon':'')+'"><div class="pbs">'
     +[['g100',100],['g550',550],['g1200',1200]].map(b=>PAID_SOON?'<button class="pbtn" type="button" disabled style="--g:#7df9ff"><span>'+b[1]+' gems</span><b>Soon</b></button>':'<button class="pbtn" type="button" data-sku="'+b[0]+'" style="--g:#7df9ff"><span>'+b[1]+' gems</span><b>'+PRICES[b[0]]+'</b></button>').join('')+'</div></div>';
@@ -2811,7 +2915,7 @@ armoryEl.addEventListener('contextmenu',e=>{ if(e.target.id==='pv'||e.target.clo
 armoryEl.addEventListener('click',e=>{
   if(e.target.closest('[data-orb]')){ if(orbOpen) closeOrb(); else openOrb(); return; }
   const ac=e.target.closest('[data-acct]'); if(ac&&window.RRcloud){ const a=ac.dataset.acct; if(a==='del'&&!confirm('Delete your account and cloud save? This cannot be undone.')) return; RRcloud.action(a); return; }
-  const t=e.target.closest('[data-act],[data-buy],[data-cm],[data-pack],[data-sku],[data-claim],[data-tab],[data-fuse],[data-nav],[data-mode],[data-world],[data-cx],[data-ac],[data-forge],[data-frag],[data-gem],[data-adgems]'); if(!t) return;
+  const t=e.target.closest('[data-act],[data-buy],[data-cm],[data-pack],[data-sku],[data-claim],[data-tab],[data-fuse],[data-nav],[data-mode],[data-world],[data-cx],[data-ac],[data-forge],[data-frag],[data-gem],[data-adgems],[data-pack]'); if(!t) return;
   if(t.dataset.cx){ UI.cx=t.dataset.cx; renderArmory(); const c0=$('content'); if(c0) c0.scrollTop=0; return; }
   if(t.dataset.ac){ UI.ac=t.dataset.ac; renderArmory(); const c1=$('content'); if(c1) c1.scrollTop=0; return; }
   if(t.dataset.nav){ UI.nav=t.dataset.nav; renderArmory(); return; }
@@ -2823,6 +2927,7 @@ armoryEl.addEventListener('click',e=>{
   if(t.dataset.frag){ buyFrags(t.dataset.frag); return; }
   if(t.dataset.gem){ buyGems(t.dataset.gem); return; }
   if(t.dataset.adgems){ adGems(); return; }
+  if(t.dataset.pack){ openPack(t.dataset.pack); return; }
   if(t.dataset.sku){ Billing.buy(t.dataset.sku); return; }
   if(t.dataset.claim){ claim(t.dataset.claim); return; }
   if(t.dataset.cm){ if(cmBuy(t.dataset.cm)){ Music.up(); renderArmory(); } return; }
@@ -3144,10 +3249,10 @@ window.__rr={fireball:fireball,chip:chip,openTeach:openTeach,fireMortar:fireMort
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 50</div>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 51</div>
 <script>
 /* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
-(function(){ const BUILD=50; let busy=false, shown=false;
+(function(){ const BUILD=51; let busy=false, shown=false;
   const inRun=()=>{ try{ return typeof G!=='undefined'&&(G.state==='playing'||G.state==='cards'||G.state==='shop'||G.state==='paused'||G.state==='teach'); }catch(e){ return false; } };
   function wipeReload(){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
     if(n>=3) return;
