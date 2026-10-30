@@ -2421,7 +2421,7 @@ function startWave(w){
 function startLevel(n,world,elite){
   G.wd=WORLDS.find(w=>w.id===(world||P.world))||WORLDS[0]; G.elite=!!elite; UI.elite=G.elite;
   G.n=n; G.hpS=hpScale(n)*(G.elite?1.6:1)*(G.wd.hp||1); G.spS=1+n*0.01; G.NW=waveCount(n); G.wave=0;
-  G.run={rz:{},hold:{}}; G.ozFlash=0; G.maxHp=ST.armor(L('armor')); G.hp=G.maxHp; G.earned=0; G.kills=0; G.pot=0; G.credits=0; G.boost={}; G.pity={}; G.sinceW=0; G.sinceBig=0; G.revived=false; G.shieldUntil=0; G.tools={}; G.pickQ=0; G.rerolls=1; G.offer=[]; G.superOn=0; G.superCd=10; G.chainT=2; G.blobs=[]; G.chips=[]; G.teachQ=[]; { const to=document.getElementById('teachov'); if(to) to.remove(); } G.cpend=null; G.flashA=0; G.sawCd=0; G.stormT=12; G.mort=2; G.mortT=0; G.saws=[]; G.bolts=[]; G.shells=[]; G.fires=[]; G.delay=[]; lastCred=0;
+  G.run={rz:{},hold:{}}; G.ozFlash=0; G.maxHp=ST.armor(L('armor')); G.hp=G.maxHp; G.earned=0; G.kills=0; G.pot=0; G.credits=0; G.boost={}; G.pity={}; G.sinceW=0; G.revived=false; G.shieldUntil=0; G.tools={}; G.pickQ=0; G.rerolls=1; G.offer=[]; G.superOn=0; G.superCd=10; G.chainT=2; G.blobs=[]; G.chips=[]; G.teachQ=[]; { const to=document.getElementById('teachov'); if(to) to.remove(); } G.cpend=null; G.flashA=0; G.sawCd=0; G.stormT=12; G.mort=2; G.mortT=0; G.saws=[]; G.bolts=[]; G.shells=[]; G.fires=[]; G.delay=[]; lastCred=0;
   G.enemies=[]; G.bullets=[]; G.parts=[]; G.rings=[]; G.floats=[]; G.mines=[]; G.fields=[]; G.boss=null; G.tag=null; G.warps=[];
   { const pf=profileFor(G.wd,n,G.elite); G.prof=pf; G.mutHp=pf.mut==='armored'?1.3:pf.mut==='dense'?0.8:pf.mut==='swift'?0.85:1; G.mutSp=pf.mut==='swift'?1.25:1; if(pf.mut||n>1) setTimeout(()=>{ if(G.state==='playing'&&G.n===n&&G.wave<=1) say(pf.name,pf.mut?MUTS[pf.mut].note:(BRIEF[pf.feat]||'')); },1400); }
   G.waveT=0; G.shake=0; G.armed=null; G.ghost.show=false; G.placing=false; G.autoT=0.5;
@@ -3039,13 +3039,19 @@ const wlv=w=>CARDS.reduce((a,c)=>a+(c.w===w&&c.t===1&&!c.unlock?bst(c.id):0),0);
 const mastery=w=>UPS.reduce((a,u)=>a+(u.tab===w?L(u.id):0),0);
 const EVO_LV=4, ULT_LV=8, EVO_MST=6, ULT_MST=14;
 /* Anti-snowball knobs. Turret Arc/Explosive rounds (extra damage types on every shot) only appear on elite levels or when the base is below OVERLOAD_HP of its health. */
-const OVERLOAD_HP=0.5, W_RARE=3, W_EPIC=2, W_BIG=4, PITY_RARE_CAP=1.6, BIG_EVERY=4;
+const OVERLOAD_HP=0.5, U_COMMON=1.5, U_RARE=1.5, U_EPIC=1, W_BIG=4, RARE_FLOOR=0.12;   /* weight per remaining copy (common / rare / epic), weight of an evolution or ultimate, lowest rare multiplier */
 /* Investment per weapon this level: every card taken for it. specGap = how far one weapon runs ahead of the average of your other weapons. */
 const spec=w=>CARDS.reduce((a,c)=>a+(c.w===w&&!c.unlock&&c.id!=='repair'?bst(c.id):0),0);
 const ownedW=()=>['turret'].concat(['mine','field','chain','saw','mortar'].filter(hasTool));
 function specGap(w){ const o=ownedW().filter(x=>x!==w); return o.length?spec(w)-o.reduce((a,x)=>a+spec(x),0)/o.length:0; }
 /* the further a weapon runs ahead, the less often its cards (and far less its rare ones) are offered */
 function specPen(c){ const g=specGap(c.w); if(g<=2) return 1; const p=1/(1+0.3*(g-2)); return Math.max(0.15,c.t>=2||c.evo||c.ult?p*p:p); }
+/* Finite deck: each card has a fixed number of copies for the level (its max, or fewer for count cards until you rank them up) and every copy you take is gone.
+   A card's odds follow the copies it has left, so the weapon you keep drawing from thins out while untouched weapons' cards rise. Rare cards also thin out the deeper you go on their weapon. */
+const effMax=c=>COUNTC.has(c.id)?Math.min(c.max,1+cmRank(c.id)):c.max;
+const copiesLeft=c=>Math.max(0,effMax(c)-bst(c.id));
+const deckSize=w=>CARDS.reduce((a,c)=>a+(c.w===w&&c.t===1&&!c.unlock&&!c.cond&&c.w!=='base'?c.max:0),0);
+const rareDecay=w=>{ const n=deckSize(w); return n?Math.max(RARE_FLOOR,Math.pow(Math.max(0,1-wlv(w)/n),1.5)):1; };
 let PICKM=1;
 const pickWave=w=>w>=2&&(w-2)%PICKM===0;
 const wcount=()=>['mine','field','chain','saw','mortar'].filter(hasTool).length;
@@ -3121,10 +3127,13 @@ function eligible(c){
 function offerCards(){
   const bias=(G.wd&&G.wd.bias)||{};
   const early=G.n<=5&&!G.elite;
-  const pool=CARDS.filter(eligible).map(c=>({c:c,w:(c.wt||(c.evo||c.ult?W_BIG:c.unlock?(wcount()<2?14:7):c.t===1?10:c.t===2?W_RARE:W_EPIC))*(bias[c.w]||1)*(early?(c.w==='turret'?2.0:c.unlock?1.1:1):1)*Math.min(c.t>=2||c.evo||c.ult?PITY_RARE_CAP:3.5,1+0.4*((G.pity||{})[c.id]||0))*(c.unlock?(1+0.3*(G.sinceW||0))*(ownedW().length===1?1+0.2*Math.max(0,spec('turret')-3):1):specPen(c))*(c.t===1&&!c.unlock?1+0.25*cmRank(c.id):1)}));
-  /* after the opening levels, every weapon you own competes on equal footing with the turret instead of the turret's longer card list swamping the offers */
-  if(!early){ const gs={}; for(const q of pool){ if(q.c.unlock||q.c.evo||q.c.ult||q.c.cond||q.c.w==='base') continue; gs[q.c.w]=(gs[q.c.w]||0)+q.w; }
-    const ks=Object.keys(gs); if(ks.length>1){ const avg=ks.reduce((t,k)=>t+gs[k],0)/ks.length; for(const q of pool){ if(q.c.unlock||q.c.evo||q.c.ult||q.c.cond||q.c.w==='base') continue; q.w*=Math.max(0.35,Math.min(2.5,avg/gs[q.c.w])); } } }
+  const pool=CARDS.filter(eligible).map(c=>{
+    const rare=!c.unlock&&(c.t>=2||c.evo||c.ult), cp=copiesLeft(c);
+    const base=c.wt?c.wt:(c.evo||c.ult)?W_BIG:c.unlock?(wcount()<2?14:7):cp*(c.t===1?U_COMMON:c.t===2?U_RARE:U_EPIC);
+    return {c:c,w:base*(bias[c.w]||1)*(early?(c.w==='turret'?2.0:c.unlock?1.1:1):1)*(rare?rareDecay(c.w):1)*(c.unlock?(1+0.3*(G.sinceW||0))*(ownedW().length===1?1+0.2*Math.max(0,spec('turret')-3):1):specPen(c))*(c.t===1&&!c.unlock?1+0.25*cmRank(c.id):1)};
+  });
+  /* after the opening levels every weapon starts with an equal share of the deck; from then on it only shrinks as you take that weapon's cards */
+  if(!early){ const ow=ownedW(); if(ow.length>1){ const avg=ow.reduce((t,w)=>t+deckSize(w),0)/ow.length; for(const q of pool){ if(q.c.unlock||q.c.evo||q.c.ult||q.c.cond||q.c.w==='base') continue; const n=deckSize(q.c.w); if(n) q.w*=Math.max(0.35,Math.min(2.5,avg/n)); } } }
   const out=[];
   while(out.length<3&&pool.length){
     const tot=pool.reduce((a,b)=>a+b.w,0); let r=Math.random()*tot, i=0;
@@ -3134,13 +3143,10 @@ function offerCards(){
   if(early&&!out.some(c=>c.w==='turret')){ const tp=CARDS.filter(c=>c.w==='turret'&&eligible(c)&&c.id!=='repair'); if(tp.length){ const pick=tp[Math.floor(Math.random()*tp.length)]; if(out.length<3) out.push(pick); else out[out.length-1]=pick; } }
   /* early game: make sure a first weapon is on the table from level 2 */
   if(early&&G.n>=2&&wcount()===0&&!out.some(c=>c.unlock)){ const up=CARDS.filter(c=>c.unlock&&eligible(c)); if(up.length){ const pk=up[Math.floor(Math.random()*up.length)]; const j=out.findIndex(c=>c.w!=='turret'||c.t!==1); if(out.length<3) out.push(pk); else out[j>=0?j:out.length-1]=pk; } }
-  const big=CARDS.filter(c=>(c.evo||c.ult)&&eligible(c));
-  if(out.some(c=>c.evo||c.ult)) G.sinceBig=0;
-  else if(big.length&&(G.sinceBig=(G.sinceBig||0)+1)>BIG_EVERY){ const ult=big.filter(c=>c.ult), pick=(ult.length?ult:big)[Math.floor(Math.random()*(ult.length?ult.length:big.length))]; if(out.length<3) out.push(pick); else out[2]=pick; G.sinceBig=0; }
   return out;
 }
 function applyCard(c){
-  /* finite-deck feel: cards that were shown and passed over get likelier next time; the one taken resets */
+  /* shown-and-passed bookkeeping (no longer affects odds: the deck is finite now) */
   G.pity=G.pity||{}; (G.offer||[]).forEach(o=>{ G.pity[o.id]=(G.pity[o.id]||0)+1; }); G.pity[c.id]=0; G.sinceW=c.unlock?0:(G.sinceW||0)+(c.id==='repair'?0:1);
   G.boost[c.id]=bst(c.id)+1;
   if(c.unlock){ G.tools[c.w]=true; if(c.w==='mortar'){ G.mort=mortMax(); G.mortT=0; say('Mortar online','Double-tap the field to fire'); } if(c.w==='mine'){ G.stock=mineMax(); G.mineT=0; } }
@@ -3346,10 +3352,10 @@ window.__rr={fireball:fireball,chip:chip,openTeach:openTeach,fireMortar:fireMort
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 58</div>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 59</div>
 <script>
 /* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
-(function(){ const BUILD=58; let busy=false, shown=false;
+(function(){ const BUILD=59; let busy=false, shown=false;
   const inRun=()=>{ try{ return typeof G!=='undefined'&&(G.state==='playing'||G.state==='cards'||G.state==='shop'||G.state==='paused'||G.state==='teach'); }catch(e){ return false; } };
   function wipeReload(){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
     if(n>=3) return;
