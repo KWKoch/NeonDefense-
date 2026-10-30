@@ -485,33 +485,37 @@ body.menu{background:
 #armory .tabs{padding:4px 2px}
 #armory .mob canvas{border-radius:18px; background:radial-gradient(circle at 35% 25%,#13202b,#02050a 75%); border:1px solid rgba(140,225,255,.25); box-shadow:inset 0 2px 3px rgba(255,255,255,.12),inset 0 -6px 10px rgba(0,0,0,.7),0 4px 8px rgba(0,0,0,.6)}
 
-/* arsenal: one screen per weapon */
-.wtabs{display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:4px; margin-bottom:4px}
-.wtab{display:flex; flex-direction:column; align-items:center; gap:2px; padding:6px 0 5px; font:inherit; font-size:10px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--dim); background:#000; border:1px solid var(--line); border-radius:14px; cursor:pointer; min-width:0}
-.wtab span{max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
-.wtab[aria-selected="true"]{color:var(--fg); border-color:var(--c); background:color-mix(in srgb,var(--c) 22%,#000); box-shadow:0 0 12px color-mix(in srgb,var(--c) 45%,transparent)}
-.wnote{font-size:11px; color:var(--dim); margin:0 2px 6px}
-.ucats{display:grid; gap:6px; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); margin-bottom:8px}
-.ucat{display:grid; gap:4px; padding:7px 9px; border-radius:16px; min-width:0}
-.uh{display:flex; justify-content:space-between; align-items:baseline; gap:8px}
-.un{display:inline-flex; align-items:center; gap:6px; font-size:15px; font-weight:800; color:var(--c); letter-spacing:.04em; text-transform:uppercase}
-.un small{font-size:11px; font-weight:600; color:var(--fg); opacity:.8; text-transform:none; letter-spacing:0}
-.ul{font-size:12px; font-weight:700; color:var(--fg); font-variant-numeric:tabular-nums; white-space:nowrap}
+/* arsenal: weapons on top, category accordion below */
+.wpns{display:grid; grid-template-columns:repeat(auto-fit,minmax(76px,1fr)); gap:5px; margin-bottom:6px}
+.wpn{display:flex; align-items:center; justify-content:center; gap:5px; padding:8px 4px; font:inherit; font-size:11px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--dim); background:#000; border:1px solid var(--line); border-radius:14px; cursor:pointer; min-width:0}
+.wpn span{overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.wpn[aria-selected="true"]{color:var(--fg); border-color:var(--c); background:color-mix(in srgb,var(--c) 22%,#000); box-shadow:0 0 12px color-mix(in srgb,var(--c) 45%,transparent)}
+.ucats{display:grid; gap:6px; margin-bottom:6px}
+.ucat{display:grid; border-radius:16px; min-width:0; overflow:hidden}
+.uh{display:flex; justify-content:space-between; align-items:center; gap:8px; width:100%; padding:10px 12px; font:inherit; color:var(--fg); background:transparent; border:0; cursor:pointer; text-align:left}
+.un{display:inline-flex; align-items:center; gap:6px; font-size:15px; font-weight:800; color:var(--c); letter-spacing:.04em; text-transform:uppercase; flex:1 1 0; min-width:0; overflow:hidden; white-space:nowrap}
+.un small{font-size:11px; font-weight:600; color:var(--fg); opacity:.8; text-transform:none; letter-spacing:0; overflow:hidden; text-overflow:ellipsis}
+.ur{flex:none; display:inline-flex; align-items:center; gap:8px; font-size:12px; font-weight:700; font-variant-numeric:tabular-nums; white-space:nowrap}
+.ur .uc{display:inline-flex; align-items:center; gap:3px}
+.ur .uf{color:var(--dim)}
+.ur .chv{color:var(--c)}
+.ur .rdy{width:8px; height:8px; border-radius:50%; background:#6dffb0; box-shadow:0 0 8px #6dffb0}
+.upanel{display:grid; gap:7px; padding:0 12px 11px}
 .urow{display:grid; grid-template-columns:minmax(0,1fr) auto; gap:8px; align-items:center}
-.uv{font-size:11px; color:var(--dim); line-height:1.2; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden}
+.uv{font-size:12px; color:var(--dim); line-height:1.25}
 .uv em{color:var(--c); font-style:normal}
 .ubody{display:grid; grid-template-columns:1fr 1fr; gap:8px}
 .ucol{display:grid; gap:5px; align-content:start; min-width:0}
 .ulab{font-size:10px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--dim); display:flex; justify-content:space-between; align-items:baseline}
 .ulab b{font-size:14px; color:var(--fg); letter-spacing:0; font-variant-numeric:tabular-nums}
 .ugems{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:4px}
-.ugems .gem{max-width:none; width:100%; aspect-ratio:auto; height:30px; border-radius:10px; padding:2px 0; gap:0}
+.ugems .gem{max-width:none; width:100%; aspect-ratio:auto; height:34px; border-radius:10px; padding:2px 0; gap:0}
 .ugems .gem b{font-size:13px} .ugems .gem small{font-size:8px}
 .ugems .gem.cur{outline:2px solid var(--c); outline-offset:2px}
-.ubuy{width:auto; min-width:104px; padding:4px 12px; min-height:0; font-size:12px; margin-top:0; white-space:nowrap}
+.ubuy{width:auto; min-width:104px; padding:5px 12px; min-height:0; font-size:12px; margin-top:0; white-space:nowrap}
 .ubuy small{font-size:10px; opacity:.85; margin-left:3px}
 .ufrg{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:4px}
-.ufrg .pbtn{padding:2px 0; border-radius:10px; gap:0; font-size:9px; height:30px; justify-content:center}
+.ufrg .pbtn{padding:2px 0; border-radius:10px; gap:0; font-size:9px; height:34px; justify-content:center}
 .ufrg .pbtn b{font-size:12px; display:block; line-height:1.05}
 .mast{margin:0 0 8px; padding:8px 10px; border:1px solid var(--line); border-radius:16px; background:var(--panel)}
 .mast summary{cursor:pointer; font-size:12px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--fg)}
@@ -2666,7 +2670,7 @@ function cmBuy(id){ const c=CARDBY[id]; if(!c) return false; const r=cmRank(id),
 function fuse(t,r){ if(r>=3||P.inv[t][r]<3) return false; P.inv[t][r]-=3; P.inv[t][r+1]++; save(); return true; }
 
 /* ================= home (armory) ================= */
-const UI={nav:'battle',elite:false,cx:'mobs',ac:'lvl'};
+const UI={nav:'battle',elite:false,cx:'mobs',ac:'lvl',uc:''};
 let tab='turret', confirmReset=false;
 const worldOpen=i=>{ if(i===0) return true; if((((P.prog[WORLDS[i].id])||{}).best||0)>0) return true; /* already played: stays open */ return (((P.prog[WORLDS[i-1].id]||{}).best||0)>=LEVELS)&&starsOfWorld(WORLDS[i-1].id)>=ECON.gate; };
 const curWorld=()=>WORLDS.find(w=>w.id===P.world)||WORLDS[0];
@@ -2709,27 +2713,30 @@ function accountHtml(){
     +'</section>';
 }
 function arsenalHtml(){
-  /* One screen per weapon: weapon buttons on top, then one row per upgrade category with the cards you hold and the fragments that forge more. */
-  let h='<div class="wtabs" role="tablist" aria-label="Weapon">'+TABS.filter(t=>t.id!=='bestiary').map(t=>'<button class="wtab" role="tab" data-tab="'+t.id+'" style="--c:'+t.color+'" aria-selected="'+(tab===t.id)+'" type="button">'+ico(TABICO[t.id],20)+'<span>'+t.name+'</span></button>').join('')+'</div>';
+  /* Weapons across the top (wraps to more rows); tap one for its upgrade categories; tap a category to open its cards, fragments and Upgrade button. */
+  let h='<div class="wpns" role="tablist" aria-label="Weapon">'+TABS.filter(t=>t.id!=='bestiary').map(t=>'<button class="wpn" role="tab" data-tab="'+t.id+'" style="--c:'+t.color+'" aria-selected="'+(tab===t.id)+'" type="button">'+ico(TABICO[t.id],18)+'<span>'+t.name+'</span></button>').join('')+'</div>';
   h+='<div class="ucats">';
   UPS.filter(u=>u.tab===tab).forEach(u=>{
-    const lv=L(u.id), maxed=lv>=u.max, ct=CT[u.ty], b=bandOf(lv,u.max), need=cardNeed(u,lv), have=avail(u.ty,b), ok=!maxed&&have>=need, f=(P.frag||{})[u.ty]||0;
-    h+='<div class="ucat" style="--c:'+ct.color+'">'
-      +'<div class="uh"><span class="un">'+ico(u.ty,16)+ct.name+' <small>'+u.name+'</small></span><span class="ul">'+(maxed?'MAX':'Lv '+lv+'/'+u.max)+'</span></div>'
-      +'<div class="urow"><div class="uv">'+u.txt(lv)+(maxed?'':' <em>\u2192</em> '+u.txt(lv+1))+'</div>'
+    const lv=L(u.id), maxed=lv>=u.max, ct=CT[u.ty], b=bandOf(lv,u.max), need=cardNeed(u,lv), have=avail(u.ty,b), ok=!maxed&&have>=need, f=(P.frag||{})[u.ty]||0, open=UI.uc===u.id;
+    h+='<div class="ucat'+(open?' open':'')+'" style="--c:'+ct.color+'">'
+      +'<button class="uh" type="button" data-uc="'+u.id+'" aria-expanded="'+open+'"><span class="un">'+ico(u.ty,16)+ct.name+' <small>'+u.name+'</small></span>'
+      +'<span class="ur">'+(ok?'<i class="rdy" title="You can upgrade this now"></i>':'')+'<span class="ul">'+(maxed?'MAX':lv+'/'+u.max)+'</span><span class="uc" title="Cards of this type">'+ico('cards',12)+avail(u.ty,0)+'</span><span class="uf" title="Fragments of this type">'+f+' frag</span><span class="chv">'+(open?'▴':'▾')+'</span></span></button>';
+    if(open){
+      h+='<div class="upanel"><div class="urow"><div class="uv">'+u.txt(lv)+(maxed?'':' <em>→</em> '+u.txt(lv+1))+'</div>'
         +'<button class="btn sm ubuy" data-buy="'+u.id+'" type="button" style="--c:'+ct.color+'" title="'+(maxed?'Max level':'Needs '+need+' '+RAR[b].name+' or better '+ct.name+' cards; you have '+have)+'" '+(ok?'':'disabled')+'>'+(maxed?'Max':'Upgrade <small>'+need+' '+RAR[b].ab+'+</small>')+'</button></div>'
-      +'<div class="ubody"><div class="ucol"><div class="ulab">Cards <b>'+avail(u.ty,0)+'</b></div><div class="ugems">'
-      +RAR.map((r,i)=>{ const n=P.inv[u.ty][i], fz=n>=3&&i<3, cur=!maxed&&i===b;
-        return (fz?'<button type="button" class="gem fuse'+(i===3?' leg':'')+(cur?' cur':'')+'" data-fuse="'+u.ty+':'+i+'" title="Fuse 3 '+r.name+' into 1 '+RAR[i+1].name+'"':'<span class="gem'+(n?'':' zero')+(i===3?' leg':'')+(cur?' cur':'')+'" title="'+r.name+'"')+' style="--g:'+r.color+'"><b>'+n+'</b><small>'+r.ab+'</small>'+(fz?'</button>':'</span>'); }).join('')
-      +'</div></div>'
-      +'<div class="ucol"><div class="ulab">Fragments <b>'+f+'</b></div><div class="ufrg">'
-      +FORGE.map((c,r)=>'<button class="pbtn" type="button" data-forge="'+u.ty+':'+r+'" style="--g:'+RAR[r].color+'" title="Forge 1 '+RAR[r].name+' card" '+(f<c?'disabled':'')+'><span>'+RAR[r].ab+'</span><b>'+c+'</b></button>').join('')
-      +'</div></div></div></div>';
+        +'<div class="ubody"><div class="ucol"><div class="ulab">Cards <b>'+avail(u.ty,0)+'</b></div><div class="ugems">'
+        +RAR.map((r,i)=>{ const n=P.inv[u.ty][i], fz=n>=3&&i<3, cur=!maxed&&i===b;
+          return (fz?'<button type="button" class="gem fuse'+(i===3?' leg':'')+(cur?' cur':'')+'" data-fuse="'+u.ty+':'+i+'" title="Fuse 3 '+r.name+' into 1 '+RAR[i+1].name+'"':'<span class="gem'+(n?'':' zero')+(i===3?' leg':'')+(cur?' cur':'')+'" title="'+r.name+'"')+' style="--g:'+r.color+'"><b>'+n+'</b><small>'+r.ab+'</small>'+(fz?'</button>':'</span>'); }).join('')
+        +'</div></div><div class="ucol"><div class="ulab">Fragments <b>'+f+'</b></div><div class="ufrg">'
+        +FORGE.map((c,r)=>'<button class="pbtn" type="button" data-forge="'+u.ty+':'+r+'" style="--g:'+RAR[r].color+'" title="Forge 1 '+RAR[r].name+' card" '+(f<c?'disabled':'')+'><span>'+RAR[r].ab+'</span><b>'+c+'</b></button>').join('')
+        +'</div></div></div></div>';
+    }
+    h+='</div>';
   });
   h+='</div>';
   const mc=CARDS.filter(c=>c.t===1&&!c.unlock&&c.id!=='repair'&&c.w===tab);
   if(mc.length){
-    h+='<details class="mast"><summary>In-run card mastery <small>'+mc.length+(tab!=='turret'&&tab!=='base'?' \u00b7 weapon mastery '+mastery(tab)+' (evolutions at '+EVO_MST+', ultimates at '+ULT_MST+')':'')+'</small></summary><div class="note" style="margin:6px 0">Cards you pick during a level start basic. Mastering one here makes every pick stronger and shows it more often in your level-ups.</div><div class="cards">';
+    h+='<details class="mast"><summary>In-run card mastery <small>'+mc.length+'</small></summary><div class="note" style="margin:6px 0">'+(tab!=='turret'&&tab!=='base'?'Weapon mastery '+mastery(tab)+': evolutions unlock in-run at '+EVO_MST+', ultimates at '+ULT_MST+'. ':'')+'Cards you pick during a level start basic. Mastering one here makes every pick stronger and shows it more often in your level-ups.</div><div class="cards">';
     mc.forEach(c=>{
       const r=cmRank(c.id), ty=CIC[c.id], ct=CT[ty], maxed=r>=3, need=NEEDB[Math.min(r,3)], have=avail(ty,Math.min(r,2)), ok=!maxed&&have>=need;
       const fmt=k=>COUNTC.has(c.id)?(()=>{const n=Math.min(c.max,1+k);return 'up to '+n+(n>1?' picks':' pick')+' per run'})():CONT.has(c.id)?c.txt(CMW[k]).replace(/\d+\.\d+/g,m=>Math.round(+m))+' per pick':c.txt(1);
@@ -2931,14 +2938,15 @@ armoryEl.addEventListener('contextmenu',e=>{ if(e.target.id==='pv'||e.target.clo
 armoryEl.addEventListener('click',e=>{
   if(e.target.closest('[data-orb]')){ if(orbOpen) closeOrb(); else openOrb(); return; }
   const ac=e.target.closest('[data-acct]'); if(ac&&window.RRcloud){ const a=ac.dataset.acct; if(a==='del'&&!confirm('Delete your account and cloud save? This cannot be undone.')) return; RRcloud.action(a); return; }
-  const t=e.target.closest('[data-act],[data-buy],[data-cm],[data-pack],[data-sku],[data-claim],[data-tab],[data-fuse],[data-nav],[data-mode],[data-world],[data-cx],[data-ac],[data-forge],[data-gem],[data-adgems],[data-pack]'); if(!t) return;
+  const t=e.target.closest('[data-act],[data-buy],[data-cm],[data-pack],[data-sku],[data-claim],[data-tab],[data-uc],[data-fuse],[data-nav],[data-mode],[data-world],[data-cx],[data-ac],[data-forge],[data-gem],[data-adgems],[data-pack]'); if(!t) return;
   if(t.dataset.cx){ UI.cx=t.dataset.cx; renderArmory(); const c0=$('content'); if(c0) c0.scrollTop=0; return; }
   if(t.dataset.ac){ UI.ac=t.dataset.ac; renderArmory(); const c1=$('content'); if(c1) c1.scrollTop=0; return; }
   if(t.dataset.nav){ UI.nav=t.dataset.nav; renderArmory(); return; }
   if(t.dataset.mode){ UI.elite=t.dataset.mode==='e'; renderArmory(); return; }
   if(t.dataset.world){ if(!worldOpen(WORLDS.findIndex(w=>w.id===t.dataset.world))) return; P.world=t.dataset.world; UI.elite=false; UI.nav='battle'; save(); renderArmory(); return; }
   
-  if(t.dataset.tab){ tab=t.dataset.tab; renderArmory(); return; }
+  if(t.dataset.tab){ tab=t.dataset.tab; UI.uc=''; renderArmory(); return; }
+  if(t.dataset.uc){ UI.uc=UI.uc===t.dataset.uc?'':t.dataset.uc; renderArmory(); return; }
   if(t.dataset.forge){ const q=t.dataset.forge.split(':'); forge(q[0],+q[1]); return; }
   if(t.dataset.gem){ buyGems(t.dataset.gem); return; }
   if(t.dataset.adgems){ adGems(); return; }
@@ -3264,10 +3272,10 @@ window.__rr={fireball:fireball,chip:chip,openTeach:openTeach,fireMortar:fireMort
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 53</div>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 54</div>
 <script>
 /* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
-(function(){ const BUILD=53; let busy=false, shown=false;
+(function(){ const BUILD=54; let busy=false, shown=false;
   const inRun=()=>{ try{ return typeof G!=='undefined'&&(G.state==='playing'||G.state==='cards'||G.state==='shop'||G.state==='paused'||G.state==='teach'); }catch(e){ return false; } };
   function wipeReload(){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
     if(n>=3) return;
