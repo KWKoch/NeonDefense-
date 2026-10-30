@@ -352,6 +352,7 @@ body.menu{background:radial-gradient(140% 55% at 50% -5%,rgba(255,43,214,.22),rg
 .cxseg button{flex:1; white-space:nowrap}
 .cxseg button small{opacity:.7; font-weight:600; letter-spacing:0; margin-left:3px}
 .acats{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:4px; margin:0 0 6px}
+.awgrid .wide{grid-column:1/-1}
 .acat{font:inherit; font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; padding:5px 2px; border-radius:14px; border:1px solid var(--line); background:#04101a; color:var(--dim); cursor:pointer; display:flex; flex-direction:column; align-items:center; font-size:10px; letter-spacing:.04em; min-width:0}
 .acat[aria-pressed="true"]{color:#fff; border-color:#00f0ff; background:color-mix(in srgb,#00f0ff 18%,#000); box-shadow:0 0 10px rgba(0,240,255,.35)}
 .acat small{opacity:.75; letter-spacing:0}
@@ -816,7 +817,7 @@ const hasTool=k=>!!(G.tools&&G.tools[k]);
 const newInv=()=>({pow:[0,0,0,0],tmp:[0,0,0,0],rch:[0,0,0,0],cap:[0,0,0,0],frt:[0,0,0,0]});
 const newPW=()=>({best:0,sel:1,perf:{},eclr:{},stars:{}});
 /* Combat record + achievements. enc/kill/leak are per mob type; w[weapon][mob]=[engaged,defeated,killingBlows,resistedEngaged,resistedDefeated,resistedKillingBlows]; world[id][mob]=1 once met there; ach[id]=unlock time. */
-const newSt=()=>({v:1,enc:{},kill:{},leak:{},rz:{},hold:{},w:{},world:{},ach:{}});
+const newSt=()=>({v:1,enc:{},kill:{},leak:{},rz:{},hold:{},w:{},world:{},ach:{},pw:{}});
 function pw(o){ return o.prog[o.world]||(o.prog[o.world]=newPW()); }
 const newP=()=>{
   const o={inv:newInv(),lv:{},cm:{},gems:0,pass:0,starter:0,chestDay:'',passDay:'',adDay:'',adN:0,ledger:[],world:'belt',own:{belt:true},prog:{},seen:{},st:newSt(),frag:{pow:0,tmp:0,rch:0,cap:0,frt:0},pk:{s:0,m:0,l:0,f:0},intro:0,en:EN_MAX,enV:2,enT:Date.now()};
@@ -1287,12 +1288,17 @@ const WNAME={turret:'Turret',mine:'Mines',field:'Slow field',chain:'Chain lightn
 const RESISTED=0.65;
 const TIER=[{n:'Bronze',c:'#cd7f32'},{n:'Silver',c:'#c4d0d8'},{n:'Gold',c:'#ffc400'},{n:'Platinum',c:'#7df9ff'}];
 const stOf=()=>P.st||(P.st=newSt());
+/* Awards are per world, so every count is also kept per world: s.pw[world] = {enc,kill,leak,rz,hold,w}. The global counters stay for the Record tab. */
+const newPwb=()=>({enc:{},kill:{},leak:{},rz:{},hold:{},w:{}});
+const stWid=()=>(G.wd&&G.wd.id)||'belt';
+function pwOf(wid){ const s=stOf(); s.pw=s.pw||{}; return s.pw[wid]||(s.pw[wid]=newPwb()); }
 const fmtN=n=>Math.round(n).toLocaleString('en-US');
 let achDirty=false, achLast=0, achQ=[], achEl=null, achBusy=false, ACHS=null;
 
 function stSpawn(e){
   const s=stOf(), w=(G.wd&&G.wd.id)||'belt';
   s.enc[e.type]=(s.enc[e.type]||0)+1; (s.world[w]||(s.world[w]={}))[e.type]=1;
+  { const q=pwOf(w); q.enc[e.type]=(q.enc[e.type]||0)+1; }
   if(e.y>=OZ_Y) e.ozx=1;   /* appeared below the ozone (warp-ins, formations): cannot be judged against it */
   achDirty=true; achCheck();
 }
@@ -1302,15 +1308,19 @@ function stHit(e,src,kind,m){
 }
 /* Called once per mob that dies to a weapon (won) or reaches the base (!won). Mobs cleared by a boss dying are not counted either way. */
 function stResolve(e,won,src){
-  const s=stOf(), t=e.type;
-  if(won) s.kill[t]=(s.kill[t]||0)+1; else s.leak[t]=(s.leak[t]||0)+1;
+  const s=stOf(), t=e.type, q=pwOf(stWid());
+  for(const r of [s,q]){ r.rz=r.rz||{}; r.hold=r.hold||{}; }
+  if(won){ s.kill[t]=(s.kill[t]||0)+1; q.kill[t]=(q.kill[t]||0)+1; } else { s.leak[t]=(s.leak[t]||0)+1; q.leak[t]=(q.leak[t]||0)+1; }
   const held=won&&!e.oz;   /* held = destroyed above the ozone line */
-  s.rz=s.rz||{}; s.hold=s.hold||{}; s.rz[t]=(s.rz[t]||0)+1; if(held) s.hold[t]=(s.hold[t]||0)+1;
+  s.rz[t]=(s.rz[t]||0)+1; q.rz[t]=(q.rz[t]||0)+1; if(held){ s.hold[t]=(s.hold[t]||0)+1; q.hold[t]=(q.hold[t]||0)+1; }
   if(G.run){ G.run.rz[t]=(G.run.rz[t]||0)+1; if(held) G.run.hold[t]=(G.run.hold[t]||0)+1; }
   if(e.wh) for(const w in e.wh){
-    const row=s.w[w]||(s.w[w]={}), a=row[t]||(row[t]=[0,0,0,0,0,0]), n=e.wn&&e.wn[w];
-    a[0]++; if(n) a[3]++;
-    if(won){ a[1]++; if(n) a[4]++; if(w===src){ a[2]++; if(n) a[5]++; } }
+    const n=e.wn&&e.wn[w];
+    for(const r of [s,q]){
+      const row=r.w[w]||(r.w[w]={}), a=row[t]||(row[t]=[0,0,0,0,0,0]);
+      a[0]++; if(n) a[3]++;
+      if(won){ a[1]++; if(n) a[4]++; if(w===src){ a[2]++; if(n) a[5]++; } }
+    }
   }
   achDirty=true; achCheck();
 }
@@ -1325,9 +1335,17 @@ function stBackfill(){
   }
 }
 
-/* ---- aggregates: one pass over the record per check ---- */
-function agg(){
-  const s=stOf(), a={sight:0,kill:0,leak:0,rz:0,hold:0,cls:{},mob:{},wc:{},wt:{},nk:0,nkTypes:0,ne:0,nd:0}, types={};
+/* One-time: saves from before per-world awards. The old global record becomes Meteor Belt's, and old unlocks carry over to Meteor Belt (already paid, never paid twice). */
+function stPwMigrate(){
+  const s=stOf(); if(s.pwm) return; s.pwm=1; s.pw=s.pw||{};
+  const cp=o=>JSON.parse(JSON.stringify(o||{}));
+  if((Object.keys(s.enc||{}).length||Object.keys(s.w||{}).length)&&!s.pw.belt) s.pw.belt={enc:cp(s.enc),kill:cp(s.kill),leak:cp(s.leak),rz:cp(s.rz),hold:cp(s.hold),w:cp(s.w)};
+  for(const k of Object.keys(s.ach||{})) if(k.indexOf('@')<0&&k.indexOf('world_')!==0&&!s.ach[k+'@belt']) s.ach[k+'@belt']=s.ach[k];
+}
+
+/* ---- aggregates: one pass over the record per check (wid = one world's record; none = everything, for the Record tab) ---- */
+function agg(wid){
+  const S=stOf(), s=wid?((S.pw||{})[wid]||newPwb()):S, a={sight:0,kill:0,leak:0,rz:0,hold:0,cls:{},mob:{},wc:{},wt:{},nk:0,nkTypes:0,ne:0,nd:0}, types={};
   for(const c in CLS) a.cls[c]={enc:0,kill:0,leak:0,rz:0,hold:0};
   for(const k in MOB){
     const m={enc:s.enc[k]||0,kill:s.kill[k]||0,leak:s.leak[k]||0,rz:(s.rz||{})[k]||0,hold:(s.hold||{})[k]||0}; a.mob[k]=m; a.sight+=m.enc; a.kill+=m.kill; a.leak+=m.leak; a.rz+=m.rz; a.hold+=m.hold;
@@ -1378,25 +1396,8 @@ function achReward(d){
 }
 function achList(){
   if(ACHS) return ACHS;
-  const A=[], add=(cat,id,name,desc,tier,fn,icon,grp)=>A.push({cat:cat,id:id,name:name,desc:desc,tier:tier,fn:fn,icon:icon||'eye',grp:grp||''});
-  const keys=Object.keys(MOB), spawnable=keys.filter(k=>MOB[k].spawn);
-
-  /* Discovery: the Codex, mob classes, worlds, sightings */
-  [[4,'First Contact'],[8,'Field Researcher'],[12,'Xenobiologist'],[keys.length,'Complete Codex']].forEach((x,i)=>
-    add('disc','cdx'+i,x[1],'Add '+x[0]+' mobs to the Codex.',i,()=>pCount(keys.filter(k=>P.seen[k]).length,x[0]),'eye','codex'));
+  const A=[], keys=Object.keys(MOB);
   const CLSN={mineral:'Geologist',mech:'Signals Analyst',bio:'Biologist'};
-  for(const c in CLS){
-    const ks=keys.filter(k=>MOB[k].cls===c);
-    add('disc','cls_'+c,CLSN[c]||CLS[c].name+' Survey','Meet every '+CLS[c].name+' mob: '+ks.map(k=>MOB[k].name).join(', ')+'.',2,()=>pCount(ks.filter(k=>P.seen[k]).length,ks.length),'eye','class');
-  }
-  WORLDS.forEach(wd=>{
-    const set=new Set(Object.keys(wd.uw||UW).filter(k=>MOB[k])); if(set.has('chunk')) set.add('small'); if(set.has('egg')) set.add('hatch'); set.add('orb'); set.add('boss');
-    const ks=[...set];
-    add('world','world_'+wd.id,wd.name+' Survey','Meet all '+ks.length+' mobs that appear in '+wd.name+'.',2,()=>{ const w=stOf().world[wd.id]||{}; return pCount(ks.filter(k=>w[k]).length,ks.length); },'world',wd.id);
-  });
-  [[100,'Spotter'],[1000,'Lookout'],[10000,'Watchtower'],[100000,'All-Seeing Rampart']].forEach((x,i)=>
-    add('disc','sight'+i,x[1],'Encounter '+fmtN(x[0])+' mobs in total.',i,a=>pCount(a.sight,x[0]),'eye','sight'));
-
   /* Weapons: six awards per weapon (two overall rates, one per mob class, one misfit). Numbers show on each tile's progress line. */
   const WAW={
     turret:{p:["Steady Hand","Take down 80% of the mobs your Turret hits."],m:["Dead Eye","Take down 92% of the mobs your Turret hits. Nothing slips by."],mineral:["Stonecutter","Bullets glance off rock. Still drop 90% of the Minerals you hit."],mech:["Scrap Sniper","Drop 90% of the Mechs your bullets find."],bio:["Pest Control","Squash 90% of the Bios your bullets hit before they regrow."],x:["Pop Gun Hero","Win 60% of fights against mobs that shrug off bullets."]},
@@ -1406,21 +1407,39 @@ function achList(){
     saw:{p:["Sharp Edge","Shred 80% of the mobs your saw cuts."],m:["Razor's Edge","Shred 92% of the mobs your saw cuts."],mineral:["Gravel Grinder","Grind down 90% of the Minerals your saw cuts."],mech:["Chop Shop","Carve up 90% of the Mechs your saw cuts."],bio:["Filleter","Carve up 90% of the Bios your saw cuts before they heal."],x:["Blunt Instrument","Win 60% of fights against mobs that resist the saw."]},
     mortar:{p:["Lobber","Bring down 80% of the mobs your shells hit."],m:["Artillery Ace","Bring down 92% of the mobs your shells hit."],mineral:["Crater Maker","Shells crack rock. Bring down 90% of the Minerals you hit."],mech:["Siege Breaker","Level 90% of the Mechs your shells hit."],bio:["Hive Hammer","Pound 90% of the Bios your shells hit."],x:["Shell Game","Win 60% of fights against mobs that resist the mortar."]}
   };
-  WLIST.forEach(w=>{
-    const T=WAW[w];
-    add('wpn','w80_'+w,T.p[0],T.p[1],1,a=>pRate(a.wt[w][1],a.wt[w][0],200,80),w,w);
-    add('wpn','w92_'+w,T.m[0],T.m[1],2,a=>pRate(a.wt[w][1],a.wt[w][0],200,92),w,w);
-    for(const c in CLS) add('wpn','ws_'+w+'_'+c,T[c][0],T[c][1],2,a=>pRate(a.wc[w][c][1],a.wc[w][c][0],100,90),w,w);
-    add('wpn','mis_'+w,T.x[0],T.x[1],1,a=>pRate(a.wt[w][4],a.wt[w][3],50,60),w,w);
-  });
+  /* Every award exists once per world: id 'base@world', counted from that world's own record only. */
+  WORLDS.forEach(wd=>{
+    const wid=wd.id, wn=wd.name;
+    const add=(cat,id,name,desc,tier,fn,icon,grp)=>A.push({cat:cat,id:id+'@'+wid,wid:wid,wname:wn,name:name,desc:desc,tier:tier,fn:fn,icon:icon||'eye',grp:grp||''});
+    const set=new Set(Object.keys(wd.uw||UW).filter(k=>MOB[k])); if(set.has('chunk')) set.add('small'); if(set.has('egg')) set.add('hatch'); set.add('orb'); set.add('boss');
+    const ks=[...set], seen=()=>stOf().world[wid]||{};
 
-  /* Underdog: weapons used against mobs that resist them */
-  [[50,'Against the Odds'],[65,'Stubborn'],[80,'Defying Physics'],[90,'Rule Breaker']].forEach((x,i)=>
-    add('odds','ni'+x[0],x[1],'Win '+x[0]+'% of fights where your weapon is resisted by the mob (at least 150 such fights).',i,a=>pRate(a.nd,a.ne,150,x[0]),'bolt','rate'));
-  [[25,'Off-Label Use'],[250,'Square Peg'],[1000,'Duct Tape Engineer']].forEach((x,i)=>
-    add('odds','nk'+x[0],x[1],'Land '+fmtN(x[0])+' killing blows with a weapon the mob resists.',i,a=>pCount(a.nk,x[0]),'bolt','blows'));
-  [[3,'Improviser'],[6,'Wild Card'],[10,'Anything Goes']].forEach((x,i)=>
-    add('odds','nt'+x[0],x[1],'Land a killing blow with a resisted weapon on '+x[0]+' different mob types.',i,a=>pCount(a.nkTypes,x[0]),'bolt','types'));
+    /* Discovery: this world's roster, its mob classes, sightings here */
+    A.push({cat:'disc',id:'world_'+wid,wid:wid,wname:wn,name:wn+' Survey',desc:'Meet all '+ks.length+' mobs that appear in '+wn+'.',tier:2,fn:()=>pCount(ks.filter(k=>seen()[k]).length,ks.length),icon:'world',grp:'survey'});
+    for(const c in CLS){
+      const kc=ks.filter(k=>MOB[k].cls===c); if(!kc.length) continue;
+      add('disc','cls_'+c,CLSN[c]||CLS[c].name+' Survey','Meet every '+CLS[c].name+' mob in '+wn+': '+kc.map(k=>MOB[k].name).join(', ')+'.',1,()=>pCount(kc.filter(k=>seen()[k]).length,kc.length),'eye','class');
+    }
+    [[50,'Spotter'],[500,'Lookout'],[2500,'Watchtower'],[10000,'All-Seeing Rampart']].forEach((x,i)=>
+      add('disc','sight'+i,x[1],'Encounter '+fmtN(x[0])+' mobs in '+wn+'.',i,a=>pCount(a.sight,x[0]),'eye','sight'));
+
+    /* Weapons */
+    WLIST.forEach(w=>{
+      const T=WAW[w];
+      add('wpn','w80_'+w,T.p[0],T.p[1],1,a=>pRate(a.wt[w][1],a.wt[w][0],150,80),w,w);
+      add('wpn','w92_'+w,T.m[0],T.m[1],2,a=>pRate(a.wt[w][1],a.wt[w][0],150,92),w,w);
+      for(const c in CLS) add('wpn','ws_'+w+'_'+c,T[c][0],T[c][1],2,a=>pRate(a.wc[w][c][1],a.wc[w][c][0],60,90),w,w);
+      add('wpn','mis_'+w,T.x[0],T.x[1],1,a=>pRate(a.wt[w][4],a.wt[w][3],30,60),w,w);
+    });
+
+    /* Underdog: weapons used against mobs that resist them */
+    [[50,'Against the Odds'],[65,'Stubborn'],[80,'Defying Physics'],[90,'Rule Breaker']].forEach((x,i)=>
+      add('odds','ni'+x[0],x[1],'Win '+x[0]+'% of fights where your weapon is resisted by the mob.',i,a=>pRate(a.nd,a.ne,100,x[0]),'bolt','rate'));
+    [[10,'Off-Label Use'],[100,'Square Peg'],[400,'Duct Tape Engineer']].forEach((x,i)=>
+      add('odds','nk'+x[0],x[1],'Land '+fmtN(x[0])+' killing blows with a weapon the mob resists.',i,a=>pCount(a.nk,x[0]),'bolt','blows'));
+    [[3,'Improviser'],[5,'Wild Card'],[8,'Anything Goes']].forEach((x,i)=>
+      add('odds','nt'+x[0],x[1],'Land a killing blow with a resisted weapon on '+x[0]+' different mob types.',i,a=>pCount(a.nkTypes,x[0]),'bolt','types'));
+  });
   return ACHS=A;
 }
 
@@ -1429,8 +1448,8 @@ function achCheck(force){
   const now=Date.now();
   if(!force){ if(!achDirty) return; if(now-achLast<500){ if(!achPend&&typeof setTimeout!=='undefined'){ achPend=true; setTimeout(()=>{ achPend=false; achCheck(true); },600); } return; } }
   achDirty=false; achLast=now;
-  const st=stOf(), a=agg(); let got=false;
-  for(const d of achList()){ if(st.ach[d.id]) continue; let r; try{ r=d.fn(a); }catch(e){ continue; } if(r&&r.done){ st.ach[d.id]=now; achReward(d); achQ.push(d); got=true; } }
+  const st=stOf(), AG={}, ag=w=>AG[w]||(AG[w]=agg(w)); let got=false;
+  for(const d of achList()){ if(st.ach[d.id]) continue; let r; try{ r=d.fn(ag(d.wid)); }catch(e){ continue; } if(r&&r.done){ st.ach[d.id]=now; achReward(d); achQ.push(d); got=true; } }
   if(achQ.length>3){ const n=achQ.length, tier=Math.max.apply(null,achQ.map(x=>x.tier)), g=achQ.reduce((q,x)=>q+((x.rw||{}).g||0),0), f=achQ.reduce((q,x)=>q+((x.rw||{}).f||0),0); achQ=[{icon:'eye',tier:tier,name:n+' achievements unlocked',rw:{g:g,f:f}}]; }
   if(got){ try{ save(); }catch(e){} achShow(); }
 }
@@ -1439,11 +1458,11 @@ function achShow(){
   const d=achQ.shift(), t=TIER[d.tier]; achBusy=true;
   if(!achEl){ achEl=document.createElement('div'); achEl.id='achToast'; achEl.setAttribute('role','status'); document.body.appendChild(achEl); }
   achEl.style.setProperty('--c',t.c);
-  achEl.innerHTML='<span class="ai">'+ico(d.icon,18)+'</span><span><small>'+t.n+' achievement'+(d.rw&&d.rw.g?' · +'+d.rw.g+' gems':'')+(d.rw&&d.rw.f?' · +'+d.rw.f+' fragments':'')+'</small><b>'+d.name+'</b></span>';
+  achEl.innerHTML='<span class="ai">'+ico(d.icon,18)+'</span><span><small>'+t.n+' achievement'+(d.rw&&d.rw.g?' · +'+d.rw.g+' gems':'')+(d.rw&&d.rw.f?' · +'+d.rw.f+' fragments':'')+'</small><b>'+d.name+(d.wname?' &middot; '+d.wname:'')+'</b></span>';
   achEl.classList.add('on'); try{ Music.up(); }catch(e){}
   setTimeout(()=>{ achEl.classList.remove('on'); setTimeout(()=>{ achBusy=false; achShow(); },350); },2800);
 }
-stBackfill();
+stBackfill(); stPwMigrate();
 
 /* ================= enemies ================= */
 const _rsc={};
@@ -2696,7 +2715,7 @@ function cmBuy(id){ const c=CARDBY[id]; if(!c) return false; const r=cmRank(id),
 function fuse(t,r){ if(r>=3||P.inv[t][r]<3) return false; P.inv[t][r]-=3; P.inv[t][r+1]++; save(); return true; }
 
 /* ================= home (armory) ================= */
-const UI={nav:'battle',elite:false,cx:'mobs',ac:'wpn',uc:'',a0:'',ag:{wpn:'turret',disc:'codex',odds:'rate'}};
+const UI={nav:'battle',elite:false,cx:'mobs',ac:'wpn',uc:'',a0:'',ag:{wpn:'turret',disc:'survey',odds:'rate'}};
 let tab='turret', confirmReset=false;
 const worldOpen=i=>{ if(i===0) return true; if((((P.prog[WORLDS[i].id])||{}).best||0)>0) return true; /* already played: stays open */ return (((P.prog[WORLDS[i-1].id]||{}).best||0)>=LEVELS)&&starsOfWorld(WORLDS[i-1].id)>=ECON.gate; };
 const curWorld=()=>WORLDS.find(w=>w.id===P.world)||WORLDS[0];
@@ -2786,9 +2805,8 @@ function codexHtml(){
 }
 const AGRP={
   wpn:WLIST.map(w=>[w,null]),
-  disc:[['codex','Codex'],['class','Classes'],['sight','Sightings']],
+  disc:[['survey','Survey'],['class','Classes'],['sight','Sightings']],
   odds:[['rate','Win rate'],['blows','Killing blows'],['types','Variety']]};
-const ACATS=[['wpn','Weapons'],['disc','Discovery'],['odds','Underdog']];
 function awTiles(list,st,a){
   return '<div class="awgrid">'+list.map(d=>{
     const t=TIER[d.tier], got=st.ach[d.id], r=d.fn(a), frac=got?1:r.frac, rw=ico('gem',11)+ECON.achGems[d.tier]+(ECON.achFrag[d.tier]?' '+ico('cards',11)+ECON.achFrag[d.tier]:'');
@@ -2801,31 +2819,27 @@ function awTiles(list,st,a){
 function awRow(items,sel,attr,pre){
   return '<div class="wpns six" style="grid-template-columns:repeat('+items.length+',minmax(0,1fr))" role="tablist">'+items.map(i=>'<button class="wpn" role="tab" '+attr+'="'+(pre||'')+i.id+'" style="--c:'+i.color+'" aria-selected="'+(sel===i.id)+'" type="button"><span class="wl">'+ico(i.ico,16)+'</span><span class="wl nm'+(i.wrap?' wrap':'')+'">'+i.label+'</span>'+(i.n?'<small>'+i.n+'</small>':'')+'</button>').join('')+'</div>';
 }
-function levelsHtml(wd){
+function levelsGrid(wd){
   const q=((P.prog||{})[wd.id]||{}).stars||{}; let h='<div class="lgrid cmp">';
   for(let n=1;n<=LEVELS;n++){ const b=q[n]|0; h+='<div class="lc'+(b===7?' full':'')+'" title="'+goalsFor(wd,n).join(' | ')+'"><b>'+n+'</b><span>'+[0,1,2].map(k=>'<i'+((b>>k)&1?' class="on"':'')+'></i>').join('')+'</span></div>'; }
   return h+'</div>';
 }
-function worldAwardsHtml(wd,list,st,a){
+function levelsView(wd){
   const tot=LEVELS*3, n=starsOfWorld(wd.id), i=WORLDS.indexOf(wd), nx=WORLDS[i+1];
-  const stars='<div class="atile" style="--c:'+wd.color+'"><div class="ath"><span class="ai">'+ico('pow',16)+'</span><b class="an">Stars</b><span class="rtag" style="--g:'+wd.color+'">'+n+'/'+tot+'</span></div>'
-    +'<div class="ad">Clear a level, hold the ozone, hold its featured mob: three stars each.</div><div class="abar"><i style="width:'+Math.round(n/tot*100)+'%"></i></div>'
-    +'<div class="ap"><span>'+n+' / '+tot+' stars</span><span class="rw">'+(nx?ECON.gate+' opens '+nx.name:'last world')+'</span></div></div>';
-  const sv=awTiles(list.filter(d=>d.cat==='world'&&d.grp===wd.id),st,a).replace('<div class="awgrid">','<div class="awgrid">'+stars);
-  return sv+levelsHtml(wd);
+  return '<div class="awgrid"><div class="atile wide" style="--c:'+wd.color+'"><div class="ath"><span class="ai">'+ico('pow',16)+'</span><b class="an">'+wd.name+' stars</b><span class="rtag" style="--g:'+wd.color+'">'+n+'/'+tot+'</span></div>'
+    +'<div class="ad">Three stars a level: clear it, hold the ozone, hold its featured mob. '+(nx?ECON.gate+' stars open '+nx.name+'.':'This is the last world.')+'</div><div class="abar"><i style="width:'+Math.round(n/tot*100)+'%"></i></div></div></div>'+levelsGrid(wd);
 }
 function awardsHtml(){
-  const st=stOf(), list=achList(), a=agg(), gl=list.filter(d=>d.cat!=='world'), cur=UI.a0||curWorld().id;
-  const tops=WORLDS.map(w=>({id:w.id,label:w.name,ico:'world',color:w.color,n:'',wrap:1})).concat([{id:'all',label:'Overall',ico:'eye',color:'#00f0ff',n:gl.filter(d=>st.ach[d.id]).length+'/'+gl.length}]);
-  let h=awRow(tops,cur,'data-a0');
-  const wd=WORLDS.find(w=>w.id===cur);
-  if(wd) return h+worldAwardsHtml(wd,list,st,a);
-  const cat=AGRP[UI.ac]?UI.ac:'wpn', cl=list.filter(d=>d.cat===cat);
-  h+='<div class="acats" style="grid-template-columns:repeat(3,minmax(0,1fr))">'+ACATS.map(c=>{ const l=list.filter(d=>d.cat===c[0]); return '<button type="button" class="acat" data-ac="'+c[0]+'" aria-pressed="'+(cat===c[0])+'">'+c[1]+' <small>'+l.filter(d=>st.ach[d.id]).length+'/'+l.length+'</small></button>'; }).join('')+'</div>';
-  const short=Object.fromEntries(TABS.map(t=>[t.id,t.name])), col=Object.fromEntries(TABS.map(t=>[t.id,t.color]));
-  const subs=AGRP[cat].map(g=>{ const l=cl.filter(d=>d.grp===g[0]); return {id:g[0],label:g[1]||short[g[0]]||WNAME[g[0]],ico:cat==='wpn'?g[0]:cat==='disc'?'eye':'bolt',color:cat==='wpn'?(col[g[0]]||'#00f0ff'):'#00f0ff',n:l.filter(d=>st.ach[d.id]).length+'/'+l.length}; });
+  const st=stOf(), list=achList(), wd=WORLDS.find(w=>w.id===UI.a0)||curWorld(), wid=wd.id, wl=list.filter(d=>d.wid===wid);
+  const cnt=l=>l.filter(d=>st.ach[d.id]).length+'/'+l.length;
+  let h=awRow(WORLDS.map(w=>({id:w.id,label:w.name,ico:'world',color:w.color,n:cnt(list.filter(d=>d.wid===w.id)),wrap:1})),wid,'data-a0');
+  const cats=[['wpn','Weapons'],['disc','Discovery'],['odds','Underdog'],['lvl','Levels']], cat=cats.some(c=>c[0]===UI.ac)?UI.ac:'wpn';
+  h+='<div class="acats">'+cats.map(c=>'<button type="button" class="acat" data-ac="'+c[0]+'" style="--c:'+wd.color+'" aria-pressed="'+(cat===c[0])+'">'+c[1]+' <small>'+(c[0]==='lvl'?starsOfWorld(wid)+'&#9733;':cnt(wl.filter(d=>d.cat===c[0])))+'</small></button>').join('')+'</div>';
+  if(cat==='lvl') return h+levelsView(wd);
+  const cl=wl.filter(d=>d.cat===cat), short=Object.fromEntries(TABS.map(t=>[t.id,t.name])), col=Object.fromEntries(TABS.map(t=>[t.id,t.color]));
+  const subs=AGRP[cat].filter(g=>cl.some(d=>d.grp===g[0])).map(g=>({id:g[0],label:g[1]||short[g[0]]||WNAME[g[0]],ico:cat==='wpn'?g[0]:cat==='disc'?'eye':'bolt',color:cat==='wpn'?(col[g[0]]||wd.color):wd.color,n:cnt(cl.filter(d=>d.grp===g[0]))}));
   const sel=subs.some(x=>x.id===UI.ag[cat])?UI.ag[cat]:subs[0].id;
-  return h+awRow(subs,sel,'data-ag',cat+':')+awTiles(cl.filter(d=>d.grp===sel),st,a);
+  return h+awRow(subs,sel,'data-ag',cat+':')+awTiles(cl.filter(d=>d.grp===sel),st,agg(wid));
 }
 function recordHtml(){
   const a=agg(), s=stOf(), res=a.kill+a.leak, R=(n,d)=>d?(n/d*100).toFixed(1)+'%':'--', RC=(n,d)=>d?Math.round(n/d*100)+'%':'--';
@@ -3321,10 +3335,10 @@ window.__rr={fireball:fireball,chip:chip,openTeach:openTeach,fireMortar:fireMort
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 56</div>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 57</div>
 <script>
 /* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
-(function(){ const BUILD=56; let busy=false, shown=false;
+(function(){ const BUILD=57; let busy=false, shown=false;
   const inRun=()=>{ try{ return typeof G!=='undefined'&&(G.state==='playing'||G.state==='cards'||G.state==='shop'||G.state==='paused'||G.state==='teach'); }catch(e){ return false; } };
   function wipeReload(){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
     if(n>=3) return;

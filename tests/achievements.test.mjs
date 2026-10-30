@@ -34,14 +34,19 @@ const fight=(type,won,{weapons=['turret'],src='turret',resKind=null,m=1}={})=>{
 // 2. catalogue sanity
 {
   reset(); const list=A.achList();
-  assert(list.length>=60,'expected a full catalogue, got '+list.length);
+  assert(list.length>=200,'expected a full catalogue, got '+list.length);
   assert.equal(new Set(list.map(d=>d.id)).size,list.length,'duplicate achievement ids');
-  const a=A.agg();
-  for(const d of list){ const r=d.fn(a); assert(r&&typeof r.done==='boolean'&&r.frac>=0&&r.frac<=1&&typeof r.txt==='string',d.id+' bad progress '+JSON.stringify(r)); assert(!r.done,d.id+' unlocked on an empty record'); assert(d.tier>=0&&d.tier<=3,d.id+' bad tier'); }
-  assert.equal(list.filter(d=>d.cat==='disc').length,4+3+4);
-  assert.equal(list.filter(d=>d.cat==='world').length,A.WORLDS.length,'one survey per world');
-  assert(list.filter(d=>d.cat==='wpn').every(d=>d.grp&&d.icon===d.grp)&&list.filter(d=>d.cat==='wpn').length===36,'six awards per weapon');
+  for(const d of list){ const r=d.fn(A.agg(d.wid)); assert(r&&typeof r.done==='boolean'&&r.frac>=0&&r.frac<=1&&typeof r.txt==='string',d.id+' bad progress '+JSON.stringify(r)); assert(!r.done,d.id+' unlocked on an empty record'); assert(d.tier>=0&&d.tier<=3,d.id+' bad tier'); }
+  assert(list.every(d=>d.wid&&d.id.endsWith('@'+d.wid)||d.id==='world_'+d.wid),'every award belongs to a world');
+  for(const wd of A.WORLDS){
+    const wl=list.filter(d=>d.wid===wd.id);
+    assert.equal(wl.filter(d=>d.cat==='wpn').length,36,wd.id+': six awards per weapon');
+    assert(wl.filter(d=>d.cat==='wpn').every(d=>d.grp&&d.icon===d.grp));
+    assert.equal(wl.filter(d=>d.id==='world_'+wd.id).length,1,wd.id+': one survey');
+    assert.equal(wl.filter(d=>d.grp==='sight').length,4); assert.equal(wl.filter(d=>d.cat==='odds').length,10);
+  }
   assert(list.every(d=>d.grp),'every award belongs to a sub-group');
+  assert(!list.some(d=>d.cat==='world'||/^cdx\d/.test(d.id)),'global-only awards are gone');
   assert(!list.some(d=>d.id==='all80'||d.id==='all99'||d.id.startsWith('k1_')||d.id.startsWith('cr')||d.id.startsWith('n_')),'removed global achievements are gone');
 }
 
@@ -51,13 +56,17 @@ const fight=(type,won,{weapons=['turret'],src='turret',resKind=null,m=1}={})=>{
   for(let i=0;i<100;i++){ P.seen.rock=1; fight('rock',true); }
   const st=A.stOf();
   assert.equal(st.enc.rock,100); assert.equal(st.kill.rock,100); assert(st.world.belt.rock);
+  assert.equal(st.pw.belt.enc.rock,100,'per-world record');
   A.achCheck(true);
-  assert(A.stOf().ach.sight0,'100 sightings');
-  assert(!st.ach.sight1);
-  const mineral=Object.keys(A.MOB).filter(k=>A.MOB[k].cls==='mineral');
-  mineral.forEach(k=>P.seen[k]=1); A.achCheck(true);
-  assert(A.stOf().ach.cls_mineral,'meeting every mineral mob');
-  assert(!A.stOf().ach.cls_bio);
+  assert(A.stOf().ach['sight0@belt'],'50 sightings in Meteor Belt'); assert(!st.ach['sight1@belt']);
+  assert(!st.ach['sight0@nebula'],'other worlds count their own sightings');
+  const w=A.G.wd; A.G.wd={id:'nebula'}; for(let i=0;i<60;i++) fight('dart',true); A.G.wd=w;
+  A.achCheck(true); assert(A.stOf().ach['sight0@nebula']); assert.equal(A.stOf().pw.belt.enc.dart,undefined,'nebula fights stay out of belt');
+  assert.equal(A.stOf().enc.dart,60,'global record still counts everything');
+  const roster=A.achList().find(d=>d.id==='world_belt'); assert(roster);
+  Object.keys(A.MOB).forEach(k=>A.stOf().world.belt[k]=1); A.achCheck(true);
+  assert(A.stOf().ach['cls_mineral@belt'],'meeting every mineral mob in the world'); assert(A.stOf().ach.world_belt);
+  assert(!A.stOf().ach['cls_mineral@void']);
 }
 
 // 4. aggregate counters
@@ -65,6 +74,7 @@ const fight=(type,won,{weapons=['turret'],src='turret',resKind=null,m=1}={})=>{
   reset();
   for(let i=0;i<240;i++) fight('dart',true); for(let i=0;i<60;i++) fight('dart',false);
   const g=A.agg(); assert.equal(g.kill,240); assert.equal(g.leak,60); assert.equal(g.mob.dart.enc,300);
+  const b=A.agg('belt'); assert.equal(b.kill,240); assert.equal(A.agg('void').kill,0);
 }
 
 // 5. weapon success: a weapon is credited for mobs it hit, a miss that leaks counts against it
@@ -72,12 +82,12 @@ const fight=(type,won,{weapons=['turret'],src='turret',resKind=null,m=1}={})=>{
   reset();
   for(let i=0;i<150;i++) fight('rock',true,{weapons:['mine','turret'],src:'mine'});
   for(let i=0;i<50;i++) fight('rock',false,{weapons:['mine']});
-  const g=A.agg(); const mine=g.wt.mine, tur=g.wt.turret;
+  const g=A.agg('belt'); const mine=g.wt.mine, tur=g.wt.turret;
   assert.deepEqual([mine[0],mine[1],mine[2]],[200,150,150],'mine engaged/defeated/killing blows');
   assert.deepEqual([tur[0],tur[1],tur[2]],[150,150,0],'turret assisted but never landed the killing blow');
   A.achCheck(true);
-  assert(!A.stOf().ach.w80_mine,'75% is not 80%'); assert(!A.stOf().ach.w92_mine);
-  assert(!A.stOf().ach.w80_turret,'turret only has 150 engagements, below the 200 minimum');
+  assert(!A.stOf().ach['w80_mine@belt'],'75% is not 80%'); assert(!A.stOf().ach['w92_mine@belt']);
+  assert(A.stOf().ach['w80_turret@belt'],'turret: 150 of 150 meets the 150 minimum'); assert(!A.stOf().ach['w80_turret@void']);
 }
 
 // 6. off-type weapons: only the weapon's own damage type, and only at <=0.65x
@@ -85,15 +95,15 @@ const fight=(type,won,{weapons=['turret'],src='turret',resKind=null,m=1}={})=>{
   reset();
   for(let i=0;i<30;i++) fight('brute',true,{weapons:['turret'],src:'turret',m:0.5});   // resisted kinetic
   for(let i=0;i<5;i++) fight('brute',true,{weapons:['mine'],src:'mine',m:1.5});         // mine is the right tool
-  const g=A.agg();
+  const g=A.agg('belt');
   assert.equal(g.nk,30,'only resisted killing blows count'); assert.equal(g.wt.mine[3],0);
-  A.achCheck(true); assert(A.stOf().ach.nk25,'25 off-type killing blows'); assert(!A.stOf().ach.nk250);
+  A.achCheck(true); assert(A.stOf().ach['nk10@belt'],'10 off-type killing blows'); assert(!A.stOf().ach['nk100@belt']);
   // arc card: energy damage dealt by the turret is not "kinetic resisted"
   const e=mob('brute'); A.stSpawn(e); A.stHit(e,'turret','e',0.3); A.stResolve(e,true,'turret');
-  assert.equal(A.agg().wt.turret[3],30,'turret arc card must not flag a resisted engagement');
+  assert.equal(A.agg('belt').wt.turret[3],30,'turret arc card must not flag a resisted engagement');
   // variety
   reset(); for(const t of ['brute','chunk','shield']) fight(t,true,{weapons:['turret'],src:'turret',m:0.5});
-  A.achCheck(true); assert(A.stOf().ach.nt3,'3 different mob types'); assert(!A.stOf().ach.nt6);
+  A.achCheck(true); assert(A.stOf().ach['nt3@belt'],'3 different mob types'); assert(!A.stOf().ach['nt5@belt']);
 }
 
 // 7. boss wipe: mobs cleared because the boss died are not counted as kills or leaks
@@ -113,7 +123,7 @@ const fight=(type,won,{weapons=['turret'],src='turret',resKind=null,m=1}={})=>{
 
 // 9. one big unlock burst collapses to a single toast
 {
-  reset(); const P=A.P(); Object.keys(A.MOB).forEach(k=>P.seen[k]=1); A.achCheck(true);
+  reset(); Object.keys(A.MOB).forEach(k=>{ for(const w of A.WORLDS) (A.stOf().world[w.id]||(A.stOf().world[w.id]={}))[k]=1; }); A.achCheck(true);
   assert(A.achQ.length<=1,'burst collapsed, queue='+A.achQ.length);
   assert(Object.keys(A.stOf().ach).length>=4,'burst still records every unlock');
 }
@@ -144,11 +154,20 @@ const fight=(type,won,{weapons=['turret'],src='turret',resKind=null,m=1}={})=>{
 
 // 9d. achievement rewards: gems by tier, fragments for tiers 1+
 {
-  reset(); const P=A.P(); P.seen.rock=1; P.seen.dart=1; P.seen.swarm=1; P.seen.invader=1; A.achCheck(true);   // First Contact: Bronze
-  assert(A.stOf().ach.cdx0); assert.equal(P.gems,A.ECON.achGems[0]); assert.equal(Object.values(P.frag).reduce((a,b)=>a+b,0),A.ECON.achFrag[0]);
-  const before=P.gems; Object.keys(A.MOB).forEach(k=>P.seen[k]=1); A.achCheck(true);
+  reset(); const P=A.P(); for(let i=0;i<50;i++) fight('rock',true); A.achCheck(true);   // Spotter: Bronze
+  assert(A.stOf().ach['sight0@belt']); assert.equal(P.gems,A.ECON.achGems[0]); assert.equal(Object.values(P.frag).reduce((a,b)=>a+b,0),A.ECON.achFrag[0]);
+  const before=P.gems; Object.keys(A.MOB).forEach(k=>A.stOf().world.belt[k]=1); A.achCheck(true);
   assert(P.gems>before,'later unlocks pay more gems'); assert(Object.values(P.frag).reduce((a,b)=>a+b,0)>0,'higher tiers pay fragments');
   const g2=P.gems; A.achCheck(true); assert.equal(P.gems,g2,'no double payout');
+}
+
+// 9e. old saves: the global record and unlocks become Meteor Belt's, once
+{
+  reset(); const st=A.stOf(); st.enc={rock:300}; st.kill={rock:290}; st.leak={rock:10}; st.rz={rock:300}; st.hold={rock:280}; st.w={turret:{rock:[300,290,290,0,0,0]}}; st.ach={sight0:123,world_belt:5,w80_turret:77}; st.pwm=0; st.pw={};
+  vm.runInContext('stPwMigrate()',ctx); vm.runInContext('stPwMigrate()',ctx);
+  assert.equal(st.pw.belt.enc.rock,300); assert.deepEqual(st.pw.belt.w.turret.rock,[300,290,290,0,0,0]);
+  assert.equal(st.ach['sight0@belt'],123); assert.equal(st.ach['w80_turret@belt'],77); assert(!st.ach['world_belt@belt']);
+  assert(!st.pw.nebula,'only Meteor Belt inherits');
 }
 
 // 10. cloud merge: counters take the larger value, unlocks are a union with the earliest time
@@ -164,6 +183,9 @@ const fight=(type,won,{weapons=['turret'],src='turret',resKind=null,m=1}={})=>{
   assert.deepEqual(r.ach,{x:100,y:50,z:300}); assert.equal(r.bf,1);
   assert.deepEqual(JSON.parse(JSON.stringify(m.mergeSt(undefined,undefined).ach)),{});
   assert.equal(r.rz.rock,12); assert.equal(r.rz.dart,1); assert.equal(r.hold.rock,7);
+  const pa={pw:{belt:{enc:{rock:5},kill:{},leak:{},rz:{},hold:{},w:{turret:{rock:[5,5,5,0,0,0]}}}},pwm:1}, pb={pw:{belt:{enc:{rock:9},kill:{},leak:{},rz:{},hold:{},w:{}},void:{enc:{brute:2},kill:{},leak:{},rz:{},hold:{},w:{}}}};
+  const pr=JSON.parse(JSON.stringify(m.mergeSt(pa,pb)));
+  assert.equal(pr.pw.belt.enc.rock,9); assert.deepEqual(pr.pw.belt.w.turret.rock,[5,5,5,0,0,0]); assert.equal(pr.pw.void.enc.brute,2); assert.equal(pr.pwm,1);
   // whole-save merge: star bitmasks are OR'd, fragments take the larger count
   const full=cut(cloud,"  const maxObj=","  const code=");
   const m2={score:()=>0,JSON,Object,Math,Set,Array}; vm.runInNewContext("const score=j=>JSON.parse(j).sc||0;\n"+full+"\nglobalThis.merge=merge;",m2);
