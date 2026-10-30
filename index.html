@@ -103,7 +103,8 @@ button{font-family:inherit}
 .rows div span:first-child{color:var(--dim)}
 .rows .tot{border-bottom:0; color:var(--yellow); font-weight:700; font-size:16px; text-shadow:0 0 10px rgba(255,242,0,.4)}
 .card.soon{opacity:.82; border-style:dashed}
-.btn.soonbtn{opacity:.6; cursor:default; letter-spacing:.12em; text-transform:uppercase; font-size:13px}
+.paytwo{display:flex; gap:10px}.paytwo .btn{flex:1; display:flex; align-items:center; justify-content:center; gap:6px}
+.paytwo .btn[disabled]{opacity:.5; cursor:default}
 .obtns{display:flex; gap:10px; flex-wrap:wrap; justify-content:center; flex:none}
 /* win / defeat screens: the rewards scroll, the Home / Next / Retry buttons stay pinned in view */
 #overlay .ovb{display:flex; flex-direction:column; align-items:center; gap:12px; width:100%; min-height:0; overflow:auto; overscroll-behavior:contain; padding:2px 0}
@@ -696,7 +697,7 @@ const newPW=()=>({best:0,sel:1,perf:{},eclr:{},stars:{}});
 const newSt=()=>({v:1,enc:{},kill:{},leak:{},rz:{},hold:{},w:{},world:{},ach:{}});
 function pw(o){ return o.prog[o.world]||(o.prog[o.world]=newPW()); }
 const newP=()=>{
-  const o={inv:newInv(),lv:{},cm:{},gems:0,pass:0,starter:0,chestDay:'',passDay:'',ledger:[],world:'belt',own:{belt:true},prog:{},seen:{},st:newSt(),frag:{pow:0,tmp:0,rch:0,cap:0,frt:0},intro:0,en:EN_MAX,enV:2,enT:Date.now()};
+  const o={inv:newInv(),lv:{},cm:{},gems:0,pass:0,starter:0,chestDay:'',passDay:'',adDay:'',adN:0,ledger:[],world:'belt',own:{belt:true},prog:{},seen:{},st:newSt(),frag:{pow:0,tmp:0,rch:0,cap:0,frt:0},intro:0,en:EN_MAX,enV:2,enT:Date.now()};
   Object.defineProperty(o,'best',{get(){ return pw(o).best; },set(v){ pw(o).best=v; },enumerable:false});
   Object.defineProperty(o,'sel',{get(){ return pw(o).sel; },set(v){ pw(o).sel=v; },enumerable:false});
   return o;
@@ -713,7 +714,7 @@ try{
     if(o.prog){ for(const k in o.prog){ const q=o.prog[k]||{}; P.prog[k]={best:+q.best||0,sel:+q.sel||1,perf:q.perf||{},eclr:q.eclr||{},stars:q.stars||{}}; } P.own=Object.assign({belt:true},o.own); if(WORLDS.some(w=>w.id===o.world)) P.world=o.world; }
     else P.prog.belt={best:+o.best||0,sel:+o.sel||1,perf:{},eclr:{}};
     if(o.seenW&&typeof o.seenW==='object') P.seenW=o.seenW; if(o.cm&&typeof o.cm==='object') P.cm=o.cm;
-    if(isFinite(+o.gems)) P.gems=Math.max(0,Math.floor(+o.gems)); P.pass=+o.pass||0; P.starter=o.starter?1:0; P.chestDay=o.chestDay||''; P.passDay=o.passDay||''; P.ledger=Array.isArray(o.ledger)?o.ledger.slice(-100):[];
+    if(isFinite(+o.gems)) P.gems=Math.max(0,Math.floor(+o.gems)); P.pass=+o.pass||0; P.starter=o.starter?1:0; P.chestDay=o.chestDay||''; P.passDay=o.passDay||''; P.adDay=o.adDay||''; P.adN=Math.max(0,Math.floor(+o.adN||0)); P.ledger=Array.isArray(o.ledger)?o.ledger.slice(-100):[];
     if(o.st&&typeof o.st==='object') P.st=Object.assign(newSt(),o.st);
     if(o.frag&&typeof o.frag==='object') for(const t in P.frag) P.frag[t]=Math.max(0,Math.floor(+o.frag[t]||0));
     if(o.seen&&typeof o.seen==='object') P.seen=o.seen;
@@ -2315,8 +2316,20 @@ let toastEl=null, toastT=0;
 function toast(t){ if(!toastEl){ toastEl=document.createElement('div'); toastEl.className='toast'; toastEl.setAttribute('role','status'); document.body.appendChild(toastEl); } toastEl.textContent=t; toastEl.classList.add('on'); clearTimeout(toastT); toastT=setTimeout(()=>toastEl.classList.remove('on'),2600); }
 /* Real-money purchases need the store's billing (Google Play / App Store). On the web build nothing is charged; the Android/iOS builds replace Billing.buy and call grantSku on success. */
 const PRICES={starter:'$2.99',pass:'$4.99',g100:'$0.99',g550:'$4.99',g1200:'$9.99'};   /* kept for the store release; not shown while PAID_SOON is on */
+const COST={pass:600,starter:200};   /* gem price of the pass (30 days) and the one-time starter pack */
+const AD_GEMS=3, AD_GEMS_DAY=3;   /* free gems per watched ad, and how many ads per day pay out */
 const PAID_SOON=true;   /* real-money items show "Coming soon" with no price until store billing is connected */
-const soonBtn='<button class="btn soonbtn" type="button" disabled>Coming soon</button>';
+const adLeft=()=>Math.max(0,AD_GEMS_DAY-(P.adDay===today()?(P.adN||0):0));
+/* two ways to buy: gems, or real money (locked until store billing is connected) */
+const payBtns=(sku,done)=>'<div class="paytwo"><button class="btn big" type="button" data-gem="'+sku+'" '+(done?'disabled':'')+'>'+ico('gem',15)+' '+COST[sku]+'</button><button class="btn" type="button" disabled aria-label="Pay with money: coming soon">'+ico('lock',14)+' Money</button></div>';
+function buyGems(sku){
+  if(!COST[sku]) return; if(sku==='starter'&&P.starter) return;
+  if((P.gems||0)<COST[sku]){ toast('Not enough gems. Watch ads or play levels to earn more.'); return; }
+  P.gems-=COST[sku]; grantSku(sku); Music.up(); toast(sku==='pass'?'Neon Pass active: +30 days':'Starter pack unlocked'); }
+function adGems(){
+  if(adLeft()<=0) return;
+  rewardFlow('free_gems',()=>{ if(adLeft()<=0) return; if(P.adDay!==today()){ P.adDay=today(); P.adN=0; } P.adN++; P.gems=(P.gems||0)+AD_GEMS; logEv('adgems',''); save(); Music.up(); toast('+'+AD_GEMS+' gems'); renderArmory(); });
+}
 const Billing={ready:false, buy(sku){ if(PAID_SOON){ toast('Coming soon'); return; } if(Billing.ready&&Billing.native) return Billing.native(sku,()=>grantSku(sku)); toast('Store purchases open with the Android and iOS release. Nothing was charged.'); }};
 function grantSku(sku){
   if(sku==='g100') P.gems+=100; else if(sku==='g550') P.gems+=550; else if(sku==='g1200') P.gems+=1200;
@@ -2390,12 +2403,14 @@ function shopHtml(){
   let h='<div class="wrap shop"><div class="ahead"><h1>Shop</h1><div class="cr"><span class="lbl">Gems</span><b style="color:#7df9ff">'+g+'</b></div></div>';
   h+='<div class="card" style="--c:#ffc400"><div class="ct"><span class="cn">Daily chest</span><span class="chip" style="--c:#ffc400">Free</span></div><div class="cv">8 gems and 3 cards'+(pa?' (doubled by your pass)':'')+'</div>'
     +'<button class="btn" data-claim="chest" type="button" style="--c:#ffc400" '+(can?'':'disabled')+'>'+(can?'Open chest'+(pa?'':' <small>(watch ad)</small>'):'Come back tomorrow')+'</button></div>';
-  h+='<div class="card'+(PAID_SOON?' soon':'')+'" style="--c:#9d4dff"><div class="ct"><span class="cn">Neon Pass</span><span class="chip" style="--c:#9d4dff">'+(PAID_SOON&&!pa?'Coming soon':pa?days+' days left':'30 days')+'</span></div>'
+  h+='<div class="card" style="--c:#7df9ff"><div class="ct"><span class="cn">Free gems</span><span class="chip" style="--c:#7df9ff">'+adLeft()+' left today</span></div><div class="cv">Watch an ad for '+AD_GEMS+' gems.</div>'
+    +'<button class="btn" data-adgems="1" type="button" style="--c:#7df9ff" '+(adLeft()?'':'disabled')+'>'+(adLeft()?'+'+AD_GEMS+' gems <small>'+(passActive()?'':'(watch ad)')+'</small>':'Come back tomorrow')+'</button></div>';
+  h+='<div class="card" style="--c:#9d4dff"><div class="ct"><span class="cn">Neon Pass</span><span class="chip" style="--c:#9d4dff">'+(pa?days+' days left':'30 days')+'</span></div>'
     +'<div class="cv">The only way to remove ads. Every reward ad is granted instantly with no waiting, 15 gems every day, and double daily chests.</div>'
     +(pa?'<button class="btn" data-claim="pass" type="button" style="--c:#9d4dff" '+(P.passDay===today()?'disabled':'')+'>'+(P.passDay===today()?'Daily 15 gems claimed':'Claim 15 gems')+'</button>':'')
-    +(PAID_SOON?soonBtn:'<button class="btn big" data-sku="pass" type="button" style="--c:#9d4dff">'+(pa?'Extend 30 days \u00b7 ':'Get Neon Pass \u00b7 ')+PRICES.pass+'</button>')+'</div>';
-  if(!P.starter) h+='<div class="card'+(PAID_SOON?' soon':'')+'" style="--c:#00f0ff"><div class="ct"><span class="cn">Starter pack</span><span class="chip" style="--c:#00f0ff">'+(PAID_SOON?'Coming soon':'One time')+'</span></div><div class="cv">150 gems, 2 Rare cards of every type and 25 energy.</div>'
-    +(PAID_SOON?soonBtn:'<button class="btn big" data-sku="starter" type="button" style="--c:#00f0ff">'+PRICES.starter+'</button>')+'</div>';
+    +payBtns('pass',false)+'</div>';
+  if(!P.starter) h+='<div class="card" style="--c:#00f0ff"><div class="ct"><span class="cn">Starter pack</span><span class="chip" style="--c:#00f0ff">One time</span></div><div class="cv">150 gems, 2 Rare cards of every type and 25 energy.</div>'
+    +payBtns('starter',false)+'</div>';
   h+='<div class="note" style="margin:10px 0 4px"><b>Card fragments.</b> Forge a card of any rarity: '+RAR.map((r,i)=>r.name+' '+FORGE[i]).join(', ')+'. Level stars and achievements pay fragments for free; you can also buy '+FRAG_BUY+' for '+FRAG_BUY+' gems.</div>';
   Object.keys(CT).forEach(t=>{
     const f=(P.frag||{})[t]||0, nx=FORGE.find(c=>c>f)||FORGE[3];
@@ -2697,7 +2712,7 @@ armoryEl.addEventListener('contextmenu',e=>{ if(e.target.id==='pv'||e.target.clo
 
 armoryEl.addEventListener('click',e=>{
   const ac=e.target.closest('[data-acct]'); if(ac&&window.RRcloud){ const a=ac.dataset.acct; if(a==='del'&&!confirm('Delete your account and cloud save? This cannot be undone.')) return; RRcloud.action(a); return; }
-  const t=e.target.closest('[data-act],[data-buy],[data-cm],[data-pack],[data-sku],[data-claim],[data-tab],[data-fuse],[data-nav],[data-mode],[data-world],[data-cx],[data-ac],[data-forge],[data-frag]'); if(!t) return;
+  const t=e.target.closest('[data-act],[data-buy],[data-cm],[data-pack],[data-sku],[data-claim],[data-tab],[data-fuse],[data-nav],[data-mode],[data-world],[data-cx],[data-ac],[data-forge],[data-frag],[data-gem],[data-adgems]'); if(!t) return;
   if(t.dataset.cx){ UI.cx=t.dataset.cx; renderArmory(); const c0=$('content'); if(c0) c0.scrollTop=0; return; }
   if(t.dataset.ac){ UI.ac=t.dataset.ac; renderArmory(); const c1=$('content'); if(c1) c1.scrollTop=0; return; }
   if(t.dataset.nav){ UI.nav=t.dataset.nav; renderArmory(); return; }
@@ -2707,6 +2722,8 @@ armoryEl.addEventListener('click',e=>{
   if(t.dataset.tab){ tab=t.dataset.tab; renderArmory(); return; }
   if(t.dataset.forge){ const q=t.dataset.forge.split(':'); forge(q[0],+q[1]); return; }
   if(t.dataset.frag){ buyFrags(t.dataset.frag); return; }
+  if(t.dataset.gem){ buyGems(t.dataset.gem); return; }
+  if(t.dataset.adgems){ adGems(); return; }
   if(t.dataset.sku){ Billing.buy(t.dataset.sku); return; }
   if(t.dataset.claim){ claim(t.dataset.claim); return; }
   if(t.dataset.cm){ if(cmBuy(t.dataset.cm)){ Music.up(); renderArmory(); } return; }
@@ -3027,10 +3044,10 @@ window.__rr={fireball:fireball,chip:chip,openTeach:openTeach,fireMortar:fireMort
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 42</div>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 43</div>
 <script>
 /* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
-(function(){ const BUILD=42; let busy=false, shown=false;
+(function(){ const BUILD=43; let busy=false, shown=false;
   const inRun=()=>{ try{ return typeof G!=='undefined'&&(G.state==='playing'||G.state==='cards'||G.state==='shop'||G.state==='paused'||G.state==='teach'); }catch(e){ return false; } };
   function wipeReload(){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
     if(n>=3) return;
