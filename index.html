@@ -701,6 +701,97 @@ const LV=o=>{ const r={}; for(const k in o) r[k]=(o[k]-1)*20+1; return r; };
 const UW=LV({rock:1,dart:3,swarm:6,invader:9,shield:12,phantom:15,chunk:18,leech:21,brute:24,tender:28,egg:32,regen:36});
 const gpOf=(n,w)=>(n-1)*20+w;
 for(const k in UW) MOB[k].unlock=Math.ceil(UW[k]/20);
+
+/* ---- World variants: every world re-skins the same mob engine into its own enemy faction, with new names, looks and a different damage profile.
+   n=name c=colour r=[kinetic,blast,energy] taken (higher = hurts more) g=regen note=bestiary text br=level brief. The belt is the baseline. ---- */
+const SKIN={
+ nebula:{ /* The Brood: living carapace. Shrugs off bullets and slime-coated against energy; soft against blasts. Regrows. */
+  rock:{n:'Spore pod',c:'#8fd14f',r:[.9,1.2,.8],note:'A seed pod, thrown like a rock.'},
+  dart:{n:'Skitter',c:'#d4ff3a',r:[1.2,1.1,.6],g:.03,note:'A brood scout. Quick, slick, and it mends itself.'},
+  swarm:{n:'Gnatling',c:'#5dffb0',r:[.9,1.7,.6],note:'Clouds of newborn fliers.'},
+  invader:{n:'Brood warrior',c:'#a7ff5e',r:[.8,1.4,.8],g:.02,note:'Marches in a tight line, hide glistening.'},
+  shield:{n:'Carapace drone',c:'#3dd6a0',r:[.5,1.2,.9],br:'Carapace drones screen the swarm.',note:'Grown armour on a flying frame.'},
+  phantom:{n:'Mirage moth',c:'#c9ff9a',r:[1.2,.9,.7],note:'Flickers in and out of the spore haze.'},
+  chunk:{n:'Husk',c:'#7ecb3f',r:[.7,1.6,.6],note:'Hardened shell that bursts into smaller husk bits.'},
+  small:{n:'Husk bit',c:'#a8d86a',note:'Shell fragments from a husk.'},
+  brute:{n:'Behemoth',c:'#4caf50',r:[.5,1.6,.7],g:.02,note:'A slow wall of living armour.'},
+  leech:{n:'Tick',c:'#ff7a5c',r:[.7,1.3,.6],g:.02,br:'Ticks drop onto the turret and cling to it. Kill them fast.',note:'Latches onto the turret and drains the base until killed.'},
+  tender:{n:'Nurse',c:'#00ffc8',r:[.8,1.5,.7],br:'Nurses mend everything near them. Kill them first.',note:'Mends nearby brood. Kill it first.'},
+  egg:{n:'Hatchery',c:'#ffe066',r:[.6,1.7,.8],br:'Hatcheries hover and spill larvae. Break them early.',note:'Hovers and spills larvae until destroyed.'},
+  hatch:{n:'Larva',c:'#e8ff8a',note:'Hatched from a hatchery. Fast and fragile.'},
+  regen:{n:'Bloomling',c:'#b6ff6b',r:[.7,1.4,.7],g:.09,br:'Bloomlings regrow. Burst them down, do not chip.',note:'Regrows fast unless you keep hitting it.'},
+  boss:{n:'Brood Mother',c:'#7dff4a',r:[.7,1.5,.8],note:'The nest queen. Hovers and spits spores and scouts.'},
+  orb:{n:'Spore bomb',c:'#d4ff3a',note:'Boss ammunition. Slick against energy.'}},
+ armada:{ /* The Ironclad: reactive plating. Bullets and blasts bounce; conductive hulls overload under energy. */
+  rock:{n:'Scrap slug',c:'#b0a090',r:[.7,.7,1.2],note:'A lump of scrap fired from a hull cannon.'},
+  dart:{n:'Lancer',c:'#ff9f43',r:[.5,.7,1.5],note:'A needle-nosed interceptor.'},
+  swarm:{n:'Rivet',c:'#ffcf6b',r:[.5,.8,1.4],note:'Tiny drones that fly in blocks.'},
+  invader:{n:'Marine',c:'#c0c8d0',r:[.4,.6,1.6],note:'Marches in step. Plated head to foot.'},
+  shield:{n:'Aegis drone',c:'#6fa8ff',r:[.3,.6,1.7],br:'Aegis drones screen the fleet.',note:'Projects a plate of hard light in front of the fleet.'},
+  phantom:{n:'Cloaker',c:'#9aa8b8',r:[.7,.5,1.4],note:'Cloaks, then reappears off to one side.'},
+  chunk:{n:'Slag block',c:'#8a7f78',r:[.4,.7,1.5],note:'A cooled block of slag that breaks into shrapnel.'},
+  small:{n:'Shrapnel',c:'#9a8f88',note:'Fragments from a slag block.'},
+  brute:{n:'Dreadnought',c:'#9aa4ac',r:[.3,.6,1.4],note:'A walking bulkhead.'},
+  leech:{n:'Limpet',c:'#ff7043',r:[.5,.7,1.5],br:'Limpets clamp onto the turret and drain the base. Kill them fast.',note:'Clamps onto the turret and drains the base until killed.'},
+  tender:{n:'Mender',c:'#e0b060',r:[.5,.8,1.5],br:'Menders patch up everything near them. Kill them first.',note:'Patches up nearby hulls. Kill it first.'},
+  egg:{n:'Hangar pod',c:'#c9a227',r:[.4,.8,1.5],br:'Hangar pods hover and launch interceptors. Break them early.',note:'Hovers and launches interceptors until destroyed.'},
+  hatch:{n:'Interceptor',c:'#ffd08a',note:'Launched from a hangar pod. Fast and fragile.'},
+  regen:{n:'Nanite cell',c:'#ffb347',r:[.4,.7,1.6],g:.09,br:'Nanite cells knit themselves back together. Burst them down, do not chip.',note:'Rebuilds itself fast unless you keep hitting it.'},
+  boss:{n:'Flagship',c:'#e8e8f0',r:[.5,.8,1.4],note:'The fleet command ship. Hovers and fires slag and interceptors.'},
+  orb:{n:'Slag shot',c:'#ff9f43',note:'Boss ammunition. Shrugs off energy.'}},
+ rift:{ /* The Wraiths: bodies of light. Energy passes through them; solid shot shatters them. Fast. */
+  rock:{n:'Light shard',c:'#b28dff',r:[1.4,1,.5],s:1.1,note:'A cold splinter of the rift.'},
+  dart:{n:'Streak',c:'#4df3ff',r:[1.5,1,.4],s:1.15,note:'A line of light with a point on the end.'},
+  swarm:{n:'Glint',c:'#7df9ff',r:[1.3,.9,.4],s:1.1,note:'Sparks that move together.'},
+  invader:{n:'Prism',c:'#d17dff',r:[1.4,.8,.5],note:'Glides in formation, bending the light around it.'},
+  shield:{n:'Mirror drone',c:'#9d8cff',r:[1.2,.8,.3],br:'Mirror drones ripple in the light.',note:'A shimmering pane that hangs in front of the others.'},
+  phantom:{n:'Wraith',c:'#e0b3ff',r:[1.5,.7,.6],s:1.1,note:'Flickers in and out, never where you expect.'},
+  chunk:{n:'Crystal',c:'#8d6bff',r:[1.6,.7,.5],note:'Brittle crystal that shatters into glints.'},
+  small:{n:'Glass shard',c:'#9d8cff',note:'Splinters from a crystal.'},
+  brute:{n:'Obelisk',c:'#a855f7',r:[1.1,.7,.5],note:'A tall, humming slab.'},
+  leech:{n:'Siphon',c:'#ff6bd6',r:[1.3,.9,.4],s:1.1,br:'Siphons dive onto the turret and drain the base. Kill them fast.',note:'Dives onto the turret and drains the base until killed.'},
+  tender:{n:'Conduit',c:'#6bffea',r:[1.2,.9,.5],br:'Conduits feed everything near them. Kill them first.',note:'Feeds nearby wraiths. Kill it first.'},
+  egg:{n:'Rift bloom',c:'#ff9de2',r:[1.3,.9,.5],br:'Rift blooms hover and burst into sparks. Break them early.',note:'Hovers and bursts into sparks until destroyed.'},
+  hatch:{n:'Spark',c:'#ff9de2',note:'Born from a rift bloom. Fast and fragile.'},
+  regen:{n:'Echo',c:'#c0a0ff',r:[1.3,.8,.5],g:.08,br:'Echoes reform after every hit. Burst them down, do not chip.',note:'Reforms fast unless you keep hitting it.'},
+  boss:{n:'Prism Core',c:'#ff4dd2',r:[1.3,.8,.5],note:'The heart of the rift. Hovers and throws flares and streaks.'},
+  orb:{n:'Flare',c:'#4df3ff',note:'Boss ammunition. Passes through energy.'}},
+ void:{ /* The Hollow: dense dark matter. Bullets barely mark it; heavy blasts and energy do the work. Slow. */
+  rock:{n:'Hollow shard',c:'#8a4a5a',r:[.5,1.3,1],s:.9,note:'A shard of something that was never rock.'},
+  dart:{n:'Shade',c:'#ff5c6c',r:[.5,1.2,1.1],s:.9,note:'A fast shadow with a bright eye.'},
+  swarm:{n:'Dust',c:'#c0394f',r:[.5,1.4,.9],s:.9,note:'Clouds of dark grit.'},
+  invader:{n:'Sentinel',c:'#d65a7a',r:[.4,1.2,1.2],note:'Stands guard in perfect rows.'},
+  shield:{n:'Warden',c:'#7a5cff',r:[.3,1.1,1.3],br:'Wardens stand in front of everything.',note:'A tall frame that guards the ones behind it.'},
+  phantom:{n:'Fade',c:'#a07aa8',r:[.6,1,1],note:'Slips out of sight and back again.'},
+  chunk:{n:'Singularity',c:'#6b2f45',r:[.4,1.4,.9],note:'A knot of dark matter that collapses into motes.'},
+  small:{n:'Mote',c:'#7a3a4a',note:'Dark fragments from a singularity.'},
+  brute:{n:'Colossus',c:'#b02a3a',r:[.35,1.3,1],s:.9,note:'A slow, crushing mass.'},
+  leech:{n:'Parasite',c:'#ff3860',r:[.5,1.2,1.2],br:'Parasites slip onto the turret and drain the base. Kill them fast.',note:'Slips onto the turret and drains the base until killed.'},
+  tender:{n:'Whisper',c:'#ff6b8a',r:[.5,1.3,1.1],br:'Whispers knit the dark back together around them. Kill them first.',note:'Knits nearby hollow back together. Kill it first.'},
+  egg:{n:'Maw seed',c:'#c04a7a',r:[.4,1.4,1],br:'Maw seeds hang in the air and split open. Break them early.',note:'Hangs in the air and splits open until destroyed.'},
+  hatch:{n:'Spawn',c:'#ff8aa8',note:'Split from a maw seed. Fast and fragile.'},
+  regen:{n:'Unraveler',c:'#ff7a9c',r:[.4,1.2,1.2],g:.08,br:'Unravelers pull themselves back together. Burst them down, do not chip.',note:'Pulls itself back together unless you keep hitting it.'},
+  boss:{n:'The Maw',c:'#ff2040',r:[.5,1.3,1],note:'A hole in the gate with teeth. Spits dark orbs and shades.'},
+  orb:{n:'Null orb',c:'#ff5c6c',note:'Boss ammunition. Shrugs off energy.'}}
+};
+const MOB0={}; for(const k in MOB) MOB0[k]=Object.assign({},MOB[k],{res:Object.assign({},MOB[k].res)});
+let SKW='belt', SKD=false;
+const skinOf=(wid,k)=>(SKIN[wid]||{})[k]||null;
+const skinKey=k=>skinOf(SKW,k)?k+'@'+SKW:k;
+const seenK=k=>!!P.seen[skinKey(k)];
+const skinName=(wid,k)=>{ const o=skinOf(wid,k); return o?o.n:MOB0[k].name; };
+const THS={rock:'Field',dart:'Run',swarm:'Tide',invader:'Advance',shield:'Wall',phantom:'Raid',chunk:'Storm',brute:'Siege',leech:'Hunt',tender:'Rising',egg:'Spawn',regen:'Pit'};
+const themeFor=(wid,k)=>{ const o=skinOf(wid,k); return o?o.n.replace(/\b\w/g,c=>c.toUpperCase())+' '+THS[k]:THEME[k]; };
+function applySkin(wid){
+  wid=wid||'belt'; if(SKD&&wid===SKW) return; SKW=wid; SKD=true;
+  for(const k in MOB0){ const b=MOB0[k], m=MOB[k], o=skinOf(wid,k);
+    for(const f in m) if(!(f in b)) delete m[f];
+    Object.assign(m,b); m.res={k:b.res.k,b:b.res.b,e:b.res.e};
+    if(!o) continue;
+    m.name=o.n; if(o.c) m.color=o.c; if(o.r) m.res={k:o.r[0],b:o.r[1],e:o.r[2]};
+    if(o.s) m.vy=b.vy*o.s; if(o.g) m.regen=o.g; if(o.note) m.note=o.note;
+  }
+}
 const INTRO={};
 
 /* ================= upgrades ================= */
@@ -785,8 +876,8 @@ function briefFor(wd,n,elite){
   const p=profileFor(wd,n,elite);
   if(!elite&&wd.id==='belt'&&STORY.belt[n]) return STORY.belt[n];
   if(!elite&&n===1&&WORLD_INTRO[wd.id]) return WORLD_INTRO[wd.id];
-  if(isBoss(n)) return n%50===0?'Mega boss. The whole raiding fleet is behind it.':'Boss level. A Mothership drops in at the final wave.';
-  return (BRIEF[p.feat]||'')+(p.mut?' '+MUTS[p.mut].note:'');
+  if(isBoss(n)) return n%50===0?'Mega boss. The whole raiding fleet is behind it.':'Boss level. A '+skinName(wd.id,'boss')+' drops in at the final wave.';
+  return (((skinOf(wd.id,p.feat)||{}).br)||BRIEF[p.feat]||'')+(p.mut?' '+MUTS[p.mut].note:'');
 }
 const PROF={};
 /* A level is not just "everything unlocked so far": it gets a roster of a few mobs, a featured one, and sometimes a mutator. */
@@ -807,7 +898,7 @@ function profileFor(wd,n,elite){
   let mut=null;
   if(!isBoss(n)&&n>=5&&(elite||rng()<0.55)){ const ks=MUTK.filter(k=>n>=10||!MUTRES[k]).filter(k=>n>=14||k!=='hardened'); mut=ks[Math.floor(rng()*ks.length)]; }
   if(mut==='armored'&&roster.some(k=>k==='tender'||k==='regen'||k==='egg')) mut='swift';   /* never stack armor on top of healers */
-  const p={roster:roster,feat:feat,mut:mut,debut:debut,name:isBoss(n)?(n%50===0?'Mega boss':'Mothership'):(THEME[feat]||'Skirmish')+(mut?' \u00b7 '+MUTS[mut].name:'')};
+  const p={roster:roster,feat:feat,mut:mut,debut:debut,name:isBoss(n)?(n%50===0?'Mega boss':skinName(wd.id,'boss')):(themeFor(wd.id,feat)||'Skirmish')+(mut?' \u00b7 '+MUTS[mut].name:'')};
   return PROF[key]=p;
 }
 const TABS=[{id:'turret',name:'Turret',color:C.cyan},{id:'base',name:'Base',color:C.mint},{id:'mine',name:'Mines',color:C.orange},{id:'field',name:'Field',color:C.violet},{id:'chain',name:'Chain',color:C.yellow},{id:'saw',name:'Saw',color:C.lime},{id:'mortar',name:'Mortar',color:C.amber},{id:'bestiary',name:'Bestiary',color:C.lime}];
@@ -874,6 +965,7 @@ const SEENK='nd-seen-v1';
 try{ if(!NDStore.get(SEENK)&&Object.keys(P.prog||{}).some(k=>(P.prog[k].best||0)>1)&&!(P.seenW&&Object.keys(P.seenW).length)){ P.seenW={}; ['turret','mine','field','chain','saw','mortar'].forEach(k=>P.seenW[k]=1); } } catch(e){}
 try{ const q=JSON.parse(NDStore.get(SEENK)||'{}'); P.seen=Object.assign({},q.m||{},P.seen||{}); P.seenW=Object.assign({},q.w||{},P.seenW||{}); }catch(e){}
 function persistSeen(){ try{ NDStore.set(SEENK,JSON.stringify({m:P.seen||{},w:P.seenW||{}})); }catch(e){} }
+applySkin(P.world);
 function save(){ persistSeen(); NDStore.set(SKEY,JSON.stringify(P)); try{ if(window.RRcloud&&RRcloud.enabled) RRcloud.push(); }catch(e){} }
 const L=id=>P.lv[id]||0;
 
@@ -1254,7 +1346,7 @@ function buildWave(n,w){
   const ev=[], add=(t,fn)=>ev.push({t:t,fn:fn});
   if(boss&&last){
     const mega=n%50===0;
-    add(1.2,()=>{ G.boss=spawn('boss',W/2,-100,{mega:mega,r:mega?84:56,cr:Math.round((mega?150:50)*G.bm*1.5)}); say(mega?'Mega boss':'Mothership',mega?'Level '+n+' finale':'Destroy it'); });
+    add(1.2,()=>{ G.boss=spawn('boss',W/2,-100,{mega:mega,r:mega?84:56,cr:Math.round((mega?150:50)*G.bm*1.5)}); say(mega?'Mega boss':skinName(G.wd.id,'boss'),mega?'Level '+n+' finale':'Destroy it'); });
     return {ev:ev,span:9999,elite:true};
   }
   const elite=w%5===0&&!last, span=15+Math.min(5,n*0.1);
@@ -1436,7 +1528,7 @@ function achList(){
     A.push({cat:'disc',id:'world_'+wid,wid:wid,wname:wn,name:wn+' Survey',desc:'Meet all '+ks.length+' mobs that appear in '+wn+'.',tier:2,fn:()=>pCount(ks.filter(k=>seen()[k]).length,ks.length),icon:'world',grp:'survey'});
     for(const c in CLS){
       const kc=ks.filter(k=>MOB[k].cls===c); if(!kc.length) continue;
-      add('disc','cls_'+c,CLSN[c]||CLS[c].name+' Survey','Meet every '+CLS[c].name+' mob in '+wn+': '+kc.map(k=>MOB[k].name).join(', ')+'.',1,()=>pCount(kc.filter(k=>seen()[k]).length,kc.length),'eye','class');
+      add('disc','cls_'+c,CLSN[c]||CLS[c].name+' Survey','Meet every '+CLS[c].name+' mob in '+wn+': '+kc.map(k=>skinName(wid,k)).join(', ')+'.',1,()=>pCount(kc.filter(k=>seen()[k]).length,kc.length),'eye','class');
     }
     [[50,'Spotter'],[500,'Lookout'],[2500,'Watchtower'],[10000,'All-Seeing Rampart']].forEach((x,i)=>
       add('disc','sight'+i,x[1],'Encounter '+fmtN(x[0])+' mobs in '+wn+'.',i,a=>pCount(a.sight,x[0]),'eye','sight'));
@@ -1489,7 +1581,7 @@ function scaleRes(r,n){ const x=1+0.009*Math.max(0,n-1), k=r.k+'|'+r.b+'|'+r.e+'
 function spawn(type,x,y,o){
   const d=MOB[type], n=G.n;
   let hp=Math.max(1,Math.round(d.hp*G.hpS*(G.wFac||1)*HPK/mobn(n)*(G.mutHp||1)*earlyHp(n)));
-  if(!P.seen[type]){ P.seen[type]=1; persistSeen(); if(d.spawn||type==='boss') queueTeach({kind:'mob',type:type}); }
+  { const sk=skinKey(type); if(!P.seen[sk]){ P.seen[sk]=1; persistSeen(); if(d.spawn||type==='boss') queueTeach({kind:'mob',type:type}); } }
   if(type==='boss'){ const tier=n/10; hp=Math.round(140*G.hpS*(1+n/25)*(o&&o.mega?2.5:1)); o=Object.assign({bt:tier,bd:3,bo:5},o); }
   if(type==='orb') hp=1;
   const e=Object.assign({type:type,x:x,y:y,vx:0,vy:d.vy*G.spS*(G.mutSp||1),regen:d.regen||0,lh:-9,r:d.r,hp:hp,maxhp:hp,val:Math.max(1,Math.round(d.val*G.cs)),dmg:Math.max(1,Math.round(d.dmg*(1+n*0.03)/mobn(n))),
@@ -2437,7 +2529,7 @@ function startWave(w){
   hudKey='';
 }
 function startLevel(n,world,elite){
-  G.wd=WORLDS.find(w=>w.id===(world||P.world))||WORLDS[0]; G.elite=!!elite; UI.elite=G.elite;
+  G.wd=WORLDS.find(w=>w.id===(world||P.world))||WORLDS[0]; applySkin(G.wd.id); G.elite=!!elite; UI.elite=G.elite;
   G.n=n; G.hpS=hpScale(n)*(G.elite?1.6:1)*(G.wd.hp||1); G.spS=1+n*0.01; G.NW=waveCount(n); G.wave=0;
   G.run={rz:{},hold:{}}; G.ozFlash=0; G.maxHp=ST.armor(L('armor')); G.hp=G.maxHp; G.earned=0; G.kills=0; G.pot=0; G.credits=0; G.boost={}; G.pity={}; G.sinceW=0; G.revived=false; G.shieldUntil=0; G.tools={}; G.pickQ=0; G.rerolls=1; G.offer=[]; G.superOn=0; G.superCd=10; G.chainT=2; G.blobs=[]; G.chips=[]; G.teachQ=[]; { const to=document.getElementById('teachov'); if(to) to.remove(); } G.cpend=null; G.flashA=0; G.sawCd=0; G.stormT=12; G.mort=2; G.mortT=0; G.saws=[]; G.bolts=[]; G.shells=[]; G.fires=[]; G.delay=[]; lastCred=0;
   G.enemies=[]; G.bullets=[]; G.parts=[]; G.rings=[]; G.floats=[]; G.mines=[]; G.fields=[]; G.boss=null; G.tag=null; G.warps=[];
@@ -2894,12 +2986,12 @@ function recordHtml(){
   return h+(met.length?'</div>':'');
 }
 function bestiaryHtml(){
-  const keys=Object.keys(MOB), got=keys.filter(k=>P.seen[k]).length;
+  const keys=Object.keys(MOB), got=keys.filter(k=>seenK(k)).length;
   let h='<div class="cls">'+Object.keys(CLS).map(c=>'<span style="--c:'+CLS[c].color+'" title="'+CLS[c].note+'">'+CLS[c].name+'</span>').join('')+'</div>'
     +'<div class="note" style="margin-bottom:10px">Discovered '+got+'/'+keys.length+'. Mobs are added as you meet them. Each takes a different share of the three damage types: bright numbers hurt, dim numbers barely scratch.</div><div class="cards">';
   keys.forEach(k=>{
     const m=MOB[k], cl=CLS[m.cls];
-    if(!P.seen[k]){ h+='<div class="card dim" style="--c:#33434d"><div class="mob"><canvas width="120" height="120" data-t="'+k+'"></canvas><div><div class="cn">???</div><div class="note">Not encountered yet.</div></div></div></div>'; return; }
+    if(!seenK(k)){ h+='<div class="card dim" style="--c:#33434d"><div class="mob"><canvas width="120" height="120" data-t="'+k+'"></canvas><div><div class="cn">???</div><div class="note">Not encountered yet.</div></div></div></div>'; return; }
     h+='<div class="card" style="--c:'+m.color+'"><div class="mob"><canvas width="120" height="120" data-t="'+k+'"></canvas><div><div class="cn">'+m.name+' <span class="chip" style="--c:'+cl.color+'">'+cl.name+'</span></div>'
       +'<div class="res">'+['k','b','e'].map(x=>'<span style="--c:'+KIND[x].color+'" class="'+(m.res[x]>=1.4?'weak':m.res[x]<=0.65?'res-low':'')+'">'+KIND[x].name+' '+m.res[x]+'x</span>').join('')+'</div></div></div><div class="note">'+m.note+'</div></div>';
   });
@@ -2911,14 +3003,14 @@ function worldsHtml(){
     const wi=WORLDS.indexOf(wd), own=worldOpen(wi), pr=P.prog[wd.id]||{best:0}, active=P.world===wd.id, uw=uwFor(wd);
     const sig=(wd.sig&&wd.sig.length?wd.sig:Object.keys(uw).filter(k=>MOB[k]&&MOB[k].spawn).slice(0,4));
     h+='<div class="wcard'+(active?' on':'')+'" style="--wc:'+wd.color+'"><div class="wh"><span class="wi">'+ico('world',22)+'</span><div class="wt"><b>'+wd.name+'</b><span>'+wd.sub+'</span></div>'+(own?'':'<span class="wlock">'+ico('lock',20)+'</span>')+'</div>'
-      +'<div class="wm">'+sig.map(k=>'<canvas width="120" height="120" data-t="'+k+'" aria-label="'+MOB[k].name+'"></canvas>').join('')
+      +'<div class="wm">'+sig.map(k=>'<canvas width="120" height="120" data-t="'+k+'" data-w="'+wd.id+'" aria-label="'+skinName(wd.id,k)+'"></canvas>').join('')
       +'<span class="pr" title="Levels cleared">'+pr.best+'/'+LEVELS+'</span><span class="pr" title="Stars">'+ico('pow',12)+starsOfWorld(wd.id)+'/'+LEVELS*3+'</span></div>'
       +'<div class="wa">'+(active?'<span class="act">'+ico('aim',16)+'Active</span>':own?'<button class="btn sm" data-world="'+wd.id+'" type="button" style="--c:'+wd.color+'">Enter</button>':'<span class="act" style="color:var(--dim)">'+ico('lock',14)+'Clear level '+LEVELS+' and earn '+ECON.gate+' stars in '+WORLDS[wi-1].name+' ('+starsOfWorld(WORLDS[wi-1].id)+'/'+ECON.gate+')</span>')+'</div></div>';
   });
   return h+'</div>';
 }
 function renderArmory(){
-  enTick();
+  enTick(); if(G.state!=='playing') applySkin(P.world);
   const wd=curWorld(), keepEl=armoryEl.querySelector('.content'), keep=keepEl?keepEl.scrollTop:0;
   P.sel=clamp(P.sel,1,Math.min(P.best+1,LEVELS));
   let body=UI.nav==='arsenal'?arsenalHtml():UI.nav==='codex'?codexHtml():UI.nav==='worlds'?worldsHtml():UI.nav==='shop'?shopHtml():battleHtml();
@@ -2933,9 +3025,13 @@ function renderArmory(){
   if(UI.nav==='battle') pvInit();
 }
 function drawIcon(cv){
+  const ww=cv.dataset.w, keepSk=SKW; if(ww&&ww!==SKW) applySkin(ww);
+  try{ drawIcon0(cv); } finally { if(ww&&ww!==keepSk) applySkin(keepSk); }
+}
+function drawIcon0(cv){
   const k=cv.dataset.t, m=MOB[k], g=cv.getContext('2d'), sc=k==='boss'?0.34:k==='brute'||k==='chunk'?0.62:k==='swarm'||k==='orb'||k==='small'?1.9:1.15;
   g.clearRect(0,0,120,120); g.save(); g.translate(60,60); g.scale(sc,sc); g.lineJoin='round';
-  shape(g,k,m.r,{color:P.seen[k]?m.color:'#33434d',flash:0,t:1,rot:0.6,vx:0,vy:1,bs:1,lw:2.4/sc,col:0});
+  shape(g,k,m.r,{color:seenK(k)?m.color:'#33434d',flash:0,t:1,rot:0.6,vx:0,vy:1,bs:1,lw:2.4/sc,col:0});
   g.restore();
 }
 
@@ -2969,7 +3065,7 @@ function pvFrame(now){
     const def=MOB[m.k], sc=(m.k==='boss'?0.5:m.k==='brute'||m.k==='chunk'?0.8:m.k==='swarm'||m.k==='orb'?1.5:1.1)*S;
     m.px=(m.x+Math.sin(PV.t*0.7+m.ph)*0.03)*w; m.py=m.y*h; m.pr=def.r*sc;
     g.save(); g.translate(m.px,m.py); g.scale(sc,sc);
-    shape(g,m.k,def.r,{color:P.seen[m.k]?def.color:'#33434d',flash:m.fl>0?1:0,t:PV.t,rot:m.rot,vx:0,vy:1,bs:1,lw:2/sc,col:0});
+    shape(g,m.k,def.r,{color:seenK(m.k)?def.color:'#33434d',flash:m.fl>0?1:0,t:PV.t,rot:m.rot,vx:0,vy:1,bs:1,lw:2/sc,col:0});
     g.restore(); if(m.fl>0) m.fl-=dt;
   }
   // turret + bullets
@@ -3002,7 +3098,7 @@ let tipT=null, tipH=null;
 function hideTip(){ clearTimeout(tipT); clearTimeout(tipH); tipEl.hidden=true; }
 function showTipAt(k,r){
   const m=MOB[k]; if(!m) return;
-  if(!P.seen[k]){ tipEl.innerHTML='<b style="color:var(--dim)">Unknown contact</b><span>Not encountered yet.</span>'; tipEl.hidden=false; const w0=tipEl.offsetWidth; tipEl.style.left=Math.max(8,Math.min(innerWidth-w0-8,r.left+r.width/2-w0/2))+'px'; tipEl.style.top=(r.bottom+10)+'px'; clearTimeout(tipH); tipH=setTimeout(hideTip,2500); return; }
+  if(!seenK(k)){ tipEl.innerHTML='<b style="color:var(--dim)">Unknown contact</b><span>Not encountered yet.</span>'; tipEl.hidden=false; const w0=tipEl.offsetWidth; tipEl.style.left=Math.max(8,Math.min(innerWidth-w0-8,r.left+r.width/2-w0/2))+'px'; tipEl.style.top=(r.bottom+10)+'px'; clearTimeout(tipH); tipH=setTimeout(hideTip,2500); return; }
   tipEl.innerHTML='<b style="color:'+m.color+'">'+m.name+'</b><span>'+m.note+'</span><div class="rs">'+['k','b','e'].map(x=>'<i style="--c:'+KIND[x].color+'">'+KIND[x].name.slice(0,3)+' '+m.res[x]+'x</i>').join('')+'</div>';
   tipEl.hidden=false;
   const w=tipEl.offsetWidth, h=tipEl.offsetHeight;
@@ -3033,7 +3129,7 @@ armoryEl.addEventListener('click',e=>{
   if(t.dataset.ac){ UI.ac=t.dataset.ac; renderArmory(); const c1=$('content'); if(c1) c1.scrollTop=0; return; }
   if(t.dataset.nav){ UI.nav=t.dataset.nav; renderArmory(); return; }
   if(t.dataset.mode){ UI.elite=t.dataset.mode==='e'; renderArmory(); return; }
-  if(t.dataset.world){ if(!worldOpen(WORLDS.findIndex(w=>w.id===t.dataset.world))) return; P.world=t.dataset.world; UI.elite=false; UI.nav='battle'; save(); renderArmory(); return; }
+  if(t.dataset.world){ if(!worldOpen(WORLDS.findIndex(w=>w.id===t.dataset.world))) return; P.world=t.dataset.world; applySkin(P.world); UI.elite=false; UI.nav='battle'; save(); renderArmory(); return; }
   
   if(t.dataset.tab){ tab=t.dataset.tab; UI.uc=''; renderArmory(); return; }
   if(t.dataset.a0){ UI.a0=t.dataset.a0; renderArmory(); return; }
@@ -3376,15 +3472,15 @@ if(!P.intro){ const io=document.createElement('div'); io.id='introov'; io.innerH
 requestAnimationFrame(frame);
 
 /* test hook for headless checks */
-window.__rr={PKEYS:PKEYS,rollKey:rollKey,rollCard:rollCard,kName:kName,loadPools:loadPools,fireball:fireball,chip:chip,openTeach:openTeach,fireMortar:fireMortar,shape:shape,spawn:spawn,G:G,get P(){return P;},set P(v){P=v;},newP:newP,startLevel:startLevel,update:update,UPS:UPS,waveCount:waveCount,levelPool:levelPool,hpScale:hpScale,tune:(a,b,c,d,m,k,bk,wh,pm,lk,c0,cg)=>{if(lk!==undefined)LATEK=lk;if(pm!==undefined)PICKM=pm;if(wh!==undefined)WAVEHP=wh;if(k!==undefined)HPK=k;if(m!==undefined)MOBN=m;if(c0!==undefined)CDROP0=c0;if(cg!==undefined)CDROPG=cg;HPG=a;POOL0=b;POOLG=c;if(d!==undefined)HPA=d;},bst:bst,pickCard:pickCard,CARDS:CARDS,offerCards:offerCards,applyCard:applyCard,hasTool:hasTool,fireMortar:fireMortar,canMortar:canMortar,T:T,wcount:wcount,canBuy:canBuy,buyUp:buyUp,cardNeed:cardNeed,bandOf:bandOf,avail:avail,awardCards:awardCards,dropCount:dropCount,fuse:fuse,useEnergy:useEnergy,enTick:enTick,tryStart:tryStart,win:win,gameOver:gameOver,profileFor:profileFor,MOB:MOB,WORLDS:WORLDS,briefFor:briefFor};
+window.__rr={MOB:MOB,SKIN:SKIN,applySkin:applySkin,PKEYS:PKEYS,rollKey:rollKey,rollCard:rollCard,kName:kName,loadPools:loadPools,fireball:fireball,chip:chip,openTeach:openTeach,fireMortar:fireMortar,shape:shape,spawn:spawn,G:G,get P(){return P;},set P(v){P=v;},newP:newP,startLevel:startLevel,update:update,UPS:UPS,waveCount:waveCount,levelPool:levelPool,hpScale:hpScale,tune:(a,b,c,d,m,k,bk,wh,pm,lk,c0,cg)=>{if(lk!==undefined)LATEK=lk;if(pm!==undefined)PICKM=pm;if(wh!==undefined)WAVEHP=wh;if(k!==undefined)HPK=k;if(m!==undefined)MOBN=m;if(c0!==undefined)CDROP0=c0;if(cg!==undefined)CDROPG=cg;HPG=a;POOL0=b;POOLG=c;if(d!==undefined)HPA=d;},bst:bst,pickCard:pickCard,CARDS:CARDS,offerCards:offerCards,applyCard:applyCard,hasTool:hasTool,fireMortar:fireMortar,canMortar:canMortar,T:T,wcount:wcount,canBuy:canBuy,buyUp:buyUp,cardNeed:cardNeed,bandOf:bandOf,avail:avail,awardCards:awardCards,dropCount:dropCount,fuse:fuse,useEnergy:useEnergy,enTick:enTick,tryStart:tryStart,win:win,gameOver:gameOver,profileFor:profileFor,MOB:MOB,WORLDS:WORLDS,briefFor:briefFor};
 })();
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 62</div>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 63</div>
 <script>
 /* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
-(function(){ const BUILD=62; let busy=false, shown=false;
+(function(){ const BUILD=63; let busy=false, shown=false;
   const inRun=()=>{ try{ return typeof G!=='undefined'&&(G.state==='playing'||G.state==='cards'||G.state==='shop'||G.state==='paused'||G.state==='teach'); }catch(e){ return false; } };
   function wipeReload(){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
     if(n>=3) return;
