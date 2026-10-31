@@ -754,18 +754,18 @@ const TOOLS={
 /* Worlds: each one specialises mobs (uw = global wave a mob first appears), favoured weapons (bias on card odds) and look.
    World 1 is free. The other four are scaffolded and pay-gated (demo unlock for now). Each has its own 50 levels and progress. */
 const WORLDS=[
-  {id:'belt',  name:'Meteor Belt',  sub:'Where it starts. A bit of everything.',                      color:C.cyan,   price:0,gate:0,      uw:null, sig:[],                    bias:{},                       hp:1},
-  {id:'nebula',name:'Swarm Nebula', sub:'Dart packs and swarmers. Blast and chain thrive.',           color:C.mint,   price:1,uw:LV({rock:1,swarm:2,dart:4,leech:6,regen:9,tender:12,phantom:15,egg:18,chunk:24,shield:30,invader:36,brute:42}),        sig:['swarm','dart'],      bias:{mine:2.2,chain:2,mortar:1.5}, hp:1.7},
-  {id:'armada',name:'Iron Armada',  sub:'Armored hulls and invader fleets. Blast and energy break them.',color:C.steel,price:1,uw:LV({rock:1,shield:3,invader:5,brute:10,phantom:14,chunk:18,dart:22,tender:30,egg:36,leech:40}),      sig:['shield','invader','brute'], bias:{mortar:2.2,field:2,mine:1.5}, hp:2.5},
-  {id:'rift',  name:'Plasma Rift',  sub:'Fast darts and drone screens. Kinetic and saws cut through.',color:C.violet, price:1,uw:LV({rock:1,dart:2,phantom:4,shield:7,swarm:10,invader:14,leech:20,regen:26,chunk:30,egg:36,tender:42}),     sig:['dart','shield'],     bias:{saw:2.2,turret:1.4,chain:1.5}, hp:3.5},
-  {id:'void',  name:'Void Gate',    sub:'Dense rock and brutes. Only heavy hitters survive.',          color:C.red,    price:1,uw:LV({rock:1,chunk:3,brute:8,shield:13,regen:18,egg:22,leech:26,swarm:30,dart:34,tender:38,phantom:42}),       sig:['chunk','brute'],     bias:{mortar:2.2,saw:2,field:1.5}, hp:4.8}
+  {id:'belt',  name:'Meteor Belt',  sub:'Where it starts. The Chorus came for Halcyon\'s beat.',                      color:C.cyan,   price:0,gate:0,      uw:null, sig:[],                    bias:{},                       hp:1},
+  {id:'nebula',name:'Swarm Nebula', sub:'The Chorus nursery. The swarm guards what is growing here.',           color:C.mint,   price:1,uw:LV({rock:1,swarm:2,dart:4,leech:6,regen:9,tender:12,phantom:15,egg:18,chunk:24,shield:30,invader:36,brute:42}),        sig:['swarm','dart'],      bias:{mine:2.2,chain:2,mortar:1.5}, hp:1.7},
+  {id:'armada',name:'Iron Armada',  sub:'The Chorus fleets muster here, stitching hulls from stolen steel.',color:C.steel,price:1,uw:LV({rock:1,shield:3,invader:5,brute:10,phantom:14,chunk:18,dart:22,tender:30,egg:36,leech:40}),      sig:['shield','invader','brute'], bias:{mortar:2.2,field:2,mine:1.5}, hp:2.5},
+  {id:'rift',  name:'Plasma Rift',  sub:'A tear in space where the Chorus feeds on raw light.',color:C.violet, price:1,uw:LV({rock:1,dart:2,phantom:4,shield:7,swarm:10,invader:14,leech:20,regen:26,chunk:30,egg:36,tender:42}),     sig:['dart','shield'],     bias:{saw:2.2,turret:1.4,chain:1.5}, hp:3.5},
+  {id:'void',  name:'Void Gate',    sub:'The source of the song. Everything the Chorus sent began here.',          color:C.red,    price:1,uw:LV({rock:1,chunk:3,brute:8,shield:13,regen:18,egg:22,leech:26,swarm:30,dart:34,tender:38,phantom:42}),       sig:['chunk','brute'],     bias:{mortar:2.2,saw:2,field:1.5}, hp:4.8}
 ];
-const MUTS={warp:{name:'Warp storm',note:'Enemies blink in from nowhere.'},swift:{name:'Swift',note:'Faster, but frailer.'},armored:{name:'Armored',note:'Fewer, tougher.'},dense:{name:'Dense',note:'More of them, but weaker.'},ionized:{name:'Ionized',note:'Energy is dampened. Chain and field struggle; bring blasts or bullets.'},hardened:{name:'Hardened',note:'Plating shrugs off bullets and saws. Bring blasts or energy.'},bunkered:{name:'Bunkered',note:'Blast-proof hulls. Mines and mortars struggle; bring bullets or energy.'}};
+const MUTS={warp:{name:'Warp storm',note:'Enemies blink in from nowhere.'},swift:{name:'Swift',note:'Faster, but frailer.'},armored:{name:'Armored',note:'Fewer, tougher.'},dense:{name:'Dense',note:'More of them, but weaker.'},ionized:{name:'Ionized',note:'The air crackles with static.'},hardened:{name:'Hardened',note:'Plating thicker than it looks.'},bunkered:{name:'Bunkered',note:'These hulls were built to be hit.'}};
 const MUTRES={ionized:{k:1,b:1,e:0.4},hardened:{k:0.45,b:1,e:1},bunkered:{k:1,b:0.45,e:1}};
 const MUTK=['warp','swift','armored','dense','ionized','hardened','bunkered'];
 const THEME={rock:'Rock Field',dart:'Dart Run',swarm:'Swarm Tide',invader:'Fleet Advance',shield:'Shield Wall',phantom:'Phantom Raid',chunk:'Splitter Storm',brute:'Heavy Siege',leech:'Latcher Hunt',tender:'Hive Rising',egg:'Brood Nest',regen:'Hydra Pit'};
-const BRIEF={rock:'Loose rock, nothing clever. Learn the rhythm.',dart:'Fast, weaving contacts. Mines barely scratch them. Use energy.',swarm:'Packs of tiny ships. Mines wipe them out.',invader:'A marching fleet. Their metal hulls conduct energy.',shield:'Shield drones deflect bullets. Overload them with energy.',phantom:'They warp in and blink. Bullets find them, blasts do not.',chunk:'Dense rock that splits when it breaks. Use blasts.',brute:'Heavy plating. Blast it open before it lands.',leech:'Latchers dive and cling to the turret. Kill them fast.',tender:'Tenders heal everything near them. Kill them first.',egg:'Brood sacs hover and hatch swarmlings. Break them early.',regen:'Hydra cells regrow. Burst them down, do not chip.'};
-const WORLD_INTRO={nebula:'Swarm Nebula. The Chorus nursery, where the Hive Bloom grows.',armada:'Iron Armada. The Chorus fleets, hulls stitched from stolen steel.',rift:'Plasma Rift. Here the Chorus bends light itself.',void:'Void Gate. The source of the song. End it here.'};
+const BRIEF={rock:'Loose rock, nothing clever. Learn the rhythm.',dart:'Fast, weaving contacts. Hard to pin down.',swarm:'Packs of tiny ships, far too many to count.',invader:'A marching fleet in tight formation.',shield:'Shield drones screen the fleet. Something about them turns shots aside.',phantom:'They warp in and blink. Never quite where you expect.',chunk:'Dense rock that splits when it breaks.',brute:'Heavy plating, slow but relentless. Stop it before it lands.',leech:'Latchers dive and cling to the turret. Kill them fast.',tender:'Tenders heal everything near them. Kill them first.',egg:'Brood sacs hover and hatch swarmlings. Break them early.',regen:'Hydra cells regrow. Burst them down, do not chip.'};
+const WORLD_INTRO={nebula:'Swarm Nebula. The Chorus nursery, where the Hive Bloom grows. They will swarm anything that comes near it.',armada:'Iron Armada. The Chorus fleets muster here, hulls stitched from stolen steel. They are gathering strength for something.',rift:'Plasma Rift. A tear in space where the Chorus feeds on raw light. They swarm whatever crosses it.',void:'Void Gate. The source of the song. Everything the Chorus sent began here. End it.'};
 const STORY={
   intro:['Halcyon was the last light on the Belt. Then the Chorus began to sing.','You are RAVE, the Rampart defense mind. Keep the beat going. Keep the city alive.'],
   belt:{
@@ -2912,7 +2912,6 @@ function worldsHtml(){
     const sig=(wd.sig&&wd.sig.length?wd.sig:Object.keys(uw).filter(k=>MOB[k]&&MOB[k].spawn).slice(0,4));
     h+='<div class="wcard'+(active?' on':'')+'" style="--wc:'+wd.color+'"><div class="wh"><span class="wi">'+ico('world',22)+'</span><div class="wt"><b>'+wd.name+'</b><span>'+wd.sub+'</span></div>'+(own?'':'<span class="wlock">'+ico('lock',20)+'</span>')+'</div>'
       +'<div class="wm">'+sig.map(k=>'<canvas width="120" height="120" data-t="'+k+'" aria-label="'+MOB[k].name+'"></canvas>').join('')
-      +Object.keys(wd.bias).map(w=>'<span class="bw" title="Favoured weapon">'+ico(WIC[w]||'pow',13)+'x'+wd.bias[w]+'</span>').join('')
       +'<span class="pr" title="Levels cleared">'+pr.best+'/'+LEVELS+'</span><span class="pr" title="Stars">'+ico('pow',12)+starsOfWorld(wd.id)+'/'+LEVELS*3+'</span></div>'
       +'<div class="wa">'+(active?'<span class="act">'+ico('aim',16)+'Active</span>':own?'<button class="btn sm" data-world="'+wd.id+'" type="button" style="--c:'+wd.color+'">Enter</button>':'<span class="act" style="color:var(--dim)">'+ico('lock',14)+'Clear level '+LEVELS+' and earn '+ECON.gate+' stars in '+WORLDS[wi-1].name+' ('+starsOfWorld(WORLDS[wi-1].id)+'/'+ECON.gate+')</span>')+'</div></div>';
   });
@@ -3382,10 +3381,10 @@ window.__rr={PKEYS:PKEYS,rollKey:rollKey,rollCard:rollCard,kName:kName,loadPools
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 60</div>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 61</div>
 <script>
 /* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
-(function(){ const BUILD=60; let busy=false, shown=false;
+(function(){ const BUILD=61; let busy=false, shown=false;
   const inRun=()=>{ try{ return typeof G!=='undefined'&&(G.state==='playing'||G.state==='cards'||G.state==='shop'||G.state==='paused'||G.state==='teach'); }catch(e){ return false; } };
   function wipeReload(){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
     if(n>=3) return;
