@@ -148,7 +148,7 @@ button:focus-visible{outline:2px solid var(--yellow); outline-offset:2px}
 .seg button{font-size:12px; font-weight:600; letter-spacing:.14em; text-transform:uppercase; color:var(--dim); background:#000; border:1px solid var(--line); padding:7px 12px; cursor:pointer}
 .seg button + button{border-left:0}
 .seg button[aria-pressed="true"]{color:var(--fg); border-color:var(--c); background:color-mix(in srgb,var(--c) 18%,#000); box-shadow:0 0 12px color-mix(in srgb,var(--c) 45%,transparent)}
-#mAuto{--c:var(--cyan)} #mManual{--c:var(--magenta)}
+
 #hint{flex:1; min-width:0; font-size:11px; color:var(--dim)}
 .mini{font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--dim); background:#000; border:1px solid var(--line); padding:7px 7px; cursor:pointer}
 .mini:hover{color:var(--fg); border-color:var(--dim)}
@@ -640,16 +640,12 @@ body.menu{background:
   <footer id="dock">
     <div id="row0">
       <button type="button" class="tool" id="toolMine" style="--c:var(--orange)" aria-pressed="false" aria-label="Mine layer" hidden><span class="ts" id="mineS"></span><span class="tt" id="mineT"></span><i class="tp" id="mineP"></i></button>
-      <div class="tool passive" id="toolMortar" style="--c:#ffc400" aria-label="Mortar: double-tap the field to fire" title="Double-tap the field to fire" hidden><span class="ts" id="mortS"></span><span class="tt" id="mortT"></span><i class="tp" id="mortP"></i></div>
+      <div class="tool passive" id="toolMortar" style="--c:#ffc400" aria-label="Mortar: AI controlled" title="AI-controlled mortar" hidden><span class="ts" id="mortS"></span><span class="tt" id="mortT"></span><i class="tp" id="mortP"></i></div>
       <button type="button" class="tool" id="toolField" style="--c:var(--violet)" aria-pressed="false" aria-label="Slow field" hidden><span class="ts" id="fieldS"></span><span class="tt" id="fieldT"></span><i class="tp" id="fieldP"></i></button>
       <div class="tool passive" id="toolChain" style="--c:var(--yellow)" aria-label="Chain lightning" hidden><span class="ts" id="chainS"></span><span class="tt" id="chainT"></span><i class="tp" id="chainP"></i></div>
       <div class="tool passive" id="toolSaw" style="--c:var(--lime)" aria-label="Buzz saw" hidden><span class="ts" id="sawS"></span><span class="tt" id="sawT"></span><i class="tp" id="sawP"></i></div>
     </div>
     <div id="row1">
-      <div class="seg" role="group" aria-label="Turret control">
-        <button type="button" id="mAuto" aria-pressed="true">Auto</button>
-        <button type="button" id="mManual" aria-pressed="false">Manual</button>
-      </div>
       <span id="hint">AI controls turret and tools</span>
       <div style="display:flex;gap:6px">
         <button type="button" class="mini" id="shopBtn">Perks</button>
@@ -1688,7 +1684,7 @@ function fire(target){
     G.bullets.push({x:T.x+Math.sin(a)*24,y:TURRET_Y-24,vx:Math.sin(a)*BS,vy:-Math.cos(a)*BS,dmg:dmg,pierce:pierce,hits:[],target:target});
   }
   T.cool=ST.rate(L('rate'))*Math.pow(0.87,bq('rate'))*(sup?0.5:1); T.recoil=1; Music.shot();
-  if(!G.blobs) G.blobs=[]; if(G.blobs.length<40) G.blobs.push({x:T.x,y:TURRET_Y-34,r:3,max:9+2.5*n+1.2*L('dmg')+2*bq('dmg'),t:0,life:0.12,color:G.mode==='auto'?'#00f0ff':'#ff2bd6'});
+  if(!G.blobs) G.blobs=[]; if(G.blobs.length<40) G.blobs.push({x:T.x,y:TURRET_Y-34,r:3,max:9+2.5*n+1.2*L('dmg')+2*bq('dmg'),t:0,life:0.12,color:'#00f0ff'});
 }
 /* Would a shot fired from the turret's current x hit e? Checks every barrel's straight line against e's predicted position. */
 const inRange=e=>Math.hypot(e.x-T.x,TURRET_Y-24-e.y)-e.r<=TUR_RANGE;
@@ -1749,7 +1745,7 @@ function updateTurret(dt){
   const slide=ST.slide(L('rate'))+90*bq('slide');
   T.cool-=dt; T.recoil=Math.max(0,T.recoil-dt*6);
   if(bst('super')>0){ if(G.superOn>0) G.superOn-=dt; else { G.superCd-=dt; if(G.superCd<=0){ G.superOn=4; G.superCd=22-3*bst('super'); float(T.x,TURRET_Y-60,'SUPERCHARGE',C.yellow); G.rings.push({x:T.x,y:TURRET_Y-14,r:10,max:90,life:0.5,t:0,color:C.yellow}); } } }
-  if(G.mode==='auto'){
+  {
     const tg=pickTarget(); T.target=tg;
     let aim=W/2;
     if(tg) aim=aimFor(tg);
@@ -1760,12 +1756,6 @@ function updateTurret(dt){
       if(ht){ fire(ht); T.idle=0; }
       else if(tg){ T.idle=(T.idle||0)+dt; if(T.idle>0.06){ fire(null); T.idle=0; } }   /* something is in range and we are still slewing: keep shooting rather than sit idle (unaimed, so it is not counted as a kill in flight) */
     } else T.idle=0;
-  } else {
-    T.target=null;
-    let mv=0; if(keys.left) mv-=1; if(keys.right) mv+=1;
-    if(mv) T.x+=mv*slide*dt;
-    else if(input.active){ const st=slide*dt; T.x+=clamp(input.x-T.x,-st,st); }
-    if(T.cool<=0&&G.enemies.some(e=>!e.dead&&e.y>0)) fire(null);
   }
   T.x=clamp(T.x,20,W-20);
 }
@@ -1981,6 +1971,27 @@ function fireMortar(x,y){
   G.rings.push({x:tx,y:ty,r:6,max:mortR()*0.9,life:0.5,t:0,color:'#ffffff'}); burst(tx,ty,'#ffffff',12,180); burst(tx,ty,C.amber,10,120);
   Music.place(false); return true;
 }
+function autoMortar(dt){
+  if(!canMortar()) return;
+  G.amT=(G.amT||0)-dt; if(G.amT>0) return; G.amT=0.25;
+  const R=mortR(), live=G.enemies.filter(e=>!e.dead&&e.y>50&&e.y<GROUND-60);
+  if(!live.length) return;
+  let best=null, bs=0;
+  const sx=T.x, sy=TURRET_Y-30;
+  for(const c of live){
+    let tx=c.x, ty=c.y;
+    for(let k=0;k<2;k++){ const d=Math.hypot(tx-sx,ty-sy), t=0.8+0.9*d/700; tx=clamp(c.x+(c.vx||0)*t,24,W-24); ty=clamp(c.y+(c.vy||0)*t,110,GROUND-90); }
+    let sc=0;
+    for(const e of live){
+      const t=0.8+0.9*Math.hypot(tx-sx,ty-sy)/700, ex=e.x+(e.vx||0)*t, ey=e.y+(e.vy||0)*t, d=Math.hypot(ex-tx,ey-ty);
+      if(d<R*0.85+e.r*0.4){ const m=(e.res&&e.res.b)||1; sc+=(e.type==='boss'?8:1+Math.min(4,(e.maxhp||e.hp)/8))*Math.min(1.5,m)*(1-0.4*d/(R+e.r)); if(e.y>GROUND-300) sc+=1.5; }
+    }
+    if(sc>bs){ bs=sc; best={x:tx,y:ty}; }
+  }
+  /* keep the last shell for emergencies unless the shot is a good one */
+  const need=G.mort>=2?2.2:3.6;
+  if(best&&bs>=need) fireMortar(best.x,best.y);
+}
 function updateMortar(dt){
   if(!hasTool('mortar')) return;
   if(G.mort<mortMax()){ G.mortT+=dt; if(G.mortT>=mortRech()){ G.mortT=0; G.mort++; if(G.state==='playing') flashMortar(); } }
@@ -2148,7 +2159,7 @@ function update(dt){
   for(const e of G.enemies){ e.slow=1; if(e.frz>0){ e.frz-=dt; e.slow=0.04; } }
   updateFields(dt); updateMines(dt);
   updateTurret(dt);
-  if(G.mode==='auto') autoTools(dt);
+  autoTools(dt); autoMortar(dt);
   updateChain(dt); updateSaws(dt); updateMortar(dt); updateFires(dt);
   updateWarps(dt); updateEnemies(dt); updateBullets(dt);
   for(const d of G.delay) d.t-=dt; for(const d of G.delay) if(d.t<=0&&!d.done){ d.done=true; d.fn(); } G.delay=G.delay.filter(d=>!d.done);
@@ -2385,7 +2396,7 @@ function drawGround(pulse){
   drawPeeps(t);
 }
 function drawTurret(){
-  const n=1+L('barrels')+bst('barrel'), col=G.mode==='auto'?C.cyan:C.magenta, rc=G.mode==='auto'?'0,240,255':'255,43,214', t=G.time, hot=Math.min(1,T.recoil);
+  const n=1+L('barrels')+bst('barrel'), col=C.cyan, rc='0,240,255', t=G.time, hot=Math.min(1,T.recoil);
   ctx.save(); ctx.translate(T.x,TURRET_Y);
   /* thruster glow under the hull */
   ctx.globalCompositeOperation='lighter'; const tg=ctx.createRadialGradient(0,16,0,0,16,26); tg.addColorStop(0,'rgba('+rc+','+(0.35+0.1*Math.sin(t*12)).toFixed(2)+')'); tg.addColorStop(1,'rgba('+rc+',0)'); ctx.fillStyle=tg; ctx.fillRect(-28,0,56,34); ctx.globalCompositeOperation='source-over';
@@ -2480,7 +2491,6 @@ function render(dt){
     for(const f of G.fires) drawFire(f);
     for(const f of G.fields) drawField(f,false);
     for(const m of G.mines) drawMine(m,false);
-    if(G.mode==='manual'&&!G.armed){ ctx.shadowBlur=0; ctx.strokeStyle='rgba(255,43,214,.2)'; ctx.lineWidth=1; ctx.setLineDash([4,10]); ctx.beginPath(); ctx.moveTo(T.x,TURRET_Y-40); ctx.lineTo(T.x,0); ctx.stroke(); ctx.setLineDash([]); }
   }
   if(G.chips) for(const c of G.chips){ const k=c.life/c.max; ctx.save(); ctx.translate(c.x,c.y); ctx.rotate(c.rot); ctx.globalAlpha=Math.max(0,Math.min(1,k*1.6)); ctx.shadowBlur=0; ctx.fillStyle=c.color+'66'; ctx.strokeStyle=c.color; ctx.lineWidth=1.2; ctx.beginPath(); for(let i=0;i<5;i++){ const a=i*1.2566, q=c.s*(0.6+0.7*Math.abs(Math.sin(c.sd+i*2.3))); ctx.lineTo(Math.cos(a)*q,Math.sin(a)*q); } ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.restore(); }
   for(const e of G.enemies) drawEnemy(e);
@@ -2595,10 +2605,8 @@ function renderTools(){
   toolMine.classList.toggle('rdy',live&&G.stock>=1); toolMine.setAttribute('aria-pressed',String(G.armed==='mine')); toolField.setAttribute('aria-pressed',String(G.armed==='field'));
 }
 function setMode(m){
-  G.mode=m; input.active=false;
-  $('mAuto').setAttribute('aria-pressed',String(m==='auto'));
-  $('mManual').setAttribute('aria-pressed',String(m==='manual'));
-  $('hint').textContent=m==='auto'?'AI controls turret and weapons':'Drag on the field to aim. Fire is automatic.';
+  G.mode='auto'; input.active=false;
+  $('hint').textContent='AI controls turret and weapons';
 }
 function arm(kind){
   if(G.state!=='playing') return;
@@ -3328,7 +3336,7 @@ const CARDS=[
  {id:'sfire',w:'saw',t:2,max:1,name:'Molten Saw',txt:l=>'EVOLVE: hits burst into flame (blast + burn)',evo:1,lv:EVO_LV,mst:EVO_MST,ex:['sbleed']},
  {id:'sbleed',w:'saw',t:2,max:1,name:'Serrated Edge',txt:l=>'EVOLVE: hits cause a 4s bleed that stacks the damage',evo:1,lv:EVO_LV,mst:EVO_MST,ex:['sfire']},
  {id:'sbig',w:'saw',t:3,max:1,name:'Mega Saw',txt:l=>'ULTIMATE: saw is 60% bigger and hits 50% harder',ult:1,lv:ULT_LV,mst:ULT_MST,any:['sfire','sbleed']},
- {id:'tmortar',w:'mortar',t:1,max:1,unlock:true,name:'Mortar',desc:'NEW WEAPON. Double-tap the field to fire a shell. It takes a moment to land, so lead your target. Two shells, slow reload. Blast damage.'},
+ {id:'tmortar',w:'mortar',t:1,max:1,unlock:true,name:'Mortar',desc:'NEW WEAPON. AI-controlled mortar: it picks clusters and big targets and leads its shots. Two shells, slow reload. Blast damage.'},
  {id:'mortpow',w:'mortar',t:1,max:5,name:'Shell Power',txt:l=>'+'+Math.round((Math.pow(1.4,l)-1)*100)+'% shell damage'},
  {id:'mortarea',w:'mortar',t:1,max:4,name:'Wide Burst',txt:l=>'+'+(l*15)+'% blast radius'},
  {id:'mortcap',w:'mortar',t:1,max:3,name:'Ammo Rack',txt:l=>(2+l)+' shells loaded'},
@@ -3378,7 +3386,7 @@ function applyCard(c){
   /* shown-and-passed bookkeeping (no longer affects odds: the deck is finite now) */
   G.pity=G.pity||{}; (G.offer||[]).forEach(o=>{ G.pity[o.id]=(G.pity[o.id]||0)+1; }); G.pity[c.id]=0; G.sinceW=c.unlock?0:(G.sinceW||0)+(c.id==='repair'?0:1);
   G.boost[c.id]=bst(c.id)+1;
-  if(c.unlock){ G.tools[c.w]=true; if(c.w==='mortar'){ G.mort=mortMax(); G.mortT=0; say('Mortar online','Double-tap the field to fire'); } if(c.w==='mine'){ G.stock=mineMax(); G.mineT=0; } }
+  if(c.unlock){ G.tools[c.w]=true; if(c.w==='mortar'){ G.mort=mortMax(); G.mortT=0; say('Mortar online','AI fires it at clusters'); } if(c.w==='mine'){ G.stock=mineMax(); G.mineT=0; } }
   if(c.id==='fort'){ const add=ST.shield(L('armor'))*0.25*cmw('fort'); G.shMax+=add; G.sh+=add; G.shRg*=1+0.1*cmw('fort'); }
   if(c.id==='mend') G.mend=(G.mend||0)+(8/60)*cmw('mend');
   if(c.id==='repair') G.hp=Math.min(G.maxHp,G.hp+G.maxHp*0.3);
@@ -3412,7 +3420,7 @@ const WTEACH={
   field:{kind:'Energy',good:'Slowing fast or heavy mobs so every weapon gets more hits.',bad:'Energy-dampened (Ionized) levels.',how:'Auto mode lays fields where mobs will pass. In Manual, tap Field, then drag to place it.'},
   chain:{kind:'Energy',good:'Crowds: the bolt jumps from mob to mob.',bad:'Shielded ships and Ionized levels.',how:'Fires on its own at mobs away from your turret. Watch for the crackle: that is where it strikes.'},
   saw:{kind:'Kinetic',good:'Tight groups, and slicing through weak mobs.',bad:'Hardened plating and bosses.',how:'Launches itself and bounces around on its own. No aiming needed.'},
-  mortar:{kind:'Blast',good:'Big targets and tight clusters.',bad:'Fast movers: lead your shot.',how:'Double-tap the field to fire. A flare shows where the shell will land, so lead moving targets.'}
+  mortar:{kind:'Blast',good:'Big targets and tight clusters.',bad:'Fast movers: lead your shot.',how:'Fully automatic. The AI picks clusters and big targets and leads its shots. A flare shows where each shell will land.'}
 };
 function teachRes(res){ const nm={k:'Kinetic (turret, saw)',b:'Blast (mines, mortar)',e:'Energy (field, chain)'}, w=[],r=[]; for(const k of ['k','b','e']){ if(res[k]>=1.3) w.push(nm[k]); else if(res[k]<=0.7) r.push(nm[k]); } return {w:w,r:r}; }
 function queueTeach(it){ if(!TEACH()) return; if(!G.teachQ) G.teachQ=[]; G.teachQ.push(it); if(G.state==='playing') openTeach(); }
@@ -3489,24 +3497,13 @@ function lpClear(){ if(lp){ clearTimeout(lp.t); lp=null; } }
 canvas.addEventListener('pointerdown',e=>{
   if(G.state!=='playing') return;
   const p=toWorld(e);
-  if(G.armed==='mortar'){ fireMortar(p.x,p.y); if(!canMortar()){ G.armed=null; G.ghost.show=false; } toolKey=''; return; }
   if(G.armed){ G.ghost.x=p.x; G.ghost.y=p.y-(e.pointerType==='mouse'?0:70); G.ghost.show=true; G.placing=true; try{ canvas.setPointerCapture(e.pointerId); }catch(_){} return; }
-  if(hasTool('mortar')&&!G.armed){
-    const now=performance.now();
-    if(lastTap&&now-lastTap.t<340&&Math.hypot(p.x-lastTap.x,p.y-lastTap.y)<80){
-      lastTap=null;
-      if(canMortar()){ fireMortar(p.x,p.y); G.rings.push({x:p.x,y:p.y,r:6,max:34,life:0.4,t:0,color:C.amber}); toolKey=''; }
-    } else lastTap={t:now,x:p.x,y:p.y};
-  }
-  if(G.mode==='manual'){ input.x=p.x; input.active=true; try{ canvas.setPointerCapture(e.pointerId); }catch(_){} }
 });
 canvas.addEventListener('pointermove',e=>{
   if(G.state!=='playing') return;
   const p=toWorld(e);
   if(lp&&Math.hypot(p.x-lp.q.x,p.y-lp.q.y)>26) lpClear();
-  if(G.armed==='mortar'){ if(e.pointerType==='mouse'){ G.ghost.x=p.x; G.ghost.y=p.y; G.ghost.show=true; } return; }
   if(G.armed){ if(G.placing||e.pointerType==='mouse'){ G.ghost.x=p.x; G.ghost.y=p.y-(e.pointerType==='mouse'?0:70); G.ghost.show=true; } return; }
-  if(G.mode==='manual'&&(e.pointerType==='mouse'||input.active)){ input.x=p.x; input.active=true; }
 });
 canvas.addEventListener('pointerup',e=>{
   lpClear();
@@ -3525,13 +3522,10 @@ window.addEventListener('keydown',e=>{
   if(k==='u'||k==='U'){ if(G.state==='playing') openShop(); else if(G.state==='shop') closeShop(); return; }
   if(k==='Escape'&&G.state==='shop'){ closeShop(); return; }
   if(G.state==='playing'){
-    if(k==='ArrowLeft'||k==='a'||k==='A'){ keys.left=true; e.preventDefault(); }
-    else if(k==='ArrowRight'||k==='d'||k==='D'){ keys.right=true; e.preventDefault(); }
-    else if(k==='1') arm('mine'); else if(k==='2') arm('field');
+    if(k==='1') arm('mine'); else if(k==='2') arm('field');
     else if(k==='Escape'&&G.armed){ G.armed=null; G.ghost.show=false; toolKey=''; }
   }
-  if(k==='m'||k==='M'){ if(G.state==='playing'||G.state==='paused') setMode(G.mode==='auto'?'manual':'auto'); }
-  else if(k==='p'||k==='P'){ togglePause(); }
+  if(k==='p'||k==='P'){ togglePause(); }
 });
 window.addEventListener('keyup',e=>{
   const k=e.key;
@@ -3541,8 +3535,6 @@ window.addEventListener('keyup',e=>{
 window.addEventListener('blur',()=>{ keys.left=keys.right=false; });
 document.addEventListener('visibilitychange',()=>{ if(document.hidden&&G.state==='playing') togglePause(); });
 document.addEventListener('pointerdown',()=>Music.start(),{once:true});
-$('mAuto').addEventListener('click',()=>setMode('auto'));
-$('mManual').addEventListener('click',()=>setMode('manual'));
 $('pauseBtn').addEventListener('click',togglePause);
 $('spdBtn').addEventListener('click',()=>{ G.speed=G.speed%3+1; $('spdBtn').textContent=G.speed+'x'; });
 const syncMute=()=>{ const c=Music.get(); $('muteBtn').textContent=(c.mOn||c.sOn)?'Sound':'Muted'; syncOrb(); };
@@ -3582,10 +3574,10 @@ window.__rr={T:T,MOB:MOB,SKIN:SKIN,applySkin:applySkin,PKEYS:PKEYS,rollKey:rollK
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 66</div>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 67</div>
 <script>
 /* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
-(function(){ const BUILD=66; let busy=false, shown=false;
+(function(){ const BUILD=67; let busy=false, shown=false;
   const inRun=()=>{ try{ return typeof G!=='undefined'&&(G.state==='playing'||G.state==='cards'||G.state==='shop'||G.state==='paused'||G.state==='teach'); }catch(e){ return false; } };
   function wipeReload(){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
     if(n>=3) return;
