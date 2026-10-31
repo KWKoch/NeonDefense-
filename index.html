@@ -671,6 +671,7 @@ body.menu{background:
 
 /* ================= constants ================= */
 const W=600, H=800, GROUND=732, TURRET_Y=GROUND-14, BS=640, LEVELS=50;
+const BARREL_SPREAD=0.0595, TUR_RANGE=640;   /* angle between barrels (was 0.085, 30% tighter so volleys leave fewer gaps); the auto turret only engages things this close to its muzzle */
 const OZ_Y=Math.round(GROUND*0.6);   /* the ozone layer: defense is judged here. A mob must die above this line to count as held. */
 const C={cyan:'#00f0ff',magenta:'#ff2bd6',lime:'#b6ff00',violet:'#9d4dff',orange:'#ff8a00',amber:'#ffc400',yellow:'#fff200',red:'#ff3860',blue:'#3d8bff',mint:'#6dffb0',steel:'#dfeaf2'};
 const KIND={k:{name:'Kinetic',color:C.cyan},b:{name:'Blast',color:C.orange},e:{name:'Energy',color:C.violet}};
@@ -1683,18 +1684,29 @@ function fire(target){
   const sup=G.superOn>0, n=1+L('barrels')+bst('barrel'), pierce=L('pierce')+bst('pierce')+2*bst('deep');
   const base=ST.dmg(L('dmg'))*Math.pow(1.32,bq('dmg'))*(sup?1.5:1), cc=0.15*bst('crit');
   for(let i=0;i<n;i++){
-    const a=(i-(n-1)/2)*0.085, dmg=Math.random()<cc?base*2.5:base;
+    const a=(i-(n-1)/2)*BARREL_SPREAD, dmg=Math.random()<cc?base*2.5:base;
     G.bullets.push({x:T.x+Math.sin(a)*24,y:TURRET_Y-24,vx:Math.sin(a)*BS,vy:-Math.cos(a)*BS,dmg:dmg,pierce:pierce,hits:[],target:target});
   }
   T.cool=ST.rate(L('rate'))*Math.pow(0.87,bq('rate'))*(sup?0.5:1); T.recoil=1; Music.shot();
   if(!G.blobs) G.blobs=[]; if(G.blobs.length<40) G.blobs.push({x:T.x,y:TURRET_Y-34,r:3,max:9+2.5*n+1.2*L('dmg')+2*bq('dmg'),t:0,life:0.12,color:G.mode==='auto'?'#00f0ff':'#ff2bd6'});
 }
 /* Would a shot fired from the turret's current x hit e? Checks every barrel's straight line against e's predicted position. */
-function hitsFrom(e){
-  const n=1+L('barrels')+bst('barrel'), sy=TURRET_Y-24, tol=e.r*0.85+2;
+const inRange=e=>Math.hypot(e.x-T.x,TURRET_Y-24-e.y)-e.r<=TUR_RANGE;
+/* Where should the turret stand so the best-placed barrel's lane meets e? Solves each barrel's flight time against e's own motion, then takes the barrel that needs the least slewing. */
+function aimFor(e){
+  const n=1+L('barrels')+bst('barrel'), sy=TURRET_Y-24; let best=null;
+  for(let i=0;i<n;i++){
+    const a=(i-(n-1)/2)*BARREL_SPREAD, sn=Math.sin(a), cs=Math.cos(a), cl=cs*BS+(e.vy||0); if(cl<=1) continue;
+    let t=Math.max(0,(sy-e.y)/cl); const ex=e.x+(e.vx||0)*t, nx=ex-sn*24-sn*BS*t;
+    if(best===null||Math.abs(nx-T.x)<Math.abs(best-T.x)) best=nx;
+  }
+  return clamp(best===null?e.x:best,24,W-24);
+}
+function hitsFrom(e,loose){
+  const n=1+L('barrels')+bst('barrel'), sy=TURRET_Y-24, tol=(e.r*0.85+2)*(loose||1);
   if(e.y>=sy||e.y<-e.r*0.3) return false;
   for(let i=0;i<n;i++){
-    const a=(i-(n-1)/2)*0.085, sn=Math.sin(a), cs=Math.cos(a), t=(sy-e.y)/(cs*BS+(e.vy||0)); if(t<=0) continue;
+    const a=(i-(n-1)/2)*BARREL_SPREAD, sn=Math.sin(a), cs=Math.cos(a), t=(sy-e.y)/(cs*BS+(e.vy||0)); if(t<=0) continue;
     const bx=T.x+sn*24+sn*BS*t, ex=e.x+(e.vx||0)*t;
     if(Math.abs(bx-ex)<=tol) return true;
   }
@@ -1706,20 +1718,20 @@ function pickTarget(){
   const sup=G.superOn>0, shot=ST.dmg(L('dmg'))*Math.pow(1.32,bq('dmg'))*(sup?1.5:1), slide=ST.slide(L('rate'))+90*bq('slide');
   let best=null,bs=-1e9;
   for(const e of G.enemies){
-    if(e.dead||e.y<-e.r*0.3) continue;
+    if(e.dead||e.y<-e.r*0.3||!inRange(e)) continue;
     const p=pend.get(e)||0;
     if(p>=e.hp*0.98) continue;                       /* kill already in flight: move on */
     let sc=e.y+e.dmg*2+(e.type==='boss'?120:0)+(e.type==='orb'?40:0)+(e.type==='tender'||e.type==='egg'?110:0)+(e.type==='leech'&&e.latched?260:0)+(e.res.k-1)*50;   /* nearness + threat */
     const left=Math.max(0.01,e.hp-p)/Math.max(0.01,shot*e.res.k);                        /* shots still needed */
     sc+=160*(1-clamp(e.hp/(e.maxhp||e.hp),0,1));     /* finish damaged mobs */
     if(left<=2.2) sc+=70;                             /* kill is probable */
-    const tt=Math.max(0,(TURRET_Y-24-e.y)/BS), ax=clamp(e.x+(e.vx||0)*tt,24,W-24);
+    const ax=aimFor(e);
     sc-=Math.abs(ax-T.x)/slide*140;                   /* slew time costs DPS */
     if(e===T.target) sc+=45+(left<=3.2?90:0);        /* stay committed, esp. when a kill is close */
     if(sc>bs){bs=sc;best=e;}
   }
   if(!best){ /* everything is already doomed: keep tracking the lowest one */
-    for(const e of G.enemies){ if(e.dead||e.y<-e.r*0.3) continue; if(!best||e.y>best.y) best=e; }
+    for(const e of G.enemies){ if(e.dead||e.y<-e.r*0.3||!inRange(e)) continue; if(!best||e.y>best.y) best=e; }
   }
   return best;
 }
@@ -1740,9 +1752,14 @@ function updateTurret(dt){
   if(G.mode==='auto'){
     const tg=pickTarget(); T.target=tg;
     let aim=W/2;
-    if(tg){ const tt=Math.max(0,(TURRET_Y-24-tg.y)/BS); aim=clamp(tg.x+(tg.vx||0)*tt,24,W-24); }
+    if(tg) aim=aimFor(tg);
     const st=slide*dt*(tg?1:0.5); T.x+=clamp(aim-T.x,-st,st);
-    if(T.cool<=0){ const ht=inLine(tg); if(ht) fire(ht); }
+    if(T.cool<=0){
+      let ht=inLine(tg);
+      if(!ht&&tg&&hitsFrom(tg,2.2)) ht=tg;                      /* nearly lined up: a volley will still clip it */
+      if(ht){ fire(ht); T.idle=0; }
+      else if(tg){ T.idle=(T.idle||0)+dt; if(T.idle>0.06){ fire(null); T.idle=0; } }   /* something is in range and we are still slewing: keep shooting rather than sit idle (unaimed, so it is not counted as a kill in flight) */
+    } else T.idle=0;
   } else {
     T.target=null;
     let mv=0; if(keys.left) mv-=1; if(keys.right) mv+=1;
@@ -2374,7 +2391,7 @@ function drawTurret(){
   ctx.globalCompositeOperation='lighter'; const tg=ctx.createRadialGradient(0,16,0,0,16,26); tg.addColorStop(0,'rgba('+rc+','+(0.35+0.1*Math.sin(t*12)).toFixed(2)+')'); tg.addColorStop(1,'rgba('+rc+',0)'); ctx.fillStyle=tg; ctx.fillRect(-28,0,56,34); ctx.globalCompositeOperation='source-over';
   /* barrels */
   for(let i=0;i<n;i++){
-    ctx.save(); ctx.rotate((i-(n-1)/2)*0.085); const rec=T.recoil*5;
+    ctx.save(); ctx.rotate((i-(n-1)/2)*BARREL_SPREAD); const rec=T.recoil*5;
     const bg=ctx.createLinearGradient(-4,0,4,0); bg.addColorStop(0,'#2a3b46'); bg.addColorStop(.5,'#8fa6b4'); bg.addColorStop(1,'#2a3b46');
     neon(col,8,1.4); ctx.fillStyle=bg; ctx.beginPath(); ctx.moveTo(-4.2,-4); ctx.lineTo(-2.6,-34+rec); ctx.lineTo(2.6,-34+rec); ctx.lineTo(4.2,-4); ctx.closePath(); ctx.fill(); ctx.stroke();
     ctx.shadowBlur=0; ctx.strokeStyle='rgba('+rc+',.7)'; ctx.lineWidth=1; for(let v=0;v<3;v++){ const y=-12-v*7+rec*0.3; ctx.beginPath(); ctx.moveTo(-3.2,y); ctx.lineTo(3.2,y); ctx.stroke(); }
@@ -2622,7 +2639,7 @@ function startLevel(n,world,elite){
   { const pf=profileFor(G.wd,n,G.elite); G.prof=pf; G.mutHp=pf.mut==='armored'?1.3:pf.mut==='dense'?0.8:pf.mut==='swift'?0.85:1; G.mutSp=pf.mut==='swift'?1.25:1; if(pf.mut||n>1) setTimeout(()=>{ if(G.state==='playing'&&G.n===n&&G.wave<=1) say(pf.name,pf.mut?MUTS[pf.mut].note:(BRIEF[pf.feat]||'')); },1400); }
   G.waveT=0; G.shake=0; G.armed=null; G.ghost.show=false; G.placing=false; G.autoT=0.5;
   G.stock=0; G.mineT=0; G.fieldCd=0;
-  T.x=W/2; T.cool=0; T.recoil=0; T.target=null; input.active=false;
+  T.x=W/2; T.cool=0; T.recoil=0; T.target=null; T.idle=0; input.active=false;
   Ads.gameplayStart(); G.state='playing'; overlay.hidden=true; $('shop').hidden=true; hudKey=''; toolKey=''; thumbKey='';
   $('pauseBtn').textContent='Pause';
   showView('game'); setMode(G.mode);
@@ -3560,15 +3577,15 @@ if(!P.intro){ const io=document.createElement('div'); io.id='introov'; io.innerH
 requestAnimationFrame(frame);
 
 /* test hook for headless checks */
-window.__rr={MOB:MOB,SKIN:SKIN,applySkin:applySkin,PKEYS:PKEYS,rollKey:rollKey,rollCard:rollCard,kName:kName,loadPools:loadPools,fireball:fireball,chip:chip,openTeach:openTeach,fireMortar:fireMortar,shape:shape,spawn:spawn,G:G,get P(){return P;},set P(v){P=v;},newP:newP,startLevel:startLevel,update:update,UPS:UPS,waveCount:waveCount,levelPool:levelPool,hpScale:hpScale,tune:(a,b,c,d,m,k,bk,wh,pm,lk,c0,cg)=>{if(lk!==undefined)LATEK=lk;if(pm!==undefined)PICKM=pm;if(wh!==undefined)WAVEHP=wh;if(k!==undefined)HPK=k;if(m!==undefined)MOBN=m;if(c0!==undefined)CDROP0=c0;if(cg!==undefined)CDROPG=cg;HPG=a;POOL0=b;POOLG=c;if(d!==undefined)HPA=d;},bst:bst,pickCard:pickCard,CARDS:CARDS,offerCards:offerCards,applyCard:applyCard,hasTool:hasTool,fireMortar:fireMortar,canMortar:canMortar,T:T,wcount:wcount,canBuy:canBuy,buyUp:buyUp,cardNeed:cardNeed,bandOf:bandOf,avail:avail,awardCards:awardCards,dropCount:dropCount,fuse:fuse,useEnergy:useEnergy,enTick:enTick,tryStart:tryStart,win:win,gameOver:gameOver,profileFor:profileFor,MOB:MOB,WORLDS:WORLDS,briefFor:briefFor};
+window.__rr={T:T,MOB:MOB,SKIN:SKIN,applySkin:applySkin,PKEYS:PKEYS,rollKey:rollKey,rollCard:rollCard,kName:kName,loadPools:loadPools,fireball:fireball,chip:chip,openTeach:openTeach,fireMortar:fireMortar,shape:shape,spawn:spawn,G:G,get P(){return P;},set P(v){P=v;},newP:newP,startLevel:startLevel,update:update,UPS:UPS,waveCount:waveCount,levelPool:levelPool,hpScale:hpScale,tune:(a,b,c,d,m,k,bk,wh,pm,lk,c0,cg)=>{if(lk!==undefined)LATEK=lk;if(pm!==undefined)PICKM=pm;if(wh!==undefined)WAVEHP=wh;if(k!==undefined)HPK=k;if(m!==undefined)MOBN=m;if(c0!==undefined)CDROP0=c0;if(cg!==undefined)CDROPG=cg;HPG=a;POOL0=b;POOLG=c;if(d!==undefined)HPA=d;},bst:bst,pickCard:pickCard,CARDS:CARDS,offerCards:offerCards,applyCard:applyCard,hasTool:hasTool,fireMortar:fireMortar,canMortar:canMortar,T:T,wcount:wcount,canBuy:canBuy,buyUp:buyUp,cardNeed:cardNeed,bandOf:bandOf,avail:avail,awardCards:awardCards,dropCount:dropCount,fuse:fuse,useEnergy:useEnergy,enTick:enTick,tryStart:tryStart,win:win,gameOver:gameOver,profileFor:profileFor,MOB:MOB,WORLDS:WORLDS,briefFor:briefFor};
 })();
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 65</div>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 66</div>
 <script>
 /* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
-(function(){ const BUILD=65; let busy=false, shown=false;
+(function(){ const BUILD=66; let busy=false, shown=false;
   const inRun=()=>{ try{ return typeof G!=='undefined'&&(G.state==='playing'||G.state==='cards'||G.state==='shop'||G.state==='paused'||G.state==='teach'); }catch(e){ return false; } };
   function wipeReload(){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
     if(n>=3) return;
