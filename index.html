@@ -141,6 +141,28 @@ button:focus-visible{outline:2px solid var(--yellow); outline-offset:2px}
 .tool.off{opacity:.45}
 .tool.rdy{box-shadow:0 0 10px color-mix(in srgb,var(--c) 70%,transparent),inset 0 0 10px color-mix(in srgb,var(--c) 22%,transparent)}
 .tool:disabled{opacity:.42; cursor:default}
+.tool{height:32px; touch-action:none; user-select:none; -webkit-user-select:none; -webkit-touch-callout:none; -webkit-tap-highlight-color:transparent}
+.tool[data-w]{cursor:grab}
+.tool.man{border-style:dashed}
+.tool.held,.tool.grab{opacity:1}
+.tool.held{animation:heldp 1s ease-in-out infinite}
+.tool.grab{transform:scale(1.14); background:color-mix(in srgb,var(--c) 30%,#000); box-shadow:0 0 18px var(--c); cursor:grabbing}
+@keyframes heldp{0%,100%{box-shadow:0 0 4px var(--c)}50%{box-shadow:0 0 16px var(--c),inset 0 0 8px color-mix(in srgb,var(--c) 40%,transparent)}}
+@media (prefers-reduced-motion:reduce){ .tool.held{animation:none; box-shadow:0 0 12px var(--c)} }
+/* weapon control panel (settings gear and the in-battle Aim button) */
+.ch2{position:relative; margin:12px 0 4px; font-family:var(--display); font-weight:400; font-size:18px; letter-spacing:.04em; color:var(--fg); text-shadow:0 0 10px var(--lime)}
+.cnote{position:relative; margin:0 0 8px; font-size:12px; line-height:1.4; color:var(--dim)}
+.call{position:relative; display:block; width:100%; padding:9px; border-radius:999px; border:1px solid rgba(160,240,255,.35); background:rgba(0,0,0,.4); color:var(--fg); font-family:inherit; font-weight:700; font-size:13px; cursor:pointer}
+.call.on{border-color:var(--lime); background:rgba(182,255,0,.14); box-shadow:0 0 12px rgba(182,255,0,.45)}
+.cgrid{position:relative; display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-top:8px}
+.cw{display:flex; flex-direction:column; align-items:center; gap:3px; padding:8px 2px; border-radius:14px; border:1px solid color-mix(in srgb,var(--c) 60%,#000); background:#000; color:var(--c); font-family:inherit; cursor:pointer}
+.cw b{font-size:11px; color:var(--fg)}
+.cw i{font-style:normal; font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--c)}
+.cw.man{border-style:dashed; background:color-mix(in srgb,var(--c) 18%,#000); box-shadow:0 0 10px color-mix(in srgb,var(--c) 40%,transparent)}
+#ctlov{position:fixed; inset:0; z-index:70; background:rgba(0,0,0,.78); display:flex; align-items:center; justify-content:center; padding:16px; box-sizing:border-box}
+#ctlov .cbox{width:min(340px,100%); background:#05070c; border:1px solid var(--cyan); box-shadow:0 0 26px rgba(0,240,255,.4); border-radius:18px; padding:14px 16px 16px; display:flex; flex-direction:column; gap:8px; box-sizing:border-box}
+#ctlov .ch2{margin-top:2px}
+#orb{max-height:calc(100dvh - 90px); overflow-y:auto}
 .tool[aria-pressed="true"]{background:color-mix(in srgb,var(--c) 26%,#000); box-shadow:0 0 14px var(--c)}
 
 #row1{display:flex; align-items:center; gap:6px}
@@ -580,7 +602,7 @@ body.menu{background:
 .gear[aria-expanded="true"] .ic{animation:gspin 1.2s linear infinite; filter:drop-shadow(0 0 5px #00f0ff)}
 @keyframes gspin{to{transform:rotate(360deg)}}
 #orbScrim{position:fixed; inset:0; z-index:90; background:rgba(0,0,0,.35)}
-#orb{position:fixed; z-index:91; width:min(310px,calc(100vw - 20px)); box-sizing:border-box; padding:16px 16px 14px; border-radius:30px; color:var(--fg); overflow:hidden;
+#orb{position:fixed; z-index:91; width:min(310px,calc(100vw - 20px)); box-sizing:border-box; padding:16px 16px 14px; border-radius:30px; color:var(--fg);
   background:radial-gradient(120% 90% at 100% 0%,rgba(157,77,255,.28),transparent 60%),linear-gradient(180deg,rgba(18,34,48,.96),rgba(4,9,15,.98));
   border:1px solid rgba(140,225,255,.4); box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 18px 40px -8px rgba(0,0,0,.9),0 0 28px -4px rgba(0,240,255,.45);
   transform-origin:var(--ox,90%) 0; animation:orbIn .26s cubic-bezier(.2,1.1,.3,1) both}
@@ -677,14 +699,15 @@ body.menu{background:
     <div id="row0">
       <button type="button" class="tool" id="cmdA1" hidden></button><button type="button" class="tool" id="cmdA2" hidden></button>
       <button type="button" class="tool" id="toolMine" style="--c:var(--orange)" aria-pressed="false" aria-label="Mine layer" hidden><span class="ts" id="mineS"></span><span class="tt" id="mineT"></span><i class="tp" id="mineP"></i></button>
-      <div class="tool passive" id="toolMortar" style="--c:#ffc400" aria-label="Mortar: AI controlled" title="AI-controlled mortar" hidden><span class="ts" id="mortS"></span><span class="tt" id="mortT"></span><i class="tp" id="mortP"></i></div>
+      <div class="tool" id="toolMortar" style="--c:#ffc400" aria-label="Mortar" title="Mortar: AI fires it. Hold and drag to aim" hidden><span class="ts" id="mortS"></span><span class="tt" id="mortT"></span><i class="tp" id="mortP"></i></div>
       <button type="button" class="tool" id="toolField" style="--c:var(--violet)" aria-pressed="false" aria-label="Slow field" hidden><span class="ts" id="fieldS"></span><span class="tt" id="fieldT"></span><i class="tp" id="fieldP"></i></button>
-      <div class="tool passive" id="toolChain" style="--c:var(--yellow)" aria-label="Chain lightning" hidden><span class="ts" id="chainS"></span><span class="tt" id="chainT"></span><i class="tp" id="chainP"></i></div>
-      <div class="tool passive" id="toolSaw" style="--c:var(--lime)" aria-label="Buzz saw" hidden><span class="ts" id="sawS"></span><span class="tt" id="sawT"></span><i class="tp" id="sawP"></i></div>
+      <div class="tool" id="toolChain" style="--c:var(--yellow)" aria-label="Chain lightning" title="Chain lightning: AI fires it. Hold and drag to aim" hidden><span class="ts" id="chainS"></span><span class="tt" id="chainT"></span><i class="tp" id="chainP"></i></div>
+      <div class="tool" id="toolSaw" style="--c:var(--lime)" aria-label="Buzz saw" title="Buzz saw: AI launches it. Hold and drag to aim" hidden><span class="ts" id="sawS"></span><span class="tt" id="sawT"></span><i class="tp" id="sawP"></i></div>
     </div>
     <div id="row1">
-      <span id="hint">AI aims. Touch and hold to take over the turret</span>
+      <span id="hint">AI fires everything. Hold the field to steer the turret, hold a weapon icon and drag to aim it</span>
       <div style="display:flex;gap:6px">
+        <button type="button" class="mini" id="ctlBtn" aria-label="Weapon control: auto or manual">Aim</button>
         <button type="button" class="mini" id="shopBtn">Perks</button>
         <button type="button" class="mini" id="spdBtn" aria-label="Game speed">1x</button>
         <button type="button" class="mini" id="pauseBtn">Pause</button>
@@ -1319,13 +1342,14 @@ function openOrb(){
   orbOpen=true; g.setAttribute('aria-expanded','true');
   const sc=document.createElement('div'); sc.id='orbScrim'; sc.addEventListener('pointerdown',closeOrb); document.body.appendChild(sc);
   const o=document.createElement('div'); o.id='orb'; o.setAttribute('role','dialog'); o.setAttribute('aria-label','Sound settings');
-  o.innerHTML='<h2>Sound</h2>'+orbRow('m','Music','note','#ff2bd6')+orbRow('s','Sound FX','spk','#00f0ff')+'<button type="button" class="oreplay">Replay tutorials</button><button type="button" class="odone">Done</button>';
+  o.innerHTML='<h2>Sound</h2>'+orbRow('m','Music','note','#ff2bd6')+orbRow('s','Sound FX','spk','#00f0ff')+'<div id="ctlwrap">'+ctlHtml()+'</div><button type="button" class="oreplay">Replay tutorials</button><button type="button" class="odone">Done</button>';
   document.body.appendChild(o);
   const r=g.getBoundingClientRect(), w=o.offsetWidth, left=Math.max(10,Math.min(innerWidth-w-10,r.right-w));
   o.style.left=left+'px'; o.style.top=(r.bottom+10)+'px'; o.style.setProperty('--ox',(r.left+r.width/2-left)+'px');
   o.addEventListener('click',e=>{
     if(e.target.closest('.odone')){ closeOrb(); return; }
     if(e.target.closest('.oreplay')){ coachReplay(); return; }
+    const cc=e.target.closest('[data-cw],[data-call]'); if(cc){ ctlToggle(cc); const cw=document.getElementById('ctlwrap'); if(cw) cw.innerHTML=ctlHtml(); return; }
     const t=e.target.closest('[data-tog]'); if(!t) return;
     const k=t.dataset.tog, c=Music.get(), next=!(k==='m'?c.mOn:c.sOn);
     if(k==='m') Music.setMusic(next); else { Music.setSfx(next); if(next) Music.up(); }
@@ -1356,6 +1380,82 @@ const G={state:'armory',tools:{},mort:2,mortT:0,saws:[],bolts:[],shells:[],fires
   armed:null,ghost:{x:W/2,y:500,show:false},placing:false,stock:0,mineT:0,fieldCd:0,autoT:0};
 const T={x:W/2,cool:0,recoil:0,target:null};
 const input={x:W/2,active:false};
+/* ================= weapon control =================
+   Every weapon is AI-driven. Press and hold a weapon icon to freeze its AI, drag onto the field, release to fire there.
+   A weapon that is still recharging keeps your aim pinned and fires the moment it is ready, then the AI takes over again.
+   Any weapon, or all of them, can be set to Manual (settings gear or the Aim button in battle): then the AI never fires it. */
+const CTLK='nd_ctl_v1', WCTL=['turret','mine','field','chain','saw','mortar'];
+const WCOL={turret:C.cyan,mine:C.orange,field:C.violet,chain:C.yellow,saw:C.lime,mortar:C.amber};
+const CTL={all:false,w:{}};
+try{ const j=JSON.parse(NDStore.get(CTLK)||'null'); if(j){ CTL.all=!!j.all; for(const k of WCTL) if(j.w&&j.w[k]) CTL.w[k]=1; } }catch(e){}
+function ctlSave(){ NDStore.set(CTLK,JSON.stringify(CTL)); toolKey=''; }
+const isManual=w=>!!(CTL.all||CTL.w[w]);
+const GR={w:null,live:false,x:W/2,y:GROUND-200,out:false,tm:0,hadPin:false,sup:false,pid:-1};
+G.pin={};
+const held=w=>GR.w===w||!!G.pin[w];
+const aiOff=w=>isManual(w)||held(w);
+function wReady(w){
+  if(!hasTool(w)) return false;
+  if(w==='mine') return canMine();
+  if(w==='field') return canField();
+  if(w==='mortar') return canMortar();
+  if(w==='chain') return !G.cpend&&G.chainT<=0.05;
+  if(w==='saw') return G.saws.length<1+bst('scount')&&G.sawCd<=0;
+  return false;
+}
+function chainSnap(x,y){ let b=null, bd=230; for(const e of G.enemies){ if(e.dead||e.y<30) continue; const d=Math.hypot(e.x-x,e.y-y); if(d<bd){ bd=d; b=e; } } return b; }
+function fireWeaponAt(w,x,y){
+  if(w==='mine') return placeMine(x,y);
+  if(w==='field') return placeField(x,y);
+  if(w==='mortar') return fireMortar(x,y);
+  if(w==='chain'){ const tg=chainSnap(x,y); if(!tg) return false; G.cpend={e:tg,t:0.3,max:0.3}; G.chainT=chainCd(); Music.place(true); return true; }
+  if(w==='saw'){
+    const a=clamp(Math.atan2(x-T.x,TURRET_Y-30-y),-1.25,1.25), r=ST.ssz(L('ssz'))*(bst('sbig')?1.6:1), life=ST.slife(L('sspd'))+2*bq('sspeed');
+    G.saws.push({x:T.x,y:TURRET_Y-30,vx:Math.sin(a)*430,vy:-Math.cos(a)*430,r:r,life:life,max:life,rot:0}); G.sawCd=0.56; Music.place(false); return true;
+  }
+  return false;
+}
+/* a pinned aim fires as soon as its weapon is ready; the AI stays off that weapon until then */
+function tickPins(dt){
+  for(const w in G.pin){
+    const p=G.pin[w]; p.t+=dt;
+    if(GR.w===w) continue;
+    if(wReady(w)){ if(fireWeaponAt(w,p.x,p.y)) delete G.pin[w]; else if(p.t>8) delete G.pin[w]; }
+    else if(p.t>30) delete G.pin[w];
+  }
+}
+function grabEnd(fire){
+  const w=GR.w; if(!w) return;
+  clearTimeout(GR.tm);
+  if(fire&&GR.live){
+    if(!(wReady(w)&&fireWeaponAt(w,GR.x,GR.y))) G.pin[w]={x:GR.x,y:GR.y,t:0};
+    else delete G.pin[w];
+    if(navigator.vibrate) try{ navigator.vibrate(12); }catch(e){}
+  }
+  GR.w=null; GR.live=false; toolKey='';
+}
+const WSHORT={turret:'Turret',mine:'Mines',field:'Field',chain:'Chain',saw:'Saw',mortar:'Mortar'};
+function ctlHtml(){
+  const rows=WCTL.map(w=>{ const on=isManual(w); return '<button type="button" class="cw'+(on?' man':'')+'" data-cw="'+w+'" aria-pressed="'+on+'" aria-label="'+WSHORT[w]+': '+(on?'manual':'auto')+'" style="--c:'+WCOL[w]+'">'+ico(w,18)+'<b>'+WSHORT[w]+'</b><i>'+(on?'Manual':'Auto')+'</i></button>'; }).join('');
+  return '<h2 class="ch2">Weapon control</h2><p class="cnote">Auto: the AI fires the weapon. In battle, hold a weapon icon and drag onto the field to aim one shot yourself. Manual: the AI never fires it, you do.</p>'
+    +'<button type="button" class="call'+(CTL.all?' on':'')+'" data-call="1" aria-pressed="'+CTL.all+'">All weapons manual</button><div class="cgrid">'+rows+'</div>';
+}
+function ctlToggle(t){
+  if(t.dataset.call){ CTL.all=!CTL.all; }
+  else if(t.dataset.cw){ const w=t.dataset.cw;
+    if(CTL.all){ CTL.all=false; WCTL.forEach(k=>{ if(k!==w) CTL.w[k]=1; }); delete CTL.w[w]; }
+    else if(CTL.w[w]) delete CTL.w[w]; else CTL.w[w]=1; }
+  ctlSave();
+}
+function openCtl(){
+  if(G.state!=='playing') return;
+  G.state='ctl'; G.armed=null; G.ghost.show=false; G.placing=false; input.active=false; grabEnd(false); toolKey=''; hudKey='';
+  let ov=document.getElementById('ctlov'); if(ov) ov.remove();
+  ov=document.createElement('div'); ov.id='ctlov'; ov.innerHTML='<div class="cbox" role="dialog" aria-label="Weapon control"><div id="ctlin">'+ctlHtml()+'</div><button type="button" class="btn big" data-cdone="1">Back to battle</button></div>';
+  ov.addEventListener('click',e=>{ if(e.target.closest('[data-cdone]')||e.target===ov){ closeCtl(); return; } const t=e.target.closest('[data-cw],[data-call]'); if(t){ ctlToggle(t); document.getElementById('ctlin').innerHTML=ctlHtml(); } });
+  document.body.appendChild(ov);
+}
+function closeCtl(){ const ov=document.getElementById('ctlov'); if(ov) ov.remove(); if(G.state==='ctl'){ G.state='playing'; toolKey=''; hudKey=''; } }
 const keys={left:false,right:false};
 const stars=[]; for(let i=0;i<90;i++) stars.push({x:Math.random()*W,y:Math.random()*H,r:rnd(0.5,1.5),ph:Math.random()*6.28});
 
@@ -1791,6 +1891,9 @@ function updateTurret(dt){
     T.target=null; T.idle=0;
     const st=slide*dt; T.x+=clamp(input.x-T.x,-st,st);
     if(T.cool<=0&&G.enemies.some(e=>!e.dead&&e.y>0)) fire(null);
+  } else if(isManual('turret')){
+    /* manual turret: it holds fire and position until the player steers it */
+    T.target=null; T.idle=0;
   } else {
     const tg=pickTarget(); T.target=tg;
     let aim=W/2;
@@ -1996,7 +2099,8 @@ const COACH={
     {t:'Welcome, Commander',x:'A quick tour of the controls. You can skip it now and replay it any time from Settings (the gear at the top).'},
     {sel:'.topbar .pill[title="Gems"]',t:'Gems and cards',x:'Gems buy packs and commanders. Cards upgrade your weapons. Levels, achievements and the daily chest all pay out.'},
     {sel:'#enBox',t:'Energy',x:'Each attempt costs energy. It refills over time, so pace yourself.'},
-    {sel:'nav.nav [data-nav="battle"]',t:'Battle',x:'Pick a level and deploy. The AI aims the turret for you. Touch and hold the field to take over and steer it yourself.'},
+    {sel:'nav.nav [data-nav="battle"]',t:'Battle',x:'Pick a level and deploy. The AI fires every weapon for you. Hold the field to steer the turret, or hold a weapon icon and drag to aim that weapon yourself.'},
+    {sel:'#gearBtn',t:'Weapon control',x:'Any weapon, or all of them, can be set to Manual here so the AI never fires it. You can also change this in battle with the Aim button.'},
     {sel:'nav.nav [data-nav="arsenal"]',t:'Arsenal',x:'Spend upgrade cards to power up the turret and every weapon you unlock. Commanders live here too, on their own tab, and unlock at level '+CMD_LVL+'.'},
     {sel:'nav.nav [data-nav="codex"]',t:'Codex',x:'Everything you have met: mobs, what they resist, what they fear, and your achievements.'},
     {sel:'nav.nav [data-nav="shop"]',t:'Shop',x:'Daily chest, free gems and card packs.'},
@@ -2010,7 +2114,13 @@ const COACH={
   ],
   run:[
     {sel:'#bar',t:'City health',x:'This bar is the city. If mobs slip past the ozone line it drops. The thin bar under it is your ozone shield, which absorbs hits first and recharges.'},
-    {t:'Steer the turret',x:'The AI aims automatically. Touch and hold anywhere on the field to take over and fire where you point. Let go and the AI resumes.'}
+    {t:'Steer the turret',x:'The AI aims automatically. Touch and hold anywhere on the field to take over and fire where you point. Let go and the AI resumes. Your other weapons work the same way: hold their icons below.'}
+  ],
+  grab:[
+    {sel:'#row0 .tool[data-w]:not([hidden])',t:'Weapons fire themselves',x:'Every weapon is run by the AI and recharges on its own timer. You choose when to step in.'},
+    {sel:'#row0 .tool[data-w]:not([hidden])',t:'Hold and drag',x:'Press and hold a weapon icon. Its AI stops and a reticle follows your finger. Drag up onto the field to pick the spot.'},
+    {t:'Release to fire',x:'Let go to fire there. If the weapon is still recharging, your aim stays pinned and fires the moment it is ready, then the AI takes over again. Drag back down to the icons and let go to cancel.'},
+    {sel:'#ctlBtn',t:'Manual mode',x:'Want full control? Tap Aim to set any weapon, or all of them, to Manual so the AI never fires them. The turret works the same way: hold the field to steer it.'}
   ],
   cmdrun:[
     {sel:'#cmdA1',t:'Commander ability',x:'Tap this when it glows. Abilities have a cooldown, so use them for bad moments. On a keyboard press Q (first) and E (second).'}
@@ -2067,6 +2177,16 @@ function coachRun(){
   if(!coachOn()) return;
   if(!coachSeen('run')){ if(Object.keys(P.prog||{}).some(k=>((P.prog[k]||{}).best||0)>0)) coachMark('run'); else coachWhenPlaying('run',1200); }
   if(G.cm&&!coachSeen('cmdrun')) coachWhenPlaying('cmdrun',1800);
+  coachGrab();
+}
+function coachGrab(){
+  if(!coachOn()||coachSeen('grab')) return; let n=0;
+  const tick=()=>{
+    if(coachSeen('grab')||G.state==='armory'||G.state==='won'||G.state==='over') return;
+    if(!coachSt&&G.state==='playing'&&!document.getElementById('teachov')&&['mine','field','chain','saw','mortar'].some(hasTool)){ coach('grab'); return; }
+    if(++n<90) setTimeout(tick,700);
+  };
+  setTimeout(tick,1500);
 }
 function coachReplay(){ P.tut={}; try{ save(); }catch(e){} closeOrb(); if(G.state==='armory'){ UI.nav='battle'; renderArmory(); } setTimeout(()=>coach('tour',true),150); }
 const CPACKS=[{id:'cr',name:'Recruit Pack',cost:60,odds:[74,21,4.6,0.4],color:'#3d8bff',blurb:'One commander card. Mostly Common, with a shot at better.'},
@@ -2150,7 +2270,7 @@ function updateFields(dt){
 }
 function autoTools(dt){
   G.autoT-=dt; if(G.autoT>0) return; G.autoT=0.4;
-  if(canMine()){
+  if(canMine()&&!aiOff('mine')){
     let best=null,bs=-1e9,bx=0,by=0;
     for(const e of G.enemies){
       if(e.dead||e.y<40||e.y>GROUND-150||!supportOK(e)) continue;
@@ -2165,7 +2285,7 @@ function autoTools(dt){
     }
     if(best) placeMine(bx,by);
   }
-  if(canField()){
+  if(canField()&&!aiOff('field')){
     /* only drop a field where it will actually catch things: aim at where the lead mobs will be, and need a crowd or a heavy in the lane */
     const hw=fieldHW(); let best=null,bs=0;
     for(const e of G.enemies){
@@ -2211,8 +2331,8 @@ function updateChain(dt){
     const p=G.cpend; if(p.e.dead){ G.cpend=null; }
     else { p.t-=dt; if(p.t<=0){ G.cpend=null; chainStrike(p.e); } }
   } else {
-    G.chainT-=dt;
-    if(G.chainT<=0){
+    G.chainT-=dt; if(G.chainT<0) G.chainT=0;
+    if(G.chainT<=0&&!aiOff('chain')){
       /* pick a support target away from the turret's lane, preferring the densest cluster so the arcs have somewhere to jump */
       let tg=null,bs=-1e9;
       for(const e of G.enemies){ if(e.dead||e.y<30||!supportOK(e)) continue; let nb=0; for(const o of G.enemies) if(!o.dead&&o!==e&&Math.hypot(o.x-e.x,o.y-e.y)<160) nb++; const sc=nb*40+e.y*0.15+Math.min(e.hp,60)*0.2; if(sc>bs){ bs=sc; tg=e; } }
@@ -2233,7 +2353,7 @@ function updateSaws(dt){
   if(!hasTool('saw')) return;
   G.sawCd-=dt;
   const want=1+bst('scount');
-  if(G.saws.length<want&&G.sawCd<=0&&G.enemies.some(e=>!e.dead&&e.y>0)){
+  if(G.saws.length<want&&G.sawCd<=0&&!aiOff('saw')&&G.enemies.some(e=>!e.dead&&e.y>0)){
     const a=rnd(-0.55,0.55), r=ST.ssz(L('ssz'))*(bst('sbig')?1.6:1), life=ST.slife(L('sspd'))+2*bq('sspeed');
     G.saws.push({x:T.x,y:TURRET_Y-30,vx:Math.sin(a)*430,vy:-Math.cos(a)*430,r:r,life:life,max:life,rot:0});
     G.sawCd=0.56;
@@ -2289,7 +2409,7 @@ function fireMortar(x,y){
   Music.place(false); return true;
 }
 function autoMortar(dt){
-  if(!canMortar()) return;
+  if(!canMortar()||aiOff('mortar')) return;
   G.amT=(G.amT||0)-dt; if(G.amT>0) return; G.amT=0.25;
   const R=mortR(), live=G.enemies.filter(e=>!e.dead&&e.y>50&&e.y<GROUND-60);
   if(!live.length) return;
@@ -2476,7 +2596,7 @@ function update(dt){
   for(const e of G.enemies){ e.slow=1; if(e.frz>0){ e.frz-=dt; e.slow=0.04; } }
   updateFields(dt); updateMines(dt);
   updateTurret(dt);
-  autoTools(dt); autoMortar(dt); updateCmd(dt);
+  tickPins(dt); autoTools(dt); autoMortar(dt); updateCmd(dt);
   updateChain(dt); updateSaws(dt); updateMortar(dt); updateFires(dt);
   updateWarps(dt); updateEnemies(dt); updateBullets(dt);
   for(const d of G.delay) d.t-=dt; for(const d of G.delay) if(d.t<=0&&!d.done){ d.done=true; d.fn(); } G.delay=G.delay.filter(d=>!d.done);
@@ -2712,6 +2832,51 @@ function drawGround(pulse){
   }
   drawPeeps(t);
 }
+/* ---- weapon control overlay: the live aim reticle while a weapon icon is held, and pinned aims waiting for recharge ---- */
+function drawGrab(){
+  const sx=T.x, sy=TURRET_Y-30, tt=G.time;
+  ctx.save(); ctx.shadowBlur=0; ctx.lineCap='round';
+  for(const w in G.pin){
+    if(GR.live&&GR.w===w) continue;
+    const p=G.pin[w], col=WCOL[w], pulse=0.5+0.5*Math.sin(tt*6);
+    ctx.strokeStyle=col; ctx.globalAlpha=0.55+0.3*pulse; ctx.lineWidth=1.6; ctx.setLineDash([4,5]); ctx.lineDashOffset=-tt*18;
+    ctx.beginPath(); ctx.arc(p.x,p.y,14+3*pulse,0,6.2832); ctx.stroke(); ctx.setLineDash([]);
+    ctx.beginPath(); ctx.moveTo(p.x-6,p.y); ctx.lineTo(p.x+6,p.y); ctx.moveTo(p.x,p.y-6); ctx.lineTo(p.x,p.y+6); ctx.stroke();
+    ctx.globalAlpha=0.85; ctx.fillStyle=col; ctx.font='700 11px "Chakra Petch", monospace'; ctx.textAlign='center'; ctx.fillText(WSHORT[w].toUpperCase()+' QUEUED',p.x,p.y-24);
+  }
+  if(GR.live&&GR.w){
+    const w=GR.w, col=WCOL[w], rdy=wReady(w), x=GR.x, y=GR.y;
+    ctx.textAlign='center'; ctx.font='700 15px "Chakra Petch", monospace';
+    if(GR.out){ ctx.globalAlpha=0.95; ctx.fillStyle=C.red; ctx.fillText('Release here to cancel',W/2,GROUND-110); ctx.restore(); return; }
+    ctx.globalAlpha=1; ctx.fillStyle=col; ctx.fillText(rdy?'Release to fire':'Release to queue. It fires when ready',W/2,GROUND-110);
+    ctx.fillStyle='rgba(255,255,255,.55)'; ctx.font='600 12px "Chakra Petch", monospace'; ctx.fillText('Drag back down to the icons to cancel',W/2,GROUND-92);
+    ctx.globalAlpha=rdy?1:0.7; ctx.strokeStyle=col; ctx.lineWidth=1.4;
+    if(w==='mine'){ const R=mineR(), cx=clamp(x,24,W-24), cy=clamp(y,200,GROUND-50); ctx.globalAlpha*=0.5; ctx.setLineDash([5,7]); ctx.beginPath(); ctx.arc(cx,cy,R,0,6.2832); ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha=1; drawMine({x:cx,y:cy,t:1},true); }
+    else if(w==='field'){ const hw=fieldHW(); drawField({x:clamp(x,hw*0.4,W-hw*0.4),y:clamp(y,140,GROUND-100),hw:hw,h:22,t:0,dur:1},true); }
+    else if(w==='mortar'){ const R=mortR(), cx=clamp(x,24,W-24), cy=clamp(y,110,GROUND-90); ctx.globalAlpha*=0.55; ctx.setLineDash([5,7]); ctx.beginPath(); ctx.arc(cx,cy,R,0,6.2832); ctx.stroke(); ctx.setLineDash([2,8]); ctx.beginPath(); ctx.moveTo(sx,sy); ctx.quadraticCurveTo((sx+cx)/2,Math.min(sy,cy)-150,cx,cy); ctx.stroke(); ctx.setLineDash([]); }
+    else if(w==='chain'){
+      const tg=chainSnap(x,y);
+      if(tg){
+        ctx.globalAlpha=0.8; ctx.setLineDash([3,5]); ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(tg.x,tg.y); ctx.stroke(); ctx.setLineDash([]);
+        ctx.beginPath(); ctx.arc(tg.x,tg.y,tg.r+8+2*Math.sin(tt*10),0,6.2832); ctx.stroke();
+        ctx.globalAlpha=0.35; ctx.lineWidth=1; let n=0; for(const o of G.enemies){ if(o.dead||o===tg||n>=3||o.y<0) continue; if(Math.hypot(o.x-tg.x,o.y-tg.y)<160){ n++; ctx.beginPath(); ctx.moveTo(tg.x,tg.y); ctx.lineTo(o.x,o.y); ctx.stroke(); } }
+      } else { ctx.globalAlpha=0.9; ctx.strokeStyle=C.red; ctx.beginPath(); ctx.moveTo(x-9,y-9); ctx.lineTo(x+9,y+9); ctx.moveTo(x+9,y-9); ctx.lineTo(x-9,y+9); ctx.stroke(); ctx.fillStyle=C.red; ctx.font='600 12px "Chakra Petch", monospace'; ctx.fillText('no target close enough',x,y-24); }
+    }
+    else if(w==='saw'){
+      const a=clamp(Math.atan2(x-sx,sy-y),-1.25,1.25), len=Math.max(120,Math.hypot(x-sx,sy-y)), ex=sx+Math.sin(a)*len, ey=sy-Math.cos(a)*len;
+      ctx.globalAlpha=0.7; ctx.setLineDash([4,6]); ctx.lineDashOffset=-tt*30; ctx.beginPath(); ctx.moveTo(sx,sy); ctx.lineTo(ex,ey); ctx.stroke(); ctx.setLineDash([]);
+      const r=ST.ssz(L('ssz')); ctx.beginPath(); ctx.arc(ex,ey,r,0,6.2832); ctx.stroke();
+      for(let i=0;i<8;i++){ const q=i*0.7854+tt*8; ctx.beginPath(); ctx.moveTo(ex+Math.cos(q)*r,ey+Math.sin(q)*r); ctx.lineTo(ex+Math.cos(q+0.3)*(r+5),ey+Math.sin(q+0.3)*(r+5)); ctx.stroke(); }
+    }
+    /* reticle */
+    const pr=0.5+0.5*Math.sin(tt*9), R0=17+2*pr;
+    ctx.globalAlpha=rdy?1:0.75; ctx.strokeStyle=col; ctx.lineWidth=2; ctx.shadowColor=col; ctx.shadowBlur=10;
+    ctx.setLineDash(rdy?[]:[5,5]); ctx.lineDashOffset=-tt*20; ctx.beginPath(); ctx.arc(x,y,R0,0,6.2832); ctx.stroke(); ctx.setLineDash([]);
+    ctx.beginPath(); ctx.moveTo(x-R0-6,y); ctx.lineTo(x-R0+7,y); ctx.moveTo(x+R0-7,y); ctx.lineTo(x+R0+6,y); ctx.moveTo(x,y-R0-6); ctx.lineTo(x,y-R0+7); ctx.moveTo(x,y+R0-7); ctx.lineTo(x,y+R0+6); ctx.stroke();
+    ctx.fillStyle=col; ctx.beginPath(); ctx.arc(x,y,2.4,0,6.2832); ctx.fill();
+  }
+  ctx.restore();
+}
 function drawTurret(){
   const n=1+L('barrels')+bst('barrel'), col=C.cyan, rc='0,240,255', t=G.time, hot=Math.min(1,T.recoil);
   ctx.save(); ctx.translate(T.x,TURRET_Y);
@@ -2839,6 +3004,7 @@ function render(dt){
     else if(G.armed==='mortar'){ const R=mortR(); ctx.save(); ctx.shadowBlur=0; ctx.strokeStyle='rgba(255,196,0,.5)'; ctx.lineWidth=1.2; ctx.setLineDash([5,7]); ctx.beginPath(); ctx.arc(clamp(g.x,24,W-24),clamp(g.y,110,GROUND-90),R,0,6.2832); ctx.stroke(); ctx.restore(); }
     else { const hw=fieldHW(); drawField({x:clamp(g.x,hw*0.4,W-hw*0.4),y:clamp(g.y,140,GROUND-100),hw:hw,h:22,t:0,dur:1},true); }
   }
+  drawGrab();
   ctx.font='700 14px "Chakra Petch", monospace'; ctx.textAlign='center'; ctx.shadowBlur=0;
   for(const f of G.floats){ ctx.globalAlpha=Math.min(1,(1-f.t/f.life)*1.6); ctx.fillStyle=f.color; ctx.shadowColor=f.color; ctx.shadowBlur=f.text.charAt(0)==='+'?8*sx:0; ctx.fillText(f.text,f.x,f.y); }
   ctx.shadowBlur=0;
@@ -2898,6 +3064,7 @@ function renderHud(){
 function flashMortar(){ const f=$('mflash'); if(!f) return; f.classList.remove('go'); void f.offsetWidth; f.classList.add('go'); }
 function fmtS(v){ return v>=10?Math.ceil(v)+'s':v.toFixed(1)+'s'; }
 function renderTools(){
+  if(GR.w&&G.state!=='playing') grabEnd(false);
   const mo=hasTool('mine'), fo=hasTool('field'), mt=hasTool('mortar'), co=hasTool('chain'), so=hasTool('saw');
   const mR=mineRech(), tR=mortRech();
   const mrem=mo&&G.stock<mineMax()?Math.max(0,mR-G.mineT):0, trem=mt&&G.mort<mortMax()?Math.max(0,tR-G.mortT):0;
@@ -2909,7 +3076,7 @@ function renderTools(){
   const sw0=G.saws[0], sact=G.saws.length?Math.max.apply(null,G.saws.map(w=>w.life)):0, scd=so&&!G.saws.length?Math.max(0,G.sawCd):0;
   const sp=sw0?Math.round(sw0.life/sw0.max*100):(so?Math.round((1-Math.min(1,scd/0.56))*100):0);
   const live=G.state==='playing';
-  const k=[mo,fo,mt,co,so,G.stock,mineMax(),Math.ceil(mrem*10),Math.ceil(fcd*10),Math.ceil(fact*10),G.mort,mortMax(),Math.ceil(trem*10),Math.ceil(ccd*10),Math.ceil(sact*10),Math.ceil(scd*10),G.armed,live,mp,fp,mrp,cp,sp].join('|');
+  const k=[mo,fo,mt,co,so,G.stock,mineMax(),Math.ceil(mrem*10),Math.ceil(fcd*10),Math.ceil(fact*10),G.mort,mortMax(),Math.ceil(trem*10),Math.ceil(ccd*10),Math.ceil(sact*10),Math.ceil(scd*10),G.armed,live,mp,fp,mrp,cp,sp,GR.w,GR.live,Object.keys(G.pin).join(','),CTL.all,WCTL.map(w=>isManual(w)?1:0).join('')].join('|');
   if(k===toolKey) return; toolKey=k;
   toolMine.hidden=!mo; toolField.hidden=!fo; toolMortar.hidden=!mt; toolChain.hidden=!co; toolSaw.hidden=!so;
   $('mortS').textContent=G.mort; $('mortT').textContent=trem>0?fmtS(trem):''; $('mortP').style.width=mrp+'%';
@@ -2918,12 +3085,13 @@ function renderTools(){
   $('fieldS').textContent=''; toolField.classList.toggle('rdy',live&&canField()); $('fieldT').textContent=G.fields.length?fmtS(fact):(fcd>0?fmtS(fcd):''); $('fieldP').style.width=fp+'%';
   $('chainS').textContent=''; toolChain.classList.toggle('rdy',ccd<=0.05); $('chainT').textContent=ccd>0.05?fmtS(ccd):''; $('chainP').style.width=cp+'%';
   $('sawS').textContent=''; toolSaw.classList.toggle('rdy',sact>0); $('sawT').textContent=sact>0?fmtS(sact):(scd>0.05?fmtS(scd):''); $('sawP').style.width=sp+'%';
-  toolMine.disabled=!live||G.stock<1; toolField.disabled=!live||!canField();
+  toolMine.classList.toggle('off',!live||G.stock<1); toolField.classList.toggle('off',!live||!canField());
+  [['mine',toolMine],['field',toolField],['chain',toolChain],['saw',toolSaw],['mortar',toolMortar]].forEach(a=>{ const w=a[0], el=a[1]; el.classList.toggle('man',isManual(w)); el.classList.toggle('held',!!G.pin[w]); el.classList.toggle('grab',GR.w===w&&GR.live); el.setAttribute('aria-label',WSHORT[w]+(isManual(w)?': manual. Hold and drag to aim':': AI controlled. Hold and drag to take over')); });
   toolMine.classList.toggle('rdy',live&&G.stock>=1); toolMine.setAttribute('aria-pressed',String(G.armed==='mine')); toolField.setAttribute('aria-pressed',String(G.armed==='field'));
 }
 function setMode(m){
   G.mode='auto'; input.active=false;
-  $('hint').textContent='AI aims. Touch and hold to take over the turret';
+  $('hint').textContent='AI fires everything. Hold the field to steer the turret, hold a weapon icon and drag to aim it';
 }
 function arm(kind){
   if(G.state!=='playing') return;
@@ -2964,7 +3132,7 @@ function startLevel(n,world,elite){
   G.enemies=[]; G.bullets=[]; G.parts=[]; G.rings=[]; G.floats=[]; G.mines=[]; G.fields=[]; G.boss=null; G.tag=null; G.warps=[];
   { const pf=profileFor(G.wd,n,G.elite); G.prof=pf; G.mutHp=pf.mut==='armored'?1.3:pf.mut==='dense'?0.8:pf.mut==='swift'?0.85:1; G.mutSp=pf.mut==='swift'?1.25:1; if(pf.mut||n>1) setTimeout(()=>{ if(G.state==='playing'&&G.n===n&&G.wave<=1) say(pf.name,pf.mut?MUTS[pf.mut].note:(BRIEF[pf.feat]||'')); },1400); }
   G.waveT=0; G.shake=0; G.armed=null; G.ghost.show=false; G.placing=false; G.autoT=0.5;
-  G.stock=0; G.mineT=0; G.fieldCd=0;
+  G.stock=0; G.mineT=0; G.fieldCd=0; G.pin={}; grabEnd(false);
   T.x=W/2; T.cool=0; T.recoil=0; T.target=null; T.idle=0; input.active=false;
   Ads.gameplayStart(); G.state='playing'; overlay.hidden=true; $('shop').hidden=true; hudKey=''; toolKey=''; thumbKey=''; coachRun();
   $('pauseBtn').textContent='Pause';
@@ -3837,10 +4005,32 @@ canvas.addEventListener('pointerup',e=>{
 canvas.addEventListener('pointercancel',()=>{ lpClear(); input.active=false; G.placing=false; });
 canvas.addEventListener('pointerleave',e=>{ if(e.pointerType==='mouse'){ input.active=false; if(!G.placing) G.ghost.show=false; } });
 
-toolMine.addEventListener('click',()=>arm('mine'));
+toolMine.addEventListener('click',()=>{ if(GR.sup) return; arm('mine'); });
 $('cmdA1').addEventListener('click',()=>{ useCmd(0); renderCmd(); });
 $('cmdA2').addEventListener('click',()=>{ useCmd(1); renderCmd(); });
-toolField.addEventListener('click',()=>arm('field'));
+toolField.addEventListener('click',()=>{ if(GR.sup) return; arm('field'); });
+/* hold a weapon icon to freeze its AI; after a short hold the reticle follows the finger. Release over the field to fire (or pin the aim if it is still recharging); release over the icons to cancel. */
+function chipPoint(e){ const p=toWorld(e), r=canvas.getBoundingClientRect(); GR.x=p.x; GR.y=clamp(p.y-(e.pointerType==='mouse'?0:70),40,GROUND-30); GR.out=e.clientY>r.bottom-6; }
+[['mine',toolMine],['field',toolField],['chain',toolChain],['saw',toolSaw],['mortar',toolMortar]].forEach(a=>{
+  const w=a[0], el=a[1]; el.dataset.w=w;
+  el.addEventListener('pointerdown',e=>{
+    if(G.state!=='playing'||!hasTool(w)||GR.w||(e.button>0)) return;
+    GR.w=w; GR.live=false; GR.hadPin=!!G.pin[w]; GR.pid=e.pointerId; chipPoint(e); toolKey='';
+    try{ el.setPointerCapture(e.pointerId); }catch(_){}
+    clearTimeout(GR.tm);
+    GR.tm=setTimeout(()=>{ if(GR.w===w&&!GR.live){ GR.live=true; G.armed=null; G.ghost.show=false; G.placing=false; input.active=false; toolKey=''; if(navigator.vibrate) try{ navigator.vibrate(8); }catch(_){} } },150);
+  });
+  el.addEventListener('pointermove',e=>{ if(GR.w===w&&e.pointerId===GR.pid) chipPoint(e); });
+  el.addEventListener('pointerup',e=>{
+    if(GR.w!==w||e.pointerId!==GR.pid) return; chipPoint(e);
+    const live=GR.live; if(!live&&GR.hadPin) delete G.pin[w];
+    if(live){ GR.sup=true; setTimeout(()=>{ GR.sup=false; },80); }
+    grabEnd(live&&!GR.out);
+  });
+  el.addEventListener('pointercancel',()=>{ if(GR.w===w) grabEnd(false); });
+  el.addEventListener('contextmenu',e=>e.preventDefault());
+});
+$('ctlBtn').addEventListener('click',()=>{ if(G.state==='ctl') closeCtl(); else openCtl(); });
 
 window.addEventListener('keydown',e=>{
   const k=e.key;
@@ -3851,6 +4041,7 @@ window.addEventListener('keydown',e=>{
     if(k==='1') arm('mine'); else if(k==='2') arm('field'); else if(k==='q'||k==='Q') useCmd(0); else if(k==='e'||k==='E') useCmd(1);
     else if(k==='Escape'&&G.armed){ G.armed=null; G.ghost.show=false; toolKey=''; }
   }
+  if(k==='Escape'&&G.state==='ctl'){ closeCtl(); return; }
   if(k==='p'||k==='P'){ togglePause(); }
 });
 window.addEventListener('keyup',e=>{
@@ -3898,16 +4089,16 @@ if(!P.intro){ const io=document.createElement('div'); io.id='introov'; io.innerH
 requestAnimationFrame(frame);
 
 /* test hook for headless checks */
-window.__rr={T:T,MOB:MOB,SKIN:SKIN,applySkin:applySkin,PKEYS:PKEYS,rollKey:rollKey,rollCard:rollCard,useCmd:useCmd,cmdBuy:cmdBuy,cmdNodeBuy:cmdNodeBuy,cmdP:cmdP,cmdLeft:cmdLeft,cmdEarned:cmdEarned,CMDS:CMDS,kName:kName,loadPools:loadPools,fireball:fireball,chip:chip,openTeach:openTeach,fireMortar:fireMortar,shape:shape,spawn:spawn,G:G,get P(){return P;},set P(v){P=v;},newP:newP,startLevel:startLevel,update:update,UPS:UPS,waveCount:waveCount,levelPool:levelPool,hpScale:hpScale,tune:(a,b,c,d,m,k,bk,wh,pm,lk,c0,cg)=>{if(lk!==undefined)LATEK=lk;if(pm!==undefined)PICKM=pm;if(wh!==undefined)WAVEHP=wh;if(k!==undefined)HPK=k;if(m!==undefined)MOBN=m;if(c0!==undefined)CDROP0=c0;if(cg!==undefined)CDROPG=cg;HPG=a;POOL0=b;POOLG=c;if(d!==undefined)HPA=d;},bst:bst,pickCard:pickCard,CARDS:CARDS,offerCards:offerCards,applyCard:applyCard,hasTool:hasTool,fireMortar:fireMortar,canMortar:canMortar,T:T,wcount:wcount,canBuy:canBuy,buyUp:buyUp,cardNeed:cardNeed,bandOf:bandOf,avail:avail,awardCards:awardCards,dropCount:dropCount,fuse:fuse,useEnergy:useEnergy,enTick:enTick,tryStart:tryStart,win:win,gameOver:gameOver,profileFor:profileFor,MOB:MOB,WORLDS:WORLDS,briefFor:briefFor};
+window.__rr={coachGrab:coachGrab,GR:GR,CTL:CTL,wReady:wReady,isManual:isManual,chainSnap:chainSnap,T:T,MOB:MOB,SKIN:SKIN,applySkin:applySkin,PKEYS:PKEYS,rollKey:rollKey,rollCard:rollCard,useCmd:useCmd,cmdBuy:cmdBuy,cmdNodeBuy:cmdNodeBuy,cmdP:cmdP,cmdLeft:cmdLeft,cmdEarned:cmdEarned,CMDS:CMDS,kName:kName,loadPools:loadPools,fireball:fireball,chip:chip,openTeach:openTeach,fireMortar:fireMortar,shape:shape,spawn:spawn,G:G,get P(){return P;},set P(v){P=v;},newP:newP,startLevel:startLevel,update:update,UPS:UPS,waveCount:waveCount,levelPool:levelPool,hpScale:hpScale,tune:(a,b,c,d,m,k,bk,wh,pm,lk,c0,cg)=>{if(lk!==undefined)LATEK=lk;if(pm!==undefined)PICKM=pm;if(wh!==undefined)WAVEHP=wh;if(k!==undefined)HPK=k;if(m!==undefined)MOBN=m;if(c0!==undefined)CDROP0=c0;if(cg!==undefined)CDROPG=cg;HPG=a;POOL0=b;POOLG=c;if(d!==undefined)HPA=d;},bst:bst,pickCard:pickCard,CARDS:CARDS,offerCards:offerCards,applyCard:applyCard,hasTool:hasTool,fireMortar:fireMortar,canMortar:canMortar,T:T,wcount:wcount,canBuy:canBuy,buyUp:buyUp,cardNeed:cardNeed,bandOf:bandOf,avail:avail,awardCards:awardCards,dropCount:dropCount,fuse:fuse,useEnergy:useEnergy,enTick:enTick,tryStart:tryStart,win:win,gameOver:gameOver,profileFor:profileFor,MOB:MOB,WORLDS:WORLDS,briefFor:briefFor};
 })();
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 73</div>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 74</div>
 <script>
 /* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
-(function(){ const BUILD=73; let busy=false, shown=false;
-  const inRun=()=>{ try{ return typeof G!=='undefined'&&(G.state==='playing'||G.state==='cards'||G.state==='shop'||G.state==='paused'||G.state==='teach'); }catch(e){ return false; } };
+(function(){ const BUILD=74; let busy=false, shown=false;
+  const inRun=()=>{ try{ return typeof G!=='undefined'&&(G.state==='playing'||G.state==='cards'||G.state==='shop'||G.state==='paused'||G.state==='teach'||G.state==='ctl'); }catch(e){ return false; } };
   function wipeReload(){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
     if(n>=3) return;
     Promise.all([(navigator.serviceWorker?navigator.serviceWorker.getRegistrations().then(rs=>Promise.all(rs.map(r=>r.unregister()))):0),(window.caches?caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k)))):0)]).catch(()=>{}).then(()=>location.replace(location.pathname+'?u='+Date.now())); }
