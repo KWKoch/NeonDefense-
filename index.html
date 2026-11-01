@@ -278,6 +278,8 @@ body.menu{background:radial-gradient(140% 55% at 50% -5%,rgba(255,43,214,.22),rg
 .tab{border-radius:999px; display:inline-flex; align-items:center; gap:6px; padding:8px 13px}
 .tab .ic{flex:none}
 .card{border-radius:18px}
+canvas.tprev{align-self:center; width:220px; height:130px; max-width:100%; border-radius:14px; background:radial-gradient(ellipse at 50% 85%,color-mix(in srgb,var(--c) 22%,#05070c),#04060b 70%); border:1px solid color-mix(in srgb,var(--c) 30%,#000)}
+canvas.tprev.dim{filter:saturate(.35) brightness(.7)}
 .chip,.rtag{border-radius:999px}
 .inv{border-radius:22px}
 .gem{border-radius:50%; width:100%; max-width:48px; aspect-ratio:1; justify-self:center; justify-content:center}
@@ -2064,7 +2066,7 @@ function commandHtml(){
     +'<div class="note"><b>One commander leads each run.</b> Each commander has a buff, a weakness and two abilities you tap during a level. Higher rarity strengthens the buff, softens the weakness and unlocks the second ability. Earn Command Points from achievements (1 for Bronze and Silver, 2 for Gold, 3 for Platinum) and spend them on specialties below. Capstones unlock new capabilities.</div>';
   CMDS.forEach(c=>{
     const own=p.own[c.id], has=own!==undefined, r=has?own:0, eq=p.eq===c.id;
-    h+='<div class="card" style="--c:'+c.color+'"><div class="ct"><span class="cn">'+c.name+'</span><span class="chip" style="--c:'+(has?RAR[r].color:'#6b7a85')+'">'+(has?CRAR[r]:'Not owned')+'</span></div>'
+    h+='<div class="card" style="--c:'+c.color+'"><canvas class="tprev'+(has?'':' dim')+'" data-tp="'+c.id+'" data-r="'+r+'" width="440" height="260"></canvas><div class="ct"><span class="cn">'+c.name+'</span><span class="chip" style="--c:'+(has?RAR[r].color:'#6b7a85')+'">'+(has?CRAR[r]:'Not owned')+'</span></div>'
       +'<div class="cv"><b style="color:'+c.color+'">'+c.role+'.</b> Buff: '+cmdPas(c,r)+'. Weakness: '+cmdWk(c,r)+'.</div>'
       +'<div class="cv">1. <b>'+c.ab[0].n+'</b> ('+c.ab[0].cd+'s) '+c.ab[0].d+'<br>2. <b>'+c.ab[1].n+'</b> ('+c.ab[1].cd+'s) '+c.ab[1].d+(has&&r<1?' <span class="note">Unlocks at Rare, or with this commander\'s Branch capstone.</span>':'')+'</div>'
       +'<div style="display:flex;gap:6px;flex-wrap:wrap">'
@@ -2877,7 +2879,198 @@ function drawGrab(){
   }
   ctx.restore();
 }
+/* ================= commander turret skins ================= */
+/* Each commander gets a hand-built turret. paintTurret draws onto any 2D context (battle field or Arsenal preview) around (0,0) = turret centre. */
+const TSKIN={warden:'0,255,163',rook:'255,138,0',vex:'157,77,255'};
+const hexRgb=h=>{ const n=parseInt(h.slice(1),16); return (n>>16&255)+','+(n>>8&255)+','+(n&255); };
+const tsFr=k=>{ const v=Math.sin(k*12.9898)*43758.5453; return v-Math.floor(v); };
+function tsGlow(g,x,y,r,rgb,a){ const q=g.createRadialGradient(x,y,0,x,y,r); q.addColorStop(0,'rgba('+rgb+','+Math.min(1,a).toFixed(3)+')'); q.addColorStop(1,'rgba('+rgb+',0)'); g.globalCompositeOperation='lighter'; g.fillStyle=q; g.beginPath(); g.arc(x,y,r,0,6.2832); g.fill(); g.globalCompositeOperation='source-over'; }
+function tsLin(g,x0,y0,x1,y1,st){ const q=g.createLinearGradient(x0,y0,x1,y1); st.forEach(s=>q.addColorStop(s[0],s[1])); return q; }
+function tsPoly(p){ return g=>{ g.beginPath(); g.moveTo(p[0],p[1]); for(let i=2;i<p.length;i+=2) g.lineTo(p[i],p[i+1]); g.closePath(); }; }
+const tsMir=(p,s)=>p.map((v,i)=>i%2?v:v*s);
+/* fill a path with a gradient, then light its top edge and shade its bottom edge so flat shapes read as bevelled metal */
+function tsBevel(g,pf,fill,edge){
+  pf(g); g.fillStyle=fill; g.fill();
+  g.save(); pf(g); g.clip(); g.lineWidth=1.6;
+  g.translate(0,1.3); pf(g); g.strokeStyle='rgba(255,255,255,.4)'; g.stroke();
+  g.translate(0,-2.6); pf(g); g.strokeStyle='rgba(0,0,0,.55)'; g.stroke();
+  g.restore(); pf(g); g.strokeStyle=edge||'rgba(0,0,0,.75)'; g.lineWidth=1; g.stroke();
+}
+function tsDot(g,x,y,r,c){ g.fillStyle=c; g.beginPath(); g.arc(x,y,r,0,6.2832); g.fill(); }
+function tsRivets(g,pts){ for(let i=0;i<pts.length;i+=2){ tsDot(g,pts[i],pts[i+1],.8,'rgba(0,0,0,.6)'); tsDot(g,pts[i]-.2,pts[i+1]-.25,.45,'rgba(255,255,255,.55)'); } }
+
+function skWarden(g,o,rgb,t,r,rr,hot){
+  const sh=o.sh==null?1:o.sh, fl=Math.min(1,o.flash||0), ha=Math.min(1,.14+.4*sh+.5*fl), n=o.n, rec=(o.recoil||0)*5;
+  /* aegis lattice: hex rings and a dome that brighten with the shield */
+  g.save(); g.translate(0,2);
+  const dm=g.createRadialGradient(0,0,12,0,0,42); dm.addColorStop(0,'rgba('+rgb+',0)'); dm.addColorStop(.82,'rgba('+rgb+','+(.04+.12*sh+.3*fl).toFixed(3)+')'); dm.addColorStop(1,'rgba('+rgb+',0)');
+  g.fillStyle=dm; g.beginPath(); g.arc(0,0,42,0,6.2832); g.fill();
+  for(let k=0;k<(r>=3?2:1);k++){
+    g.save(); g.rotate(t*(k?-.34:.24)); const R=k?35:41, al=(ha*(k?.7:1)).toFixed(3);
+    g.strokeStyle='rgba('+rgb+','+al+')'; g.lineWidth=1.1; g.beginPath(); for(let i=0;i<6;i++){ const a=i*1.0472; g.lineTo(Math.cos(a)*R,Math.sin(a)*R); } g.closePath(); g.stroke();
+    g.lineWidth=.7; g.beginPath(); for(let i=0;i<6;i+=2){ const a=i*1.0472; g.moveTo(Math.cos(a)*R,Math.sin(a)*R); g.lineTo(Math.cos(a)*R*.55,Math.sin(a)*R*.55); } g.stroke();
+    for(let i=0;i<6;i++){ const a=i*1.0472; tsDot(g,Math.cos(a)*R,Math.sin(a)*R,1.5,'rgba(220,255,245,'+Math.min(1,ha+.25).toFixed(3)+')'); }
+    g.restore();
+  }
+  g.restore();
+  /* bastion pauldrons with shield emitters */
+  for(const sg of [-1,1]){
+    tsBevel(g,tsPoly(tsMir([6,-3,23,-7,35,4,33,18,9,17],sg)),tsLin(g,0,-7,0,18,[[0,'#7fa39c'],[.4,'#2f4b46'],[1,'#0e1a19']]));
+    g.strokeStyle='rgba('+rgb+',.85)'; g.lineWidth=1.4; g.beginPath(); g.moveTo(12*sg,2); g.lineTo(28*sg,2); g.lineTo(31*sg,12); g.stroke();
+    g.strokeStyle='rgba(0,0,0,.45)'; g.lineWidth=.8; g.beginPath(); g.moveTo(11*sg,10); g.lineTo(29*sg,13); g.stroke();
+    tsRivets(g,[14*sg,13,22*sg,14,29*sg,8]);
+    const ex=26*sg, ey=9; tsDot(g,ex,ey,4.8,'#09120f'); g.strokeStyle='rgba('+rgb+',.95)'; g.lineWidth=1.2; g.beginPath(); g.arc(ex,ey,4.8,0,6.2832); g.stroke();
+    tsGlow(g,ex,ey,11,rgb,.4+.35*sh+.5*fl); tsDot(g,ex,ey,1.7,'rgba(235,255,248,.95)');
+  }
+  /* armoured barrels with shield sleeves */
+  for(let i=0;i<n;i++){
+    g.save(); g.rotate((i-(n-1)/2)*BARREL_SPREAD);
+    tsBevel(g,tsPoly([-5.2,-3,-3.8,-31+rec,3.8,-31+rec,5.2,-3]),tsLin(g,-5,0,5,0,[[0,'#14201d'],[.32,'#9bbdb5'],[.55,'#4b6a63'],[1,'#0b1412']]));
+    for(const y of [-11,-21]){ const yy=y+rec*.5; g.fillStyle=tsLin(g,-6,0,6,0,[[0,'#0c1613'],[.4,'#3d5c55'],[1,'#0c1613']]); g.fillRect(-6,yy,12,4.2); g.fillStyle='rgba('+rgb+',.95)'; g.fillRect(-6,yy+1.7,12,.9); }
+    g.fillStyle='#0a1210'; g.fillRect(-4.6,-33+rec,9.2,3.4); g.strokeStyle='rgba('+rgb+',.9)'; g.lineWidth=.8; g.strokeRect(-4.6,-33+rec,9.2,3.4);
+    tsGlow(g,0,-34+rec,6+hot*6,rgb,.45+.5*hot);
+    g.restore();
+  }
+  /* helm */
+  const hull=g=>{ g.beginPath(); g.moveTo(-15,17); g.lineTo(-17,3); g.quadraticCurveTo(0,-20,17,3); g.lineTo(15,17); g.closePath(); };
+  tsBevel(g,hull,tsLin(g,0,-14,0,17,[[0,'#c5ddd7'],[.28,'#628780'],[.7,'#28443f'],[1,'#0b1614']]));
+  g.save(); hull(g); g.clip(); tsGlow(g,-5,-6,13,'255,255,255',.16); g.restore();
+  g.strokeStyle='rgba(255,255,255,.4)'; g.lineWidth=1; g.beginPath(); g.moveTo(-10,1); g.quadraticCurveTo(-4,-9,4,-8); g.stroke();
+  if(r>=1){ g.strokeStyle='rgba('+rr+',.85)'; g.lineWidth=1.1; g.beginPath(); g.moveTo(-13,5); g.quadraticCurveTo(0,-14,13,5); g.stroke(); }
+  /* shield crest */
+  g.beginPath(); g.moveTo(0,-1); g.lineTo(6.2,1.2); g.lineTo(5.2,9); g.lineTo(0,14); g.lineTo(-5.2,9); g.lineTo(-6.2,1.2); g.closePath();
+  g.fillStyle='rgba(3,14,11,.92)'; g.fill(); g.strokeStyle='rgba('+rgb+',.95)'; g.lineWidth=1.3; g.stroke();
+  const cr=7+hot*3+Math.sin(t*4)*.8; tsGlow(g,0,7,cr*2,rgb,.95); tsGlow(g,0,7,cr*.8,'255,255,255',.9);
+  /* orbiting aegis plates */
+  if(r>=2){ for(let k=0;k<3;k++){ const a=t*.9+k*2.0944, px=Math.cos(a)*37, py=2+Math.sin(a)*13, f=.55+.45*Math.sin(a); g.save(); g.translate(px,py); g.scale(f,1); tsBevel(g,tsPoly([0,-5,3.4,0,0,5,-3.4,0]),tsLin(g,0,-5,0,5,[[0,'#bfe6dc'],[1,'#27504a']]),'rgba('+rgb+',.9)'); g.restore(); tsGlow(g,px,py,7,rgb,.35*f); } }
+}
+
+function skRook(g,o,rgb,t,r,rr,hot){
+  const ov=o.over>0?1:0, heat=Math.min(1,hot*.55+ov), n=o.n, rec=(o.recoil||0)*5;
+  /* ammo drums and feed belts */
+  for(const sg of [-1,1]){
+    const cx=24*sg, cy=9;
+    g.save(); g.lineCap='butt'; g.strokeStyle='#22272d'; g.lineWidth=3.6; g.beginPath(); g.moveTo(cx-5*sg,cy-6); g.quadraticCurveTo(12*sg,-9,4*sg,-5); g.stroke();
+    g.strokeStyle='rgba(255,205,120,.95)'; g.lineWidth=2.2; g.setLineDash([1.7,2.3]); g.lineDashOffset=t*(ov?46:7)*sg; g.beginPath(); g.moveTo(cx-5*sg,cy-6); g.quadraticCurveTo(12*sg,-9,4*sg,-5); g.stroke(); g.restore();
+    const dg=g.createRadialGradient(cx-2.5,cy-3,1,cx,cy,10); dg.addColorStop(0,'#d7dde2'); dg.addColorStop(.45,'#5d6872'); dg.addColorStop(1,'#14181d');
+    g.fillStyle=dg; g.beginPath(); g.arc(cx,cy,9,0,6.2832); g.fill(); g.strokeStyle='rgba(0,0,0,.85)'; g.lineWidth=1; g.stroke();
+    g.strokeStyle='rgba('+rgb+',.95)'; g.lineWidth=1.6; g.beginPath(); g.arc(cx,cy,6.6,0,6.2832); g.stroke();
+    g.save(); g.translate(cx,cy); g.rotate(t*(ov?7:1.2)*sg); g.fillStyle='#0c0f12'; for(let i=0;i<6;i++){ g.rotate(1.0472); g.fillRect(-1,-5.3,2,3.1); } g.restore();
+    tsDot(g,cx,cy,2,'#20262c'); tsGlow(g,cx,cy,7,rgb,.22+.4*ov);
+  }
+  /* shrouded cannons */
+  for(let i=0;i<n;i++){
+    g.save(); g.rotate((i-(n-1)/2)*BARREL_SPREAD);
+    tsBevel(g,tsPoly([-3,-3,-2.4,-36+rec,2.4,-36+rec,3,-3]),tsLin(g,-3,0,3,0,[[0,'#171b20'],[.5,'#9aa5ae'],[1,'#171b20']]));
+    tsBevel(g,tsPoly([-5,-6,-4.6,-29+rec,4.6,-29+rec,5,-6]),tsLin(g,-5,0,5,0,[[0,'#1a1e24'],[.3,'#7b8791'],[.6,'#3a424a'],[1,'#12161a']]));
+    for(let k=0;k<4;k++){ const y=-10-k*5.2+rec*.6; g.fillStyle='#07090b'; g.beginPath(); g.ellipse(0,y,2.3,1.5,0,0,6.2832); g.fill(); tsGlow(g,0,y,4.5,heat>.6?'255,220,150':rgb,.25+.7*heat); }
+    g.fillStyle='rgba('+(heat>.6?'255,170,70':rgb)+','+(.05+.3*heat).toFixed(2)+')'; g.globalCompositeOperation='lighter'; g.fillRect(-4.4,-29+rec,8.8,23); g.globalCompositeOperation='source-over';
+    tsBevel(g,tsPoly([-6.2,-35+rec,-6.2,-39+rec,6.2,-39+rec,6.2,-35+rec,3,-33+rec,-3,-33+rec]),tsLin(g,-6,0,6,0,[[0,'#20262c'],[.5,'#aab4bc'],[1,'#20262c']]));
+    g.fillStyle='#050607'; g.fillRect(-4.6,-38+rec,1.3,2.4); g.fillRect(3.3,-38+rec,1.3,2.4);
+    tsGlow(g,0,-39+rec,7+hot*7,rgb,.4+.5*hot);
+    if(ov){ for(let k=0;k<3;k++){ const ph=(t*7+k*.37+i*.2)%1, fx=(tsFr(Math.floor(t*14)+k+i*9)-.5)*5*ph; tsGlow(g,fx,-42+rec-ph*16,6*(1-ph)+2,k?'255,150,40':'255,235,180',.8*(1-ph)); } }
+    g.restore();
+  }
+  /* assault chassis */
+  const hull=g=>{ g.beginPath(); g.moveTo(-14,17); g.lineTo(-17,5); g.lineTo(-8,-9); g.lineTo(8,-9); g.lineTo(17,5); g.lineTo(14,17); g.closePath(); };
+  tsBevel(g,hull,tsLin(g,0,-9,0,17,[[0,'#8a949d'],[.3,'#444c55'],[.75,'#1d2227'],[1,'#0b0d10']]));
+  g.save(); hull(g); g.clip();
+  for(let k=-4;k<6;k++){ g.fillStyle=(k&1)?'rgba(12,12,14,.9)':'rgba('+rgb+',.95)'; g.beginPath(); g.moveTo(-18+k*5,17); g.lineTo(-13+k*5,17); g.lineTo(-10+k*5,11); g.lineTo(-15+k*5,11); g.fill(); }
+  for(let k=0;k<3;k++){ const x=-5+k*5; g.fillStyle='#050607'; g.fillRect(x-1.4,-6,2.8,4); tsGlow(g,x,-4,5,heat>.6?'255,220,160':rgb,.15+.7*heat); }
+  g.restore();
+  if(r>=1){ g.strokeStyle='rgba('+rr+',.9)'; g.lineWidth=1.1; g.beginPath(); g.moveTo(-15.5,5); g.lineTo(-8,-7.5); g.lineTo(8,-7.5); g.lineTo(15.5,5); g.stroke(); }
+  /* visor and core */
+  tsBevel(g,tsPoly([-8,-1,8,-1,6,3.4,-6,3.4]),'#0a0c0e','rgba('+rgb+',.9)');
+  tsGlow(g,0,1.2,11,rgb,.55+.3*heat+.12*Math.sin(t*6)); g.fillStyle='rgba(255,236,205,.95)'; g.fillRect(-5.5,.5,11,1.4);
+  tsRivets(g,[-12,10,12,10,-10,-6,10,-6]);
+  if(r>=2){ tsGlow(g,0,-12,18,rr,.18+.1*Math.sin(t*5)); }
+}
+
+function skVex(g,o,rgb,t,r,rr,hot){
+  const a1=o.a1?1:0, a2=o.a2?1:0, c1=o.c1==null?1:o.c1, n=o.n, rec=(o.recoil||0)*5;
+  /* ordnance pods */
+  for(const sg of [-1,1]){
+    g.save(); g.translate(25*sg,5); g.rotate(.2*sg);
+    tsBevel(g,tsPoly([-8,-11,8,-11,9,12,-9,12]),tsLin(g,-8,0,8,0,[[0,'#17102a'],[.4,'#5a4a86'],[1,'#120c22']]),'rgba(0,0,0,.8)');
+    for(let k=-1;k<=1;k++){ const x=k*5; g.fillStyle='#07040f'; g.fillRect(x-2.2,-10,4.4,8); tsBevel(g,tsPoly([x-1.9,-8,x,-15,x+1.9,-8]),tsLin(g,0,-15,0,-8,[[0,a1?'#ffffff':'#8a7ab0'],[1,a1?'#b36bff':'#3a2f5c']])); if(a1) tsGlow(g,x,-12,6,rgb,.6+.2*Math.sin(t*8+k)); }
+    g.fillStyle='#07040f'; g.fillRect(-6.4,5,3,6.4); g.fillStyle='rgba('+rgb+','+(a1?.95:.55).toFixed(2)+')'; const h=6.4*(a1?1:c1); g.fillRect(-6.4,11.4-h,3,h);
+    g.strokeStyle='rgba('+rgb+',.7)'; g.lineWidth=.9; g.beginPath(); g.moveTo(-8,-3); g.lineTo(8,-3); g.stroke();
+    g.fillStyle='rgba(255,255,255,.28)'; g.fillRect(-7.4,-10,1.2,20);
+    g.restore();
+  }
+  /* radar dish and beacon */
+  g.save(); g.translate(26,-9); g.rotate(.2); g.strokeStyle='#4a3d70'; g.lineWidth=1.6; g.beginPath(); g.moveTo(0,8); g.lineTo(0,-1); g.stroke();
+  const dw=Math.abs(Math.cos(t*1.4))*5.5+.8; tsBevel(g,g2=>{ g2.beginPath(); g2.ellipse(0,-4,dw,5,-.5,0,6.2832); },tsLin(g,-5,-8,5,0,[[0,'#d6c8ff'],[1,'#4a3a86']]),'rgba('+rgb+',.9)'); tsDot(g,0,-4,1,'#fff'); g.restore();
+  g.save(); g.translate(-26,-7); g.rotate(-.2); g.strokeStyle='#4a3d70'; g.lineWidth=1.4; g.beginPath(); g.moveTo(0,6); g.lineTo(0,-6); g.stroke(); g.restore();
+  tsGlow(g,-27.2,-13,5,Math.sin(t*5)>.3?'255,255,255':rgb,.7);
+  /* tesla coils */
+  for(const sg of [-1,1]){
+    tsBevel(g,tsPoly([4*sg,8,10*sg,8,9*sg,-4,5*sg,-4]),tsLin(g,0,-4,0,8,[[0,'#6e5aa8'],[1,'#1a1030']]));
+    for(let k=0;k<3;k++){ g.strokeStyle='rgba('+rgb+','+(.5+.4*a2)+')'; g.lineWidth=1; g.beginPath(); g.moveTo(4.4*sg,5-k*3.4); g.lineTo(9.6*sg,5-k*3.4); g.stroke(); }
+    tsDot(g,7*sg,-6,2.4,'#190f33'); tsGlow(g,7*sg,-6,a2?10:6,rgb,a2?.95:.35); if(a2) tsDot(g,7*sg,-6,1.3,'#fff');
+  }
+  if(a2){
+    const sd=Math.floor(t*22); g.save(); g.lineCap='round'; g.lineJoin='round'; g.globalCompositeOperation='lighter';
+    for(let a=0;a<2;a++){
+      g.beginPath(); g.moveTo(-7,-6); const N=7;
+      for(let k=1;k<N;k++){ const f=k/N; g.lineTo(-7+14*f+(tsFr(sd+k+a*31)-.5)*3, -6-9*Math.sin(f*3.1416)*(.5+tsFr(sd+a*7)*.9)+(tsFr(sd*3+k+a)-.5)*3); }
+      g.lineTo(7,-6);
+      g.strokeStyle='rgba('+rgb+','+(a?.35:.9)+')'; g.lineWidth=a?3.4:1.2; g.stroke();
+      if(!a){ g.strokeStyle='rgba(255,255,255,.85)'; g.lineWidth=.6; g.stroke(); }
+    }
+    g.restore();
+  }
+  /* rail barrels */
+  for(let i=0;i<n;i++){
+    g.save(); g.rotate((i-(n-1)/2)*BARREL_SPREAD);
+    tsBevel(g,tsPoly([-3.6,-3,-1.9,-35+rec,1.9,-35+rec,3.6,-3]),tsLin(g,-3.6,0,3.6,0,[[0,'#0e0820'],[.35,'#7a62b8'],[.6,'#2b1e52'],[1,'#080514']]));
+    g.fillStyle='rgba(0,0,0,.7)'; g.fillRect(-.9,-30+rec,1.8,24);
+    g.globalCompositeOperation='lighter'; g.fillStyle='rgba('+rgb+',.9)'; g.fillRect(-.45,-30+rec,.9,24); g.globalCompositeOperation='source-over';
+    for(const sg of [-1,1]){ tsBevel(g,tsPoly([2.4*sg,-14+rec*.5,5*sg,-19+rec*.5,2.1*sg,-22+rec*.5]),'#3c2c6e'); }
+    tsBevel(g,tsPoly([0,-40+rec,2.4,-36+rec,0,-33+rec,-2.4,-36+rec]),tsLin(g,0,-40,0,-33,[[0,'#fff'],[1,'#b87dff']]),'rgba('+rgb+',.9)');
+    tsGlow(g,0,-36+rec,6+hot*6,rgb,.5+.5*hot);
+    g.restore();
+  }
+  /* faceted hull */
+  const outline=[-13,17,-16,4,-6,-10,6,-10,16,4,13,17];
+  tsBevel(g,tsPoly(outline),tsLin(g,0,-10,0,17,[[0,'#6b5a9e'],[.4,'#2a1d4e'],[1,'#0a0616']]));
+  g.save(); tsPoly(outline)(g); g.clip();
+  g.fillStyle=tsLin(g,-14,0,0,0,[[0,'rgba(0,0,0,.45)'],[1,'rgba(0,0,0,0)']]); g.fillRect(-18,-12,18,32);
+  g.fillStyle=tsLin(g,0,0,14,0,[[0,'rgba(255,255,255,0)'],[1,'rgba(200,170,255,.22)']]); g.fillRect(0,-12,18,32);
+  g.strokeStyle='rgba('+rgb+',.55)'; g.lineWidth=.8; g.beginPath(); g.moveTo(-14,10); g.lineTo(-5,4); g.lineTo(0,17); g.moveTo(14,10); g.lineTo(5,4); g.lineTo(0,17); g.stroke();
+  g.restore();
+  g.strokeStyle='rgba('+(r>=1?rr:rgb)+',.9)'; g.lineWidth=1.1; g.beginPath(); g.moveTo(-16,4); g.lineTo(-6,-10); g.lineTo(6,-10); g.lineTo(16,4); g.stroke();
+  tsBevel(g,tsPoly([0,-5,6,2.5,0,10,-6,2.5]),'#06030d','rgba('+rgb+',.95)');
+  tsGlow(g,0,2.5,12,rgb,.7+.25*Math.sin(t*4)); tsGlow(g,0,2.5,4,'255,255,255',.9);
+  if(r>=2){ for(let k=0;k<2;k++){ const a=t*1.1+k*3.1416, px=Math.cos(a)*33, py=-2+Math.sin(a)*10; tsBevel(g,tsPoly([px,py-4,px+2.6,py,px,py+4,px-2.6,py]),tsLin(g,0,py-4,0,py+4,[[0,'#fff'],[1,'#8a4bff']]),'rgba('+rr+',.9)'); tsGlow(g,px,py,7,rr,.4); } }
+}
+const TSK={warden:skWarden,rook:skRook,vex:skVex};
+function paintTurret(g,o){
+  const rgb=TSKIN[o.id], t=o.t, r=o.r|0, rr=hexRgb(RAR[r].color), hot=Math.min(1,o.hot||0);
+  g.save(); g.lineJoin='round'; g.lineCap='round';
+  if(r>=3) tsGlow(g,0,4,48,rr,.2+.06*Math.sin(t*3));
+  tsGlow(g,0,18,30,rgb,.3+.08*Math.sin(t*10));
+  TSK[o.id](g,o,rgb,t,r,rr,hot);
+  if(r>=3){ for(let k=0;k<6;k++){ const ph=(t*.5+k/6)%1, a=k*2.4+t*.3; const px=Math.cos(a)*(14+ph*26), py=4-ph*34; tsGlow(g,px,py,3.2*(1-ph)+1,rr,.9*(1-ph)); } }
+  g.restore();
+}
+/* Arsenal preview: a live turret on every commander card, shown at the rarity the player owns */
+setInterval(()=>{
+  if(typeof armoryEl==='undefined'||armoryEl.hidden) return;
+  const cs=armoryEl.querySelectorAll('canvas.tprev'); if(!cs.length) return;
+  const t=performance.now()/1000;
+  cs.forEach(cv=>{ const g=cv.getContext('2d'), id=cv.dataset.tp, r=+cv.dataset.r||0, k=(t*.55)%3, pulse=Math.max(0,Math.sin(t*2.2));
+    g.setTransform(1,0,0,1,0,0); g.clearRect(0,0,cv.width,cv.height); g.setTransform(2.9,0,0,2.9,cv.width/2,cv.height*.66);
+    paintTurret(g,{id:id,r:r,t:t,hot:pulse>.9?.8:0,recoil:pulse>.9?.8:0,over:id==='rook'&&k>2?1:0,n:1+Math.min(2,r),sh:.55+.45*Math.sin(t*1.2)**2,flash:id==='warden'&&k<.3?1-k/.3:0,a1:true,a2:r>=1,c1:1}); });
+},40);
 function drawTurret(){
+  const q=G.cm;
+  if(q&&TSKIN[q.c.id]){
+    ctx.save(); ctx.translate(T.x,TURRET_Y);
+    paintTurret(ctx,{id:q.c.id,r:q.r,t:G.time,hot:T.recoil,recoil:T.recoil,over:q.over,n:1+L('barrels')+bst('barrel'),
+      sh:G.shMax?Math.max(0,G.sh)/G.shMax:0,flash:G.shFlash,a1:q.t1<=0,a2:q.M.unlock2&&q.t2<=0,c1:1-q.t1/Math.max(1,q.c.ab[0].cd*q.M.cd1)});
+    ctx.restore(); return;
+  }
   const n=1+L('barrels')+bst('barrel'), col=C.cyan, rc='0,240,255', t=G.time, hot=Math.min(1,T.recoil);
   ctx.save(); ctx.translate(T.x,TURRET_Y);
   /* thruster glow under the hull */
@@ -4089,15 +4282,15 @@ if(!P.intro){ const io=document.createElement('div'); io.id='introov'; io.innerH
 requestAnimationFrame(frame);
 
 /* test hook for headless checks */
-window.__rr={coachGrab:coachGrab,GR:GR,CTL:CTL,wReady:wReady,isManual:isManual,chainSnap:chainSnap,T:T,MOB:MOB,SKIN:SKIN,applySkin:applySkin,PKEYS:PKEYS,rollKey:rollKey,rollCard:rollCard,useCmd:useCmd,cmdBuy:cmdBuy,cmdNodeBuy:cmdNodeBuy,cmdP:cmdP,cmdLeft:cmdLeft,cmdEarned:cmdEarned,CMDS:CMDS,kName:kName,loadPools:loadPools,fireball:fireball,chip:chip,openTeach:openTeach,fireMortar:fireMortar,shape:shape,spawn:spawn,G:G,get P(){return P;},set P(v){P=v;},newP:newP,startLevel:startLevel,update:update,UPS:UPS,waveCount:waveCount,levelPool:levelPool,hpScale:hpScale,tune:(a,b,c,d,m,k,bk,wh,pm,lk,c0,cg)=>{if(lk!==undefined)LATEK=lk;if(pm!==undefined)PICKM=pm;if(wh!==undefined)WAVEHP=wh;if(k!==undefined)HPK=k;if(m!==undefined)MOBN=m;if(c0!==undefined)CDROP0=c0;if(cg!==undefined)CDROPG=cg;HPG=a;POOL0=b;POOLG=c;if(d!==undefined)HPA=d;},bst:bst,pickCard:pickCard,CARDS:CARDS,offerCards:offerCards,applyCard:applyCard,hasTool:hasTool,fireMortar:fireMortar,canMortar:canMortar,T:T,wcount:wcount,canBuy:canBuy,buyUp:buyUp,cardNeed:cardNeed,bandOf:bandOf,avail:avail,awardCards:awardCards,dropCount:dropCount,fuse:fuse,useEnergy:useEnergy,enTick:enTick,tryStart:tryStart,win:win,gameOver:gameOver,profileFor:profileFor,MOB:MOB,WORLDS:WORLDS,briefFor:briefFor};
+window.__rr={paintTurret:paintTurret,coachGrab:coachGrab,GR:GR,CTL:CTL,wReady:wReady,isManual:isManual,chainSnap:chainSnap,T:T,MOB:MOB,SKIN:SKIN,applySkin:applySkin,PKEYS:PKEYS,rollKey:rollKey,rollCard:rollCard,useCmd:useCmd,cmdBuy:cmdBuy,cmdNodeBuy:cmdNodeBuy,cmdP:cmdP,cmdLeft:cmdLeft,cmdEarned:cmdEarned,CMDS:CMDS,kName:kName,loadPools:loadPools,fireball:fireball,chip:chip,openTeach:openTeach,fireMortar:fireMortar,shape:shape,spawn:spawn,G:G,get P(){return P;},set P(v){P=v;},newP:newP,startLevel:startLevel,update:update,UPS:UPS,waveCount:waveCount,levelPool:levelPool,hpScale:hpScale,tune:(a,b,c,d,m,k,bk,wh,pm,lk,c0,cg)=>{if(lk!==undefined)LATEK=lk;if(pm!==undefined)PICKM=pm;if(wh!==undefined)WAVEHP=wh;if(k!==undefined)HPK=k;if(m!==undefined)MOBN=m;if(c0!==undefined)CDROP0=c0;if(cg!==undefined)CDROPG=cg;HPG=a;POOL0=b;POOLG=c;if(d!==undefined)HPA=d;},bst:bst,pickCard:pickCard,CARDS:CARDS,offerCards:offerCards,applyCard:applyCard,hasTool:hasTool,fireMortar:fireMortar,canMortar:canMortar,T:T,wcount:wcount,canBuy:canBuy,buyUp:buyUp,cardNeed:cardNeed,bandOf:bandOf,avail:avail,awardCards:awardCards,dropCount:dropCount,fuse:fuse,useEnergy:useEnergy,enTick:enTick,tryStart:tryStart,win:win,gameOver:gameOver,profileFor:profileFor,MOB:MOB,WORLDS:WORLDS,briefFor:briefFor};
 })();
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 74</div>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 75</div>
 <script>
 /* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
-(function(){ const BUILD=74; let busy=false, shown=false;
+(function(){ const BUILD=75; let busy=false, shown=false;
   const inRun=()=>{ try{ return typeof G!=='undefined'&&(G.state==='playing'||G.state==='cards'||G.state==='shop'||G.state==='paused'||G.state==='teach'||G.state==='ctl'); }catch(e){ return false; } };
   function wipeReload(){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
     if(n>=3) return;
