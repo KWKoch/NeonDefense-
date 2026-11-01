@@ -1181,6 +1181,7 @@ const Music=(function(){
   const bpmOf=()=>(cur.t.bpm+push);
   function tempo(){ S=60/bpmOf()/4; if(dly) dly.delayTime.setTargetAtTime(S*3,ac.currentTime,0.05); }
   function tick(){ while(next<ac.currentTime+0.14){ sched(step,next+(step&1?cur.t.sw*S:0)); next+=S; step=(step+1)%16; if(step===0) bar++; } }
+  let away=false;
   const on=()=>ac&&ac.state==='running';
   /* switch track now, restarting the bar count so the new loop lines up with whatever just began */
   function setTrack(id,quiet){
@@ -1188,9 +1189,11 @@ const Music=(function(){
     cur=buildTrack(t); step=0; bar=0; if(ac){ tempo(); next=Math.max(next,ac.currentTime+0.06); if(!quiet&&on()&&timer) crash(ac.currentTime+0.05); }
   }
   return {
-    start(){ if(!ac&&!init()) return; ac.resume(); if(timer) return; if(!cur) cur=buildTrack(TRACK_BY_ID.menu); tempo(); step=0; bar=0; kicks=[]; next=ac.currentTime+0.08; timer=setInterval(tick,25); },
+    start(){ if(!ac&&!init()) return; if(!away) ac.resume(); if(timer) return; if(!cur) cur=buildTrack(TRACK_BY_ID.menu); tempo(); step=0; bar=0; kicks=[]; next=ac.currentTime+0.08; timer=setInterval(tick,25); },
     pause(){ if(ac) ac.suspend(); },
-    resume(){ if(ac) ac.resume(); },
+    resume(){ if(ac&&!away) ac.resume(); },
+    /* page left the screen / lost focus: silence everything until the player is back */
+    setAway(a){ away=!!a; if(!ac) return; if(away) ac.suspend(); else if(!(typeof G!=='undefined'&&G.state==='paused')) ac.resume(); },
     setIntensity(n){ inten=n; },
     /* the game nudges tempo up as levels rise; half of that nudge applies on top of each track's own tempo */
     setBpm(b){ push=(b-122)*0.5; if(cur&&ac) tempo(); },
@@ -3541,6 +3544,9 @@ window.addEventListener('keyup',e=>{
 });
 window.addEventListener('blur',()=>{ keys.left=keys.right=false; });
 document.addEventListener('visibilitychange',()=>{ if(document.hidden&&G.state==='playing') togglePause(); });
+{ const sync=()=>Music.setAway(document.hidden||!document.hasFocus());
+  document.addEventListener('visibilitychange',sync); window.addEventListener('blur',sync); window.addEventListener('focus',sync);
+  window.addEventListener('pagehide',()=>Music.setAway(true)); window.addEventListener('pageshow',sync); }
 document.addEventListener('pointerdown',()=>Music.start(),{once:true});
 $('pauseBtn').addEventListener('click',togglePause);
 $('spdBtn').addEventListener('click',()=>{ G.speed=G.speed%3+1; $('spdBtn').textContent=G.speed+'x'; });
@@ -3581,10 +3587,10 @@ window.__rr={T:T,MOB:MOB,SKIN:SKIN,applySkin:applySkin,PKEYS:PKEYS,rollKey:rollK
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 68</div>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 69</div>
 <script>
 /* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
-(function(){ const BUILD=68; let busy=false, shown=false;
+(function(){ const BUILD=69; let busy=false, shown=false;
   const inRun=()=>{ try{ return typeof G!=='undefined'&&(G.state==='playing'||G.state==='cards'||G.state==='shop'||G.state==='paused'||G.state==='teach'); }catch(e){ return false; } };
   function wipeReload(){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
     if(n>=3) return;
