@@ -44,7 +44,7 @@ button{font-family:inherit}
 .bar.low{border-color:var(--red); box-shadow:0 0 8px rgba(255,56,96,.4)}
 .bar.low #hpFill{background:var(--red); box-shadow:0 0 8px var(--red)}
 
-#stage{flex:1 1 0; min-height:0; display:flex; align-items:center; justify-content:center; overflow:hidden}
+#stage{flex:1 1 0; min-height:0; display:flex; align-items:flex-start; justify-content:center; overflow:hidden}
 #play{position:relative; container-type:size; width:300px; height:400px; box-shadow:0 0 0 1px var(--line),0 0 28px rgba(157,77,255,.12); background:#000}
 #c{display:block; width:100%; height:100%; touch-action:none}
 
@@ -94,7 +94,7 @@ button{font-family:inherit}
   @keyframes banr{0%{opacity:0}12%{opacity:1}72%{opacity:1}100%{opacity:0}}
 }
 
-#overlay{position:absolute; inset:0; background:rgba(0,0,0,.84); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; padding:16px; box-sizing:border-box; text-align:center; overflow:auto}
+#overlay{position:absolute; z-index:8; inset:0; background:rgba(0,0,0,.84); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; padding:16px; box-sizing:border-box; text-align:center; overflow:auto}
 #introov{position:absolute; inset:0; background:rgba(0,0,0,.84); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; padding:16px; box-sizing:border-box; text-align:center; overflow:auto}
 #overlay h1{margin:0; font-family:var(--display); font-weight:400; font-size:clamp(26px,12cqw,58px); line-height:1.05; color:var(--cyan); text-shadow:0 0 10px var(--cyan),0 0 34px var(--magenta); text-wrap:balance}
 #introov h1{margin:0; font-family:var(--display); font-weight:400; font-size:clamp(26px,12cqw,58px); line-height:1.05; color:var(--cyan); text-shadow:0 0 10px var(--cyan),0 0 34px var(--magenta); text-wrap:balance}
@@ -125,6 +125,7 @@ button:focus-visible{outline:2px solid var(--yellow); outline-offset:2px}
 /* commander abilities: big round command orbs in the bottom corners of the field, away from the weapon chips in the dock */
 #play{position:relative}
 #cmdDock{position:absolute; left:0; right:0; bottom:6px; display:flex; justify-content:space-between; padding:0 8px; pointer-events:none; z-index:3}
+#play:has(#overlay:not([hidden])) #cmdDock{display:none}
 .cmo{--p:360deg; position:relative; pointer-events:auto; width:68px; height:68px; border-radius:50%; padding:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; color:var(--c); cursor:pointer; touch-action:manipulation; -webkit-tap-highlight-color:transparent; user-select:none; -webkit-user-select:none;
   border:0; background:radial-gradient(circle at 50% 38%,color-mix(in srgb,var(--c) 26%,#0a0d14),#04060a 72%); box-shadow:0 0 0 2px #04060a,0 0 0 4px color-mix(in srgb,var(--c) 45%,#000),0 6px 18px rgba(0,0,0,.7)}
 .cmo[hidden]{display:none}
@@ -161,6 +162,18 @@ button:focus-visible{outline:2px solid var(--yellow); outline-offset:2px}
 .tool.rdy{box-shadow:0 0 10px color-mix(in srgb,var(--c) 70%,transparent),inset 0 0 10px color-mix(in srgb,var(--c) 22%,transparent)}
 .tool:disabled{opacity:.42; cursor:default}
 .tool{height:32px; touch-action:none; user-select:none; -webkit-user-select:none; -webkit-touch-callout:none; -webkit-tap-highlight-color:transparent}
+
+/* big weapon triggers: each weapon has its own silhouette so thumbs find them without looking */
+#row0{gap:6px; padding-top:2px}
+#row0 .tool{flex-direction:column; flex-wrap:nowrap; gap:3px; height:60px; min-width:58px; padding:6px 4px 4px; border-width:2px; background:linear-gradient(180deg,color-mix(in srgb,var(--c) 16%,#05070c),#020305 78%)}
+#row0 .tool .ic{width:24px; height:24px; flex:none; filter:drop-shadow(0 0 4px var(--c))}
+#row0 .tool .ts,#row0 .tool .tt{font-size:13px}
+#row0 .tool .ts:not(:empty)+.tt:not(:empty){font-size:11px}
+#toolMine{border-radius:16px}
+#toolMortar{border-radius:32px 32px 12px 12px}
+#toolField{border-radius:12px 12px 32px 32px}
+#toolChain{border-radius:4px 22px 4px 22px}
+#toolSaw{border-radius:50%; width:60px; min-width:60px; padding:6px 0 4px}
 .tool[data-w]{cursor:grab}
 .tool.man{border-style:dashed}
 .tool.held,.tool.grab{opacity:1}
@@ -4279,6 +4292,7 @@ function fit(){
   const s=Math.min(r.width/W,r.height/H);
   const w=Math.max(120,Math.floor(W*s)), h=Math.max(160,Math.floor(H*s)), d=Math.min(window.devicePixelRatio||1,2);
   play.style.width=w+'px'; play.style.height=h+'px';
+  const dk=$('dock'); if(dk) dk.style.transform=r.height>h+1?'translateY('+(-(r.height-h))+'px)':'';
   canvas.width=Math.round(w*d); canvas.height=Math.round(h*d);
   sx=canvas.width/W; sy=canvas.height/H;
 }
@@ -4306,10 +4320,10 @@ window.__rr={paintTurret:paintTurret,coachGrab:coachGrab,GR:GR,CTL:CTL,wReady:wR
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 76</div>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 77</div>
 <script>
 /* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
-(function(){ const BUILD=76; let busy=false, shown=false;
+(function(){ const BUILD=77; let busy=false, shown=false;
   const inRun=()=>{ try{ return typeof G!=='undefined'&&(G.state==='playing'||G.state==='cards'||G.state==='shop'||G.state==='paused'||G.state==='teach'||G.state==='ctl'); }catch(e){ return false; } };
   function wipeReload(){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
     if(n>=3) return;
