@@ -646,7 +646,7 @@ body.menu{background:
       <div class="tool passive" id="toolSaw" style="--c:var(--lime)" aria-label="Buzz saw" hidden><span class="ts" id="sawS"></span><span class="tt" id="sawT"></span><i class="tp" id="sawP"></i></div>
     </div>
     <div id="row1">
-      <span id="hint">AI controls turret and tools</span>
+      <span id="hint">AI aims. Touch and hold to take over the turret</span>
       <div style="display:flex;gap:6px">
         <button type="button" class="mini" id="shopBtn">Perks</button>
         <button type="button" class="mini" id="spdBtn" aria-label="Game speed">1x</button>
@@ -1745,7 +1745,12 @@ function updateTurret(dt){
   const slide=ST.slide(L('rate'))+90*bq('slide');
   T.cool-=dt; T.recoil=Math.max(0,T.recoil-dt*6);
   if(bst('super')>0){ if(G.superOn>0) G.superOn-=dt; else { G.superCd-=dt; if(G.superCd<=0){ G.superOn=4; G.superCd=22-3*bst('super'); float(T.x,TURRET_Y-60,'SUPERCHARGE',C.yellow); G.rings.push({x:T.x,y:TURRET_Y-14,r:10,max:90,life:0.5,t:0,color:C.yellow}); } } }
-  {
+  if(input.active){
+    /* player is holding a finger on the field: they steer, the turret keeps firing */
+    T.target=null; T.idle=0;
+    const st=slide*dt; T.x+=clamp(input.x-T.x,-st,st);
+    if(T.cool<=0&&G.enemies.some(e=>!e.dead&&e.y>0)) fire(null);
+  } else {
     const tg=pickTarget(); T.target=tg;
     let aim=W/2;
     if(tg) aim=aimFor(tg);
@@ -2606,7 +2611,7 @@ function renderTools(){
 }
 function setMode(m){
   G.mode='auto'; input.active=false;
-  $('hint').textContent='AI controls turret and weapons';
+  $('hint').textContent='AI aims. Touch and hold to take over the turret';
 }
 function arm(kind){
   if(G.state!=='playing') return;
@@ -3498,17 +3503,19 @@ canvas.addEventListener('pointerdown',e=>{
   if(G.state!=='playing') return;
   const p=toWorld(e);
   if(G.armed){ G.ghost.x=p.x; G.ghost.y=p.y-(e.pointerType==='mouse'?0:70); G.ghost.show=true; G.placing=true; try{ canvas.setPointerCapture(e.pointerId); }catch(_){} return; }
+  input.x=p.x; input.active=true; try{ canvas.setPointerCapture(e.pointerId); }catch(_){}
 });
 canvas.addEventListener('pointermove',e=>{
   if(G.state!=='playing') return;
   const p=toWorld(e);
   if(lp&&Math.hypot(p.x-lp.q.x,p.y-lp.q.y)>26) lpClear();
   if(G.armed){ if(G.placing||e.pointerType==='mouse'){ G.ghost.x=p.x; G.ghost.y=p.y-(e.pointerType==='mouse'?0:70); G.ghost.show=true; } return; }
+  if(input.active) input.x=p.x;
 });
 canvas.addEventListener('pointerup',e=>{
   lpClear();
   if(G.armed&&G.placing){ commitArmed(); return; }
-  if(e.pointerType!=='mouse') input.active=false;
+  input.active=false;
 });
 canvas.addEventListener('pointercancel',()=>{ lpClear(); input.active=false; G.placing=false; });
 canvas.addEventListener('pointerleave',e=>{ if(e.pointerType==='mouse'){ input.active=false; if(!G.placing) G.ghost.show=false; } });
@@ -3574,10 +3581,10 @@ window.__rr={T:T,MOB:MOB,SKIN:SKIN,applySkin:applySkin,PKEYS:PKEYS,rollKey:rollK
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 67</div>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 68</div>
 <script>
 /* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
-(function(){ const BUILD=67; let busy=false, shown=false;
+(function(){ const BUILD=68; let busy=false, shown=false;
   const inRun=()=>{ try{ return typeof G!=='undefined'&&(G.state==='playing'||G.state==='cards'||G.state==='shop'||G.state==='paused'||G.state==='teach'); }catch(e){ return false; } };
   function wipeReload(){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
     if(n>=3) return;
