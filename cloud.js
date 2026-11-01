@@ -92,11 +92,15 @@ else (async()=>{
   async function sync(u){
     try{
       const snap=await F.getDoc(mine(u)), local=localStorage.getItem(SKEY);
+      /* Reload loop guard: the merged save can re-serialize differently from the local save on every load, which used to reload forever. Reload at most once per tab session per account. */
+      let did=false; try{ did=sessionStorage.getItem('nd-synced')===u.uid; }catch(e){}
+      const mark=()=>{ try{ sessionStorage.setItem('nd-synced',u.uid); }catch(e){} };
       if(snap.exists()&&snap.data().data){
         const cloud=snap.data().data;
-        if(local){ const m=merge(local,cloud); if(m!==local){ localStorage.setItem(SKEY,m); await put(u,rec(m)); location.reload(); return; } }
-        else { localStorage.setItem(SKEY,cloud); location.reload(); return; }
+        if(local){ const m=merge(local,cloud); if(m!==local){ localStorage.setItem(SKEY,m); await put(u,rec(m)); if(!did){ mark(); location.reload(); return; } } }
+        else { localStorage.setItem(SKEY,cloud); if(!did){ mark(); location.reload(); return; } }
       }
+      mark();
       await put(u,rec(local)); R.status='saved';
     }catch(e){ R.status='offline'; }
     ping();
@@ -138,7 +142,7 @@ else (async()=>{
         // flush the save, then clear this device's copy so the next account on this device doesn't inherit it
         clearTimeout(timer);
         try{ await put(auth.currentUser,rec(localStorage.getItem(SKEY))); }catch(e){ if(!confirm('Could not save to the cloud (offline?). Sign out anyway and lose unsynced progress on this device?')) return; }
-        await A.signOut(auth); localStorage.removeItem(SKEY); location.reload(); return;
+        await A.signOut(auth); localStorage.removeItem(SKEY); try{ sessionStorage.removeItem('nd-synced'); }catch(e){} location.reload(); return;
       }
       else if(a==='del') await del();
     }catch(e){
