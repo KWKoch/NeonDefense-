@@ -325,6 +325,12 @@ body.menu{background:radial-gradient(140% 55% at 50% -5%,rgba(255,43,214,.22),rg
 #tip .rs i{font-style:normal; font-size:11px; font-weight:700; padding:1px 7px; border-radius:999px; border:1px solid color-mix(in srgb,var(--c) 60%,#000); color:var(--c)}
 .dcard i{font-style:normal; font-size:10px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--g)}
 .dcard small{font-size:10px; letter-spacing:.06em; text-transform:uppercase; color:var(--c)}
+#cpack{position:fixed; inset:0; z-index:80; background:rgba(0,0,0,.85); display:flex; align-items:center; justify-content:center; padding:16px}
+#cpack .cpc{width:min(320px,100%); box-sizing:border-box; padding:18px; text-align:center; background:#0a0f1a; border:1px solid var(--rc); box-shadow:0 0 30px color-mix(in srgb,var(--rc) 45%,transparent); display:flex; flex-direction:column; gap:8px; align-items:center}
+#cpack .cpr{font-size:12px; letter-spacing:.2em; text-transform:uppercase; font-weight:700}
+#cpack h3{margin:0; font-family:var(--display); font-weight:400; font-size:26px; color:var(--c)}
+#cpack p{margin:0; font-size:14px; line-height:1.5}
+#cpack .cpres{font-weight:700; letter-spacing:.08em; color:var(--yellow)}
 #coach{position:fixed; inset:0; z-index:70}
 #coach.flat{background:rgba(0,0,0,.78)}
 #coach .chole{position:fixed; border-radius:10px; border:2px solid var(--cyan); box-shadow:0 0 0 100vmax rgba(0,0,0,.78),0 0 18px var(--cyan); pointer-events:none; transition:all .2s}
@@ -335,7 +341,13 @@ body.menu{background:radial-gradient(140% 55% at 50% -5%,rgba(255,43,214,.22),rg
 #coach .cb{display:flex; justify-content:flex-end; gap:8px; margin-top:4px}
 #coach .btn.ghost{background:transparent; border-color:var(--dim); color:var(--dim)}
 .oreplay{margin-top:8px; width:100%; font:inherit; padding:9px; background:transparent; color:var(--fg); border:1px solid var(--dim); cursor:pointer}
-.nav button.lk{opacity:.55}
+.wpn.lk{opacity:.55}
+.nav button{min-width:0; overflow:hidden; letter-spacing:.06em; font-size:clamp(8px,2.5vw,10px)}
+.nav .nl{display:block; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.nav .ic{flex:none; width:22px; height:22px}
+.nd .btn{padding-left:12px; padding-right:12px; letter-spacing:.06em; min-width:0; flex:none}
+.ucat{min-width:0}
+
 #introov{position:fixed; z-index:60; background:rgba(0,0,0,.92)}
 #introov[hidden]{display:none}
 #teachov{position:fixed; inset:0; z-index:70; background:rgba(0,0,0,.78); display:flex; align-items:center; justify-content:center; padding:16px; box-sizing:border-box}
@@ -628,6 +640,19 @@ body.menu{background:
 .pksum span{padding:3px 10px; border-radius:999px; border:1px solid var(--c); color:var(--c); font-size:12px; font-weight:700}
 .pkbt{display:flex; gap:8px; width:100%} .pkbt .btn{flex:1}
 @media (prefers-reduced-motion:reduce){ #packov,#packov.flash::before,.pkc>div,.pkc.r2.on .fr,.pkc.r3.on .fr{animation:none; transition:none} }
+@media (max-width:380px){
+  #armory .topbar{gap:4px}
+  #armory .pill{padding:5px 6px; gap:3px; font-size:12px; flex:none}
+  .pill .ic{width:14px; height:14px}
+  #armory .topbar .gear{width:32px; height:32px; flex:none}
+  #armory .topbar .wchip{min-width:30px}
+  .topbar .wchip .nm{display:none}
+  #armory .topbar .wchip{padding:4px; flex:none; min-width:34px; max-width:none}
+  .seg button{padding:7px 8px; letter-spacing:.06em}
+  .wpns{grid-template-columns:repeat(auto-fit,minmax(68px,1fr))}
+  .wpn .ic{display:none}
+  .wpn{letter-spacing:.01em; padding:8px 2px; gap:3px; font-size:10.5px}
+}
 </style></head><body>
 <div id="gate" role="dialog" aria-modal="true" aria-label="Sign in"><h1>Neon Defense</h1><p class="gmsg" id="gateMsg">Loading…</p><div class="gbtns" id="gateBtns"></div><p class="gmsg gerr" id="gateErr"></p><p class="gmsg"><a href="https://kwkoch.github.io/privacy.html" target="_blank" rel="noopener" style="color:var(--cyan)">Privacy Policy</a></p></div>
 
@@ -1926,12 +1951,13 @@ function cmdAct(s){
   else if(q[0]==='buy') cmdBuy(q[1],+q[2]);
   else if(q[0]==='node') cmdNodeBuy(q[1],q[2]);
   else if(q[0]==='reset') p.tl[q[1]]={};
+  else if(q[0]==='pack'){ cmdPack(q[1]); return; }
   save(); renderArmory();
 }
 function commandHtml(){
-  if(!cmdUnlocked()) return '<div class="wrap cmdv"><div class="ahead"><h1>Command</h1></div><div class="card" style="--c:#6b7a85"><div class="ct"><span class="cn">Locked</span></div><div class="cv">Clear level '+CMD_LVL+' in any world to unlock commanders: leaders with a buff, a weakness and two abilities you tap during a level. Achievements will earn you the points to specialize them.</div></div></div>';
+  if(!cmdUnlocked()) return '<div class="wrap cmdv"><div class="card" style="--c:#6b7a85"><div class="ct"><span class="cn">Locked</span></div><div class="cv">Clear level '+CMD_LVL+' in any world to unlock commanders: leaders with a buff, a weakness and two abilities you tap during a level. Achievements will earn you the points to specialize them.</div></div></div>';
   const p=cmdP(), left=cmdLeft(), sel=CMDBY[UI.cm]||CMDBY[p.eq];
-  let h='<div class="wrap cmdv"><div class="ahead"><h1>Command</h1><div class="cr"><span class="lbl">Command points</span><b>'+left+'</b></div></div>'
+  let h='<div class="wrap cmdv"><div class="ahead" style="margin-bottom:6px"><span class="note"><b>Command</b></span><div class="cr"><span class="lbl">Command points</span><b>'+left+'</b></div></div>'
     +'<div class="note"><b>One commander leads each run.</b> Each commander has a buff, a weakness and two abilities you tap during a level. Higher rarity strengthens the buff, softens the weakness and unlocks the second ability. Earn Command Points from achievements (1 for Bronze and Silver, 2 for Gold, 3 for Platinum) and spend them on specialties below. Capstones unlock new capabilities.</div>';
   CMDS.forEach(c=>{
     const own=p.own[c.id], has=own!==undefined, r=has?own:0, eq=p.eq===c.id;
@@ -1971,17 +1997,16 @@ const COACH={
     {sel:'.topbar .pill[title="Gems"]',t:'Gems and cards',x:'Gems buy packs and commanders. Cards upgrade your weapons. Levels, achievements and the daily chest all pay out.'},
     {sel:'#enBox',t:'Energy',x:'Each attempt costs energy. It refills over time, so pace yourself.'},
     {sel:'nav.nav [data-nav="battle"]',t:'Battle',x:'Pick a level and deploy. The AI aims the turret for you. Touch and hold the field to take over and steer it yourself.'},
-    {sel:'nav.nav [data-nav="arsenal"]',t:'Arsenal',x:'Spend upgrade cards to power up the turret and every weapon you unlock. Each weapon has its own cards.'},
+    {sel:'nav.nav [data-nav="arsenal"]',t:'Arsenal',x:'Spend upgrade cards to power up the turret and every weapon you unlock. Commanders live here too, on their own tab, and unlock at level '+CMD_LVL+'.'},
     {sel:'nav.nav [data-nav="codex"]',t:'Codex',x:'Everything you have met: mobs, what they resist, what they fear, and your achievements.'},
-    {sel:'nav.nav [data-nav="command"]',t:'Command (locked for now)',x:'Clear level '+CMD_LVL+' to unlock commanders: special leaders with abilities you tap during a level.'},
     {sel:'nav.nav [data-nav="shop"]',t:'Shop',x:'Daily chest, free gems and card packs.'},
     {sel:'nav.nav [data-nav="worlds"]',t:'Worlds',x:'Earn stars to open new worlds. Every world sends a different enemy faction.'}
   ],
   command:[
-    {sel:'nav.nav [data-nav="command"]',t:'Commanders unlocked',x:'You can now bring a commander into battle. They add a buff, carry a weakness, and give you two abilities to tap.'},
-    {nav:'command',sel:'.cmdv .cr',t:'Command Points',x:'Achievements earn points. Spend them on specialty branches that boost a commander and unlock new capabilities.'},
-    {nav:'command',sel:'.cmdv .card',t:'Your commander',x:'Warden Sol is yours for free. Check the buff, the weakness and the two abilities, then tap Specialties to invest points.'},
-    {nav:'shop',sel:'#cmarket',t:'Commander Market',x:'Recruit new commanders here, or upgrade rarity for a stronger buff, a softer weakness and the second ability.'}
+    {nav:'arsenal',tab:'command',sel:'.wpn[data-tab="command"]',t:'Commanders unlocked',x:'You can now bring a commander into battle. They add a buff, carry a weakness, and give you two abilities to tap. Find them on the Command tab in the Arsenal.'},
+    {nav:'arsenal',tab:'command',sel:'.cmdv .cr',t:'Command Points',x:'Achievements earn points. Spend them on specialty branches that boost a commander and unlock new capabilities.'},
+    {nav:'arsenal',tab:'command',sel:'.cmdv .card',t:'Your commander',x:'Warden Sol is yours for free. Check the buff, the weakness and the two abilities, then tap Specialties to invest points.'},
+    {nav:'shop',sel:'#cmarket',t:'Commander Market',x:'Open Command Packs or recruit directly with gems. Higher rarity means a stronger buff, a softer weakness and the second ability.'}
   ],
   run:[
     {sel:'#bar',t:'City health',x:'This bar is the city. If mobs slip past the ozone line it drops. The thin bar under it is your ozone shield, which absorbs hits first and recharges.'},
@@ -2004,7 +2029,7 @@ function coach(id,force){
 }
 function coachShow(){
   const s=coachSt; if(!s) return; const st=s.steps[s.i];
-  if(st.nav&&UI.nav!==st.nav){ UI.nav=st.nav; renderArmory(); }
+  if((st.nav&&UI.nav!==st.nav)||(st.tab&&tab!==st.tab)){ if(st.nav) UI.nav=st.nav; if(st.tab) tab=st.tab; renderArmory(); }
   let ov=document.getElementById('coach');
   if(!ov){ ov=document.createElement('div'); ov.id='coach'; ov.innerHTML='<div class="chole"></div><div class="ccard" role="dialog" aria-live="polite"></div>';
     ov.addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; if(b.dataset.c==='skip') coachEnd(); else if(b.dataset.c==='next'){ s.i++; if(coachSt.i>=coachSt.steps.length) coachEnd(); else coachShow(); } });
@@ -2044,9 +2069,26 @@ function coachRun(){
   if(G.cm&&!coachSeen('cmdrun')) coachWhenPlaying('cmdrun',1800);
 }
 function coachReplay(){ P.tut={}; try{ save(); }catch(e){} closeOrb(); if(G.state==='armory'){ UI.nav='battle'; renderArmory(); } setTimeout(()=>coach('tour',true),150); }
+const CPACKS=[{id:'cr',name:'Recruit Pack',cost:60,odds:[74,21,4.6,0.4],color:'#3d8bff',blurb:'One commander card. Mostly Common, with a shot at better.'},
+  {id:'ce',name:'Elite Pack',cost:240,odds:[0,60,33,7],color:'#ff2bd6',blurb:'One commander card, Rare or better.'}];
+function cmdPack(id){
+  const pk=CPACKS.find(x=>x.id===id), p=cmdP(); if(!pk||!cmdUnlocked()) return;
+  if((P.gems||0)<pk.cost){ toast('Not enough gems.'); return; }
+  P.gems-=pk.cost;
+  let x=Math.random()*pk.odds.reduce((a,b)=>a+b,0), r=0; for(let i=0;i<4;i++){ x-=pk.odds[i]; if(x<=0){ r=i; break; } }
+  const need=CMDS.filter(c=>p.own[c.id]===undefined||p.own[c.id]<r), pool=need.length?need:CMDS, c=pool[Math.floor(Math.random()*pool.length)], cur=p.own[c.id];
+  let res; if(cur===undefined){ p.own[c.id]=r; res='NEW COMMANDER'; } else if(r>cur){ p.own[c.id]=r; res='UPGRADED TO '+CRAR[r].toUpperCase(); } else { const g=Math.round(CRP[r]*0.4); P.gems+=g; res='DUPLICATE: +'+g+' gems'; }
+  try{ logEv('cpack',id); }catch(e){} save(); showCmdReveal(pk,c,r,res); renderArmory();
+}
+function showCmdReveal(pk,c,r,res){
+  const old=document.getElementById('cpack'); if(old) old.remove(); const o=document.createElement('div'); o.id='cpack'; o.setAttribute('role','dialog');
+  o.innerHTML='<div class="cpc" style="--c:'+c.color+';--rc:'+RAR[r].color+'"><div class="ck">'+pk.name+'</div><div class="cpr" style="color:'+RAR[r].color+'">'+CRAR[r]+'</div><h3>'+c.name+'</h3><div class="note">'+c.role+'</div><p>'+cmdPas(c,r)+'<br>Weakness: '+cmdWk(c,r)+'</p><div class="cpres">'+res+'</div><button class="btn" type="button">Continue</button></div>';
+  o.addEventListener('click',e=>{ if(e.target.closest('button')) o.remove(); }); document.body.appendChild(o); const b=o.querySelector('button'); if(b) b.focus({preventScroll:true});
+}
 function marketHtml(){
   const p=cmdP(); let h='<div class="note" style="margin:10px 0 4px" id="cmarket"><b>Commander Market.</b> '+(cmdUnlocked()?'Recruit commanders and raise their rarity with gems. Rarity strengthens the buff, softens the weakness and unlocks the second ability.':'Opens when you clear level '+CMD_LVL+'.')+'</div>';
   if(!cmdUnlocked()) return h;
+  CPACKS.forEach(pk=>{ h+='<div class="card" style="--c:'+pk.color+'"><div class="ct"><span class="cn">'+pk.name+'</span><span class="chip" style="--c:'+pk.color+'">Command pack</span></div><div class="cv">'+pk.blurb+' Duplicates refund gems.</div><button class="btn" type="button" data-cmd="pack:'+pk.id+'" style="--c:'+pk.color+'" '+((P.gems||0)<pk.cost?'disabled':'')+'>Open <small>'+pk.cost+' gems</small></button></div>'; });
   CMDS.forEach(c=>{
     const own=p.own[c.id], has=own!==undefined, top=has?own:-1;
     h+='<div class="card" style="--c:'+c.color+'"><div class="ct"><span class="cn">'+c.name+'</span><span class="chip" style="--c:'+(has?RAR[own].color:'#6b7a85')+'">'+(has?CRAR[own]:'Not owned')+'</span></div>'
@@ -3232,8 +3274,8 @@ const curWorld=()=>WORLDS.find(w=>w.id===P.world)||WORLDS[0];
 const uwFor=wd=>(wd&&wd.uw)||UW;
 function levelMobs(n){ return profileFor(curWorld(),n,UI.elite).roster; }
 const totalCards=()=>{ let t=0; for(const k in P.inv) t+=P.inv[k].reduce((a,b)=>a+b,0); return t; };
-const TABICO={turret:'turret',base:'frt',mine:'mine',field:'field',chain:'chain',saw:'saw',mortar:'mortar'};
-const NAVS=[['arsenal','Arsenal','pow'],['codex','Codex','eye'],['battle','Battle','aim'],['command','Command','bolt'],['shop','Shop','gem'],['worlds','Worlds','world']];
+const TABICO={command:'bolt',turret:'turret',base:'frt',mine:'mine',field:'field',chain:'chain',saw:'saw',mortar:'mortar'};
+const NAVS=[['arsenal','Arsenal','pow'],['codex','Codex','eye'],['battle','Battle','aim'],['shop','Shop','gem'],['worlds','Worlds','world']];
 function fillEnergy(){
   enTick(); const cost=UI.elite&&UI.nav==='battle'?EN_COST*2:EN_COST, nx=enNext();
   const box=$('enBox'); if(box) box.innerHTML=ico('bolt',16)+P.en+'/'+EN_MAX+(P.en>=EN_MAX?'':'<small>'+fmtT(nx)+'</small>');
@@ -3269,7 +3311,8 @@ function accountHtml(){
 }
 function arsenalHtml(){
   /* Weapons across the top (wraps to more rows); tap one for its upgrade categories; tap a category to open its cards, fragments and Upgrade button. */
-  let h='<div class="wpns" role="tablist" aria-label="Weapon">'+TABS.filter(t=>t.id!=='bestiary').map(t=>'<button class="wpn" role="tab" data-tab="'+t.id+'" style="--c:'+t.color+'" aria-selected="'+(tab===t.id)+'" type="button">'+ico(TABICO[t.id],18)+'<span>'+t.name+'</span></button>').join('')+'</div>';
+  let h='<div class="wpns" role="tablist" aria-label="Weapon">'+TABS.filter(t=>t.id!=='bestiary').map(t=>'<button class="wpn" role="tab" data-tab="'+t.id+'" style="--c:'+t.color+'" aria-selected="'+(tab===t.id)+'" type="button">'+ico(TABICO[t.id],18)+'<span>'+t.name+'</span></button>').join('')+'<button class="wpn'+(cmdUnlocked()?'':' lk')+'" role="tab" data-tab="command" style="--c:#ffc400" aria-selected="'+(tab==='command')+'" type="button">'+ico('bolt',18)+'<span>Command</span></button></div>';
+  if(tab==='command') return h+commandHtml();
   h+='<div class="ucats">';
   UPS.filter(u=>u.tab===tab).forEach(u=>{
     const lv=L(u.id), maxed=lv>=u.max, ct=CT[u.ty], b=bandOf(lv,u.max), need=cardNeed(u,lv), have=avail(u.k,b), ok=!maxed&&have>=need, f=(P.frag||{})[u.k]||0, open=UI.uc===u.id;
@@ -3401,11 +3444,11 @@ function renderArmory(){
   enTick(); if(G.state!=='playing') applySkin(P.world);
   const wd=curWorld(), keepEl=armoryEl.querySelector('.content'), keep=keepEl?keepEl.scrollTop:0;
   P.sel=clamp(P.sel,1,Math.min(P.best+1,LEVELS));
-  let body=UI.nav==='arsenal'?arsenalHtml():UI.nav==='codex'?codexHtml():UI.nav==='worlds'?worldsHtml():UI.nav==='command'?commandHtml():UI.nav==='shop'?shopHtml():battleHtml();
+  let body=UI.nav==='arsenal'?arsenalHtml():UI.nav==='codex'?codexHtml():UI.nav==='worlds'?worldsHtml():UI.nav==='shop'?shopHtml():battleHtml();
   const h='<div class="topbar"><button class="wchip" type="button" data-nav="worlds" style="--wc:'+wd.color+'" aria-label="Worlds"><span class="dot">'+ico('world',14)+'</span><span class="nm">'+wd.name+'</span></button><span class="sp"></span>'
     +'<span class="pill" title="Gems" style="color:#7df9ff">'+ico('gem',16)+(P.gems||0)+'</span><span class="pill" title="Upgrade cards">'+ico('cards',16)+totalCards()+'</span><span class="pill" id="enBox" title="Energy"></span><button class="gear" id="gearBtn" type="button" data-orb="1" aria-label="Settings" aria-haspopup="dialog" aria-expanded="'+(orbOpen?'true':'false')+'">'+ico('cog',18)+'</button></div>'
     +'<div class="content" id="content">'+body+'</div>'
-    +'<nav class="nav" aria-label="Menu">'+NAVS.map(a=>'<button type="button" '+(a[0]==='command'&&!cmdUnlocked()?'class="lk" ':'')+'data-nav="'+a[0]+'" '+(UI.nav===a[0]?'aria-current="page"':'')+'>'+ico(a[2],UI.nav===a[0]?24:20)+a[1]+'</button>').join('')+'</nav>';
+    +'<nav class="nav" aria-label="Menu">'+NAVS.map(a=>'<button type="button" '+'data-nav="'+a[0]+'" '+(UI.nav===a[0]?'aria-current="page"':'')+'>'+ico(a[2],22)+'<span class="nl">'+a[1]+'</span></button>').join('')+'</nav>';
   armoryEl.innerHTML=h;
   const c=$('content'); if(c) c.scrollTop=keep;
   fillEnergy();
@@ -3860,10 +3903,10 @@ window.__rr={T:T,MOB:MOB,SKIN:SKIN,applySkin:applySkin,PKEYS:PKEYS,rollKey:rollK
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 71</div>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 72</div>
 <script>
 /* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
-(function(){ const BUILD=71; let busy=false, shown=false;
+(function(){ const BUILD=72; let busy=false, shown=false;
   const inRun=()=>{ try{ return typeof G!=='undefined'&&(G.state==='playing'||G.state==='cards'||G.state==='shop'||G.state==='paused'||G.state==='teach'); }catch(e){ return false; } };
   function wipeReload(){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
     if(n>=3) return;
