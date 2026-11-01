@@ -124,8 +124,8 @@ button:focus-visible{outline:2px solid var(--yellow); outline-offset:2px}
 #dock{display:flex; flex-direction:column; gap:8px}
 /* commander abilities: big round command orbs in the bottom corners of the field, away from the weapon chips in the dock */
 #play{position:relative}
-#cmdDock{position:absolute; left:0; right:0; bottom:6px; display:flex; justify-content:space-between; padding:0 8px; pointer-events:none; z-index:3}
-#play:has(#overlay:not([hidden])) #cmdDock{display:none}
+#cmdDock{display:flex; justify-content:flex-end; align-items:center; gap:22px; padding:10px 14px 6px 0}
+#cmdDock:not(:has(.cmo:not([hidden]))){display:none}
 .cmo{--p:360deg; position:relative; pointer-events:auto; width:68px; height:68px; border-radius:50%; padding:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; color:var(--c); cursor:pointer; touch-action:manipulation; -webkit-tap-highlight-color:transparent; user-select:none; -webkit-user-select:none;
   border:0; background:radial-gradient(circle at 50% 38%,color-mix(in srgb,var(--c) 26%,#0a0d14),#04060a 72%); box-shadow:0 0 0 2px #04060a,0 0 0 4px color-mix(in srgb,var(--c) 45%,#000),0 6px 18px rgba(0,0,0,.7)}
 .cmo[hidden]{display:none}
@@ -137,7 +137,7 @@ button:focus-visible{outline:2px solid var(--yellow); outline-offset:2px}
 .cmo.rdy{animation:cmoR 1.2s ease-in-out infinite}
 .cmo.rdy::after{content:''; position:absolute; inset:-12px; border-radius:50%; border:2px dashed var(--c); opacity:.7; animation:cmoS 6s linear infinite}
 .cmo:active:not(:disabled){transform:scale(.92)}
-#cmdA2{width:56px; height:56px; align-self:flex-end}
+#cmdA2{width:56px; height:56px}
 #cmdA2 .ic{width:22px; height:22px}
 @keyframes cmoR{0%,100%{box-shadow:0 0 0 2px #04060a,0 0 0 4px var(--c),0 0 14px color-mix(in srgb,var(--c) 70%,transparent),0 6px 18px rgba(0,0,0,.7)}50%{box-shadow:0 0 0 2px #04060a,0 0 0 4px var(--c),0 0 30px var(--c),0 6px 18px rgba(0,0,0,.7)}}
 @keyframes cmoS{to{transform:rotate(360deg)}}
@@ -164,16 +164,16 @@ button:focus-visible{outline:2px solid var(--yellow); outline-offset:2px}
 .tool{height:32px; touch-action:none; user-select:none; -webkit-user-select:none; -webkit-touch-callout:none; -webkit-tap-highlight-color:transparent}
 
 /* big weapon triggers: each weapon has its own silhouette so thumbs find them without looking */
-#row0{gap:6px; padding-top:2px}
-#row0 .tool{flex-direction:column; flex-wrap:nowrap; gap:3px; height:60px; min-width:58px; padding:6px 4px 4px; border-width:2px; background:linear-gradient(180deg,color-mix(in srgb,var(--c) 16%,#05070c),#020305 78%)}
-#row0 .tool .ic{width:24px; height:24px; flex:none; filter:drop-shadow(0 0 4px var(--c))}
-#row0 .tool .ts,#row0 .tool .tt{font-size:13px}
-#row0 .tool .ts:not(:empty)+.tt:not(:empty){font-size:11px}
-#toolMine{border-radius:16px}
-#toolMortar{border-radius:32px 32px 12px 12px}
-#toolField{border-radius:12px 12px 32px 32px}
-#toolChain{border-radius:4px 22px 4px 22px}
-#toolSaw{border-radius:50%; width:60px; min-width:60px; padding:6px 0 4px}
+#row0{gap:5px; padding-top:2px}
+#row0 .tool{flex-direction:column; flex-wrap:nowrap; gap:1px; height:36px; min-width:35px; padding:3px 3px 2px; border-width:1.5px; background:linear-gradient(180deg,color-mix(in srgb,var(--c) 16%,#05070c),#020305 78%)}
+#row0 .tool .ic{width:14px; height:14px; flex:none; filter:drop-shadow(0 0 4px var(--c))}
+#row0 .tool .ts,#row0 .tool .tt{font-size:9px; line-height:1}
+#row0 .tool .ts:not(:empty)+.tt:not(:empty){font-size:8px}
+#toolMine{border-radius:10px}
+#toolMortar{border-radius:20px 20px 7px 7px}
+#toolField{border-radius:7px 7px 20px 20px}
+#toolChain{border-radius:3px 14px 3px 14px}
+#toolSaw{border-radius:50%; width:36px; min-width:36px; padding:3px 0 2px}
 .tool[data-w]{cursor:grab}
 .tool.man{border-style:dashed}
 .tool.held,.tool.grab{opacity:1}
@@ -723,7 +723,6 @@ body.menu{background:
   <main id="stage">
     <div id="play">
       <canvas id="c" aria-label="Neon Defense play field"></canvas>
-      <div id="cmdDock"><button type="button" class="cmo" id="cmdA2" hidden></button><button type="button" class="cmo" id="cmdA1" hidden></button></div>
       <div id="banner" aria-live="polite"></div>
       <div id="overlay" hidden></div>
       <div id="mflash" aria-hidden="true"></div>
@@ -738,6 +737,7 @@ body.menu{background:
       <div class="tool" id="toolChain" style="--c:var(--yellow)" aria-label="Chain lightning" title="Chain lightning: AI fires it. Hold and drag to aim" hidden><span class="ts" id="chainS"></span><span class="tt" id="chainT"></span><i class="tp" id="chainP"></i></div>
       <div class="tool" id="toolSaw" style="--c:var(--lime)" aria-label="Buzz saw" title="Buzz saw: AI launches it. Hold and drag to aim" hidden><span class="ts" id="sawS"></span><span class="tt" id="sawT"></span><i class="tp" id="sawP"></i></div>
     </div>
+    <div id="cmdDock"><button type="button" class="cmo" id="cmdA2" hidden></button><button type="button" class="cmo" id="cmdA1" hidden></button></div>
     <div id="row1">
       <span id="hint">AI fires everything. Hold the field to steer the turret, hold a weapon icon and drag to aim it</span>
       <div style="display:flex;gap:6px">
@@ -2157,7 +2157,7 @@ const COACH={
     {sel:'#ctlBtn',t:'Manual mode',x:'Want full control? Tap Aim to set any weapon, or all of them, to Manual so the AI never fires them. The turret works the same way: hold the field to steer it.'}
   ],
   cmdrun:[
-    {sel:'#cmdA1',t:'Commander abilities',x:'Your commander has their own big buttons in the bottom corners of the field, apart from the weapons. Tap one when it glows. Abilities have a cooldown, so use them for bad moments. On a keyboard press Q (first) and E (second).'}
+    {sel:'#cmdA1',t:'Commander abilities',x:'Your commander has their own big buttons at the bottom right, on a row of their own below the weapons. Tap one when it glows. Abilities have a cooldown, so use them for bad moments. On a keyboard press Q (first) and E (second).'}
   ]
 };
 let coachSt=null, coachQ=[];
@@ -4320,10 +4320,10 @@ window.__rr={paintTurret:paintTurret,coachGrab:coachGrab,GR:GR,CTL:CTL,wReady:wR
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 77</div>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 78</div>
 <script>
 /* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
-(function(){ const BUILD=77; let busy=false, shown=false;
+(function(){ const BUILD=78; let busy=false, shown=false;
   const inRun=()=>{ try{ return typeof G!=='undefined'&&(G.state==='playing'||G.state==='cards'||G.state==='shop'||G.state==='paused'||G.state==='teach'||G.state==='ctl'); }catch(e){ return false; } };
   function wipeReload(){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
     if(n>=3) return;
