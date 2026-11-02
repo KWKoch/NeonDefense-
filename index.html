@@ -381,6 +381,8 @@ canvas.tprev.dim{filter:saturate(.35) brightness(.7)}
 .pvstar{position:absolute; right:12px; top:8px; color:var(--yellow)}
 .facts{display:flex; gap:18px; justify-content:center; font-size:14px; font-weight:700; font-variant-numeric:tabular-nums}
 .facts span{display:inline-flex; align-items:center; gap:6px}
+#armory .pvwrap .pvgo{position:absolute; left:50%; right:auto; top:auto; bottom:16px; margin:0; transform:translateX(-50%); z-index:3; width:min(78%,300px)!important; box-shadow:0 0 24px rgba(255,43,214,.55),0 6px 18px rgba(0,0,0,.6)}
+#pv{cursor:pointer}
 .btn.go{width:min(84%,340px); display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:14px 20px; font-size:20px; letter-spacing:.12em}
 .wlist{display:grid; gap:12px}
 .wcard{border:1.5px solid var(--wc); border-radius:22px; padding:12px 14px; display:grid; gap:10px; background:linear-gradient(135deg,color-mix(in srgb,var(--wc) 12%,#02060d),#02060d); box-shadow:0 0 16px color-mix(in srgb,var(--wc) 25%,transparent)}
@@ -4045,7 +4047,7 @@ const NAVS=[['arsenal','Arsenal','pow'],['codex','Codex','eye'],['battle','Battl
 function fillEnergy(){
   enTick(); const cost=UI.elite&&UI.nav==='battle'?EN_COST*2:EN_COST, nx=enNext();
   const box=$('enBox'); if(box) box.innerHTML=ico('bolt',16)+P.en+'/'+EN_MAX+(P.en>=EN_MAX?'':'<small>'+fmtT(nx)+'</small>');
-  const d=armoryEl.querySelector('[data-act="deploy"]');
+  const d=armoryEl.querySelector('button[data-act="deploy"]');
   if(d){ const lk=d.dataset.lock==='1'; d.disabled=lk||P.en<cost; d.innerHTML=lk?ico('lock',18)+'Locked':(P.en<cost?ico('bolt',18)+fmtT(nx):'Battle '+ico('bolt',18)+cost); }
 }
 setInterval(()=>{ if(!armoryEl.hidden) fillEnergy(); },1000);
@@ -4058,13 +4060,13 @@ function battleHtml(){
     +'<div class="mseg" role="group" aria-label="Difficulty"><button type="button" data-mode="n" style="--c:'+wd.color+'" aria-pressed="'+(!el)+'">Normal</button>'
     +'<button type="button" data-mode="e" style="--c:'+C.red+'" aria-pressed="'+el+'">'+(eOk?'':ico('lock',13))+'Elite</button></div>'
     +'<div class="pvrow"><button class="chev" data-act="prev" type="button" aria-label="Previous level" '+(n<=1?'disabled':'')+'>'+ico('chev',30)+'</button>'
-    +'<div class="pvwrap"><canvas id="pv" aria-label="Preview of this level\'s enemies"></canvas>'+(el?'<span class="pvtag">ELITE</span>':'')+(pr.perf[n]&&!el?'<span class="pvstar" title="Perfected">'+ico('pow',20)+'</span>':'')
-    +(lockElite?'<div class="pvlock">'+ico('lock',30)+'<span>Clear level '+n+' with no base damage to unlock Elite</span></div>':'')+'</div>'
+    +'<div class="pvwrap"><canvas id="pv" data-act="deploy" aria-label="Preview of this level\'s enemies. Tap to start."></canvas>'+(el?'<span class="pvtag">ELITE</span>':'')+(pr.perf[n]&&!el?'<span class="pvstar" title="Perfected">'+ico('pow',20)+'</span>':'')
+    +(lockElite?'<div class="pvlock">'+ico('lock',30)+'<span>Clear level '+n+' with no base damage to unlock Elite</span></div>':'<button class="btn big go pvgo" data-act="deploy" type="button" data-lock="0">Battle</button>')+'</div>'
     +'<button class="chev r" data-act="next" type="button" aria-label="Next level" '+(n>=maxSel?'disabled':'')+'>'+ico('chev',30)+'</button></div>'
     +'<div class="brief">'+briefFor(wd,n,el)+'</div>'
     +(el?'':'<div class="goals">'+goalsFor(wd,n).map((t,k)=>'<span class="gl'+(((pr.stars||{})[n]|0)>>k&1?' on':'')+'">'+ico('pow',13)+t+'</span>').join('')+'</div>')
     +'<div class="facts"><span title="Waves">'+ico('wave',18)+waveCount(n)+'</span><span title="Crystals per clear">'+ico('crystal',18)+'~'+cnt+'</span>'+(el?'<span style="color:var(--red)" title="Elite costs double energy">'+ico('bolt',18)+'x2</span>':'')+'</div>'
-    +'<button class="btn big go" data-act="deploy" type="button" data-lock="'+(lockElite?1:0)+'">Battle</button>'+(P.en<(el?EN_COST*2:EN_COST)?'<button class="mini" data-act="ad" type="button">Watch ad: +'+EN_AD+' energy</button>':'')+'</div>';
+    +(P.en<(el?EN_COST*2:EN_COST)?'<button class="mini" data-act="ad" type="button">Watch ad: +'+EN_AD+' energy</button>':'')+'</div>';
   return h;
 }
 function accountHtml(){
@@ -4694,10 +4696,10 @@ window.__rr={openPack:openPack,renderArmory:renderArmory,UI:UI,fuse:fuse,queueTe
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 87</div>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 88</div>
 <script>
 /* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
-(function(){ const BUILD=87; let busy=false, shown=false;
+(function(){ const BUILD=88; let busy=false, shown=false;
   const inRun=()=>{ try{ return typeof G!=='undefined'&&(G.state==='playing'||G.state==='cards'||G.state==='shop'||G.state==='paused'||G.state==='teach'||G.state==='ctl'); }catch(e){ return false; } };
   function wipeReload(){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
     if(n>=3) return;
