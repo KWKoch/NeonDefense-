@@ -40,7 +40,7 @@ else (async()=>{
   }
   const SKEY='rave-rampart-v5';
   // progress score: more levels + more upgrades wins when local and cloud differ (integer, rules require int)
-  const score=j=>{ try{ const o=JSON.parse(j); let n=0; for(const k in (o.prog||{})) n+=(o.prog[k].best||0)*10+Object.keys(o.prog[k].perf||{}).length+Object.keys(o.prog[k].eclr||{}).length*2; for(const k in (o.lv||{})) n+=o.lv[k]; return Math.round(n)||0; }catch(e){ return -1; } };
+  const score=j=>{ try{ const o=JSON.parse(j); let n=0; for(const k in (o.prog||{})) n+=(o.prog[k].best||0)*10+Object.keys(o.prog[k].perf||{}).length+Object.keys(o.prog[k].eclr||{}).length*2; for(const k in (o.lv||{})) n+=o.lv[k]; for(const k in ((o.cmd||{}).own||{})) n+=((+o.cmd.own[k]||0)+1)*25; n+=Object.keys((o.vault||{}).items||{}).length; return Math.round(n)||0; }catch(e){ return -1; } };
   const mine=u=>F.doc(db,'users',u.uid);
   /* Structured, queryable summary of the account (levels, accomplishments, wallet, entitlements) stored next to the full save blob. Client-reported: the blob stays the source of truth until purchases are verified server-side. */
   const summary=j=>{ try{ const o=JSON.parse(j||'{}'), best={}; let perfect=0, elite=0, cards=0;
@@ -68,13 +68,15 @@ else (async()=>{
   const mergeStars=(o,a,b)=>{ const pa=(a&&a.prog)||{}, pb=(b&&b.prog)||{}; o.prog=o.prog||{};
     for(const w of new Set([...Object.keys(pa),...Object.keys(pb)])){ const sa=(pa[w]||{}).stars||{}, sb=(pb[w]||{}).stars||{}, r={};
       for(const n of new Set([...Object.keys(sa),...Object.keys(sb)])) r[n]=((+sa[n]||0)|(+sb[n]||0))&7;
-      o.prog[w]=o.prog[w]||{}; o.prog[w].stars=r; } };
+      const qa=pa[w]||{}, qb=pb[w]||{}; o.prog[w]=o.prog[w]||{}; o.prog[w].stars=r;
+      o.prog[w].best=Math.max(+qa.best||0,+qb.best||0); o.prog[w].perf=Object.assign({},qb.perf||{},qa.perf||{}); o.prog[w].eclr=Object.assign({},qb.eclr||{},qa.eclr||{}); if(!o.prog[w].sel) o.prog[w].sel=qa.sel||qb.sel||1; } };
   const merge=(lj,cj)=>{ try{
-      const l=JSON.parse(lj||'{}'), c=JSON.parse(cj||'{}'), cloudWins=score(cj)>score(lj||'{}'), a=cloudWins?c:l, b=cloudWins?l:c, o=JSON.parse(JSON.stringify(a));
+      const l=JSON.parse(lj||'{}'), c=JSON.parse(cj||'{}'); { const ea=+l.epoch||0, eb=+c.epoch||0; if(ea!==eb) return ea>eb?lj:cj; } const cloudWins=score(cj)>score(lj||'{}'), a=cloudWins?c:l, b=cloudWins?l:c, o=JSON.parse(JSON.stringify(a));
       const maxMap=(k)=>{ o[k]=Object.assign({},b[k]||{},a[k]||{}); for(const i in (b[k]||{})) o[k][i]=Math.max(+(a[k]||{})[i]||0,+(b[k]||{})[i]||0); };
       maxMap('lv'); maxMap('cm'); o.seen=Object.assign({},b.seen||{},a.seen||{}); o.seenW=Object.assign({},b.seenW||{},a.seenW||{}); o.own=Object.assign({},b.own||{},a.own||{});
       o.st=mergeSt(a.st,b.st); mergeStars(o,a,b); o.frag=maxObj(a.frag,b.frag);
-      { const ca=a.cmd||{}, cb=b.cmd||{}, tl={}; for(const id of new Set([...Object.keys(ca.tl||{}),...Object.keys(cb.tl||{})])) tl[id]=maxObj((ca.tl||{})[id],(cb.tl||{})[id]); const own=Object.assign({},cb.own||{},ca.own||{}); for(const id in (cb.own||{})) own[id]=Math.max(+(ca.own||{})[id]||0,+cb.own[id]||0); o.tut=Object.assign({},b.tut||{},a.tut||{}); o.cmd={eq:ca.eq||cb.eq||'warden',own:own,tl:tl}; }
+      { const ca=a.cmd||{}, cb=b.cmd||{}, tl={}; const rs=maxObj(ca.rs,cb.rs); for(const id of new Set([...Object.keys(ca.tl||{}),...Object.keys(cb.tl||{})])){ const ra=+(ca.rs||{})[id]||0, rb=+(cb.rs||{})[id]||0; tl[id]=ra>rb?Object.assign({},(ca.tl||{})[id]):rb>ra?Object.assign({},(cb.tl||{})[id]):maxObj((ca.tl||{})[id],(cb.tl||{})[id]); } const own=Object.assign({},cb.own||{},ca.own||{}); for(const id in (cb.own||{})) own[id]=Math.max(+(ca.own||{})[id]||0,+cb.own[id]||0); o.tut=Object.assign({},b.tut||{},a.tut||{}); o.cmd={eq:ca.eq||cb.eq||'warden',own:own,tl:tl,rs:rs}; }
+      o.vault={v:1,items:maxObj((a.vault||{}).items,(b.vault||{}).items)}; o.epoch=+a.epoch||0; for(const k in b) if(!(k in o)) o[k]=b[k];
       o.pass=Math.max(+a.pass||0,+b.pass||0); o.starter=(a.starter||b.starter)?1:0; o.chestDay=[a.chestDay||'',b.chestDay||''].sort().pop(); { const da=a.adDay||'', db=b.adDay||''; o.adDay=da===db?da:(+da.split('-').join('')>+db.split('-').join('')?da:db)||''; o.adN=da===db?Math.max(+a.adN||0,+b.adN||0):(o.adDay===da?(+a.adN||0):(+b.adN||0)); } o.passDay=[a.passDay||'',b.passDay||''].sort().pop();
       o.ledger=[].concat(a.ledger||[],(b.ledger||[]).filter(x=>!(a.ledger||[]).some(y=>y.t===x.t&&y.k===x.k))).sort((x,y)=>x.t-y.t).slice(-100);
       return JSON.stringify(o); }catch(e){ return score(cj)>score(lj||'{}')?cj:lj; } };
@@ -85,8 +87,20 @@ else (async()=>{
   const put=async(u,r)=>{ if(slim){ const {stats,ledger,...rest}=r; return F.setDoc(mine(u),rest); } try{ return await F.setDoc(mine(u),r); }catch(e){ if(code(e)==='permission-denied'){ slim=true; const {stats,ledger,...rest}=r; return F.setDoc(mine(u),rest); } throw e; } };
   let timer=null;
   R.enabled=true;
-  R.push=()=>{ if(!auth.currentUser) return; clearTimeout(timer); timer=setTimeout(async()=>{
-    try{ await put(auth.currentUser,rec(localStorage.getItem(SKEY))); R.status='saved'; }catch(e){ R.status='offline'; } ping(); },1500); };
+  /* Every write first reads the cloud copy and merges it in, so a stale device can never overwrite what another device earned. Anything new from the cloud is handed to the live game; failures retry until they land. */
+  const canon=v=>Array.isArray(v)?v.map(canon):(v&&typeof v==='object')?Object.keys(v).sort().reduce((r,k)=>(r[k]=canon(v[k]),r),{}):v;
+  const same=(x,y)=>{ try{ return JSON.stringify(canon(JSON.parse(x)))===JSON.stringify(canon(JSON.parse(y))); }catch(e){ return x===y; } };
+  let busy=false, again=false, retry=null;
+  const flushNow=async()=>{ const u=auth.currentUser; if(!u) return true; if(busy){ again=true; return false; } busy=true; let ok=false;
+    try{
+      let local=localStorage.getItem(SKEY); const snap=await F.getDoc(mine(u));
+      if(snap.exists()&&snap.data().data&&local){ const m=merge(local,snap.data().data); if(!same(m,local)){ localStorage.setItem(SKEY,m); local=m; if(window.NDAdopt) window.NDAdopt(m); } }
+      await put(u,rec(local)); R.status='saved'; ok=true; clearTimeout(retry);
+    }catch(e){ R.status='offline'; clearTimeout(retry); retry=setTimeout(flushNow,15000); }
+    busy=false; ping(); if(again){ again=false; setTimeout(flushNow,200); } return ok; };
+  R.flush=()=>{ clearTimeout(timer); return flushNow(); };
+  R.push=()=>{ if(!auth.currentUser) return; clearTimeout(timer); timer=setTimeout(flushNow,1500); };
+  addEventListener('online',()=>{ if(auth.currentUser) flushNow(); });
   // merge: keep whichever save (cloud vs this device) has the higher progress score.
   // This also migrates an existing pre-sign-in local save into the first account that signs in.
   async function sync(u){
@@ -97,11 +111,11 @@ else (async()=>{
       const mark=()=>{ try{ sessionStorage.setItem('nd-synced',u.uid); }catch(e){} };
       if(snap.exists()&&snap.data().data){
         const cloud=snap.data().data;
-        if(local){ const m=merge(local,cloud); if(m!==local){ localStorage.setItem(SKEY,m); await put(u,rec(m)); if(!did){ mark(); location.reload(); return; } } }
-        else { localStorage.setItem(SKEY,cloud); if(!did){ mark(); location.reload(); return; } }
+        if(local){ const m=merge(local,cloud); if(!same(m,local)){ localStorage.setItem(SKEY,m); await put(u,rec(m)); if(!did){ mark(); location.reload(); return; } if(window.NDAdopt) window.NDAdopt(m); } }
+        else { localStorage.setItem(SKEY,cloud); if(!did){ mark(); location.reload(); return; } if(window.NDAdopt) window.NDAdopt(cloud); }
       }
       mark();
-      await put(u,rec(local)); R.status='saved';
+      await put(u,rec(localStorage.getItem(SKEY))); R.status='saved';
     }catch(e){ R.status='offline'; }
     ping();
   }
@@ -141,7 +155,7 @@ else (async()=>{
       else if(a==='out'){
         // flush the save, then clear this device's copy so the next account on this device doesn't inherit it
         clearTimeout(timer);
-        try{ await put(auth.currentUser,rec(localStorage.getItem(SKEY))); }catch(e){ if(!confirm('Could not save to the cloud (offline?). Sign out anyway and lose unsynced progress on this device?')) return; }
+        try{ let ok=await flushNow(); if(!ok){ await new Promise(r=>setTimeout(r,900)); ok=await flushNow(); } if(!ok) throw new Error('unsynced'); }catch(e){ if(!confirm('Could not save to the cloud (offline?). Sign out anyway and lose unsynced progress on this device?')) return; }
         await A.signOut(auth); localStorage.removeItem(SKEY); try{ sessionStorage.removeItem('nd-synced'); }catch(e){} location.reload(); return;
       }
       else if(a==='del') await del();

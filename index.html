@@ -1031,9 +1031,35 @@ const newP=()=>{
 /* storage: portal providers may replace window.NDStore (e.g. CrazyGames data module); default = guarded localStorage */
 const NDStore=window.NDStore||{get(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } },set(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }};
 let P=newP();
-try{
-  const s=NDStore.get(SKEY);
-  if(s){
+/* ---- ownership vault: a monotonic registry of everything the account has ever earned or bought (upgrade levels, mastery, worlds, commanders and their rarity, pass, achievements, best levels). It only ever grows, is merged by max across devices, and heals any field a load or merge dropped. ---- */
+const vMax=(a,b)=>{ const r=Object.assign({},a||{}); for(const k in (b||{})) r[k]=Math.max(+r[k]||0,+b[k]||0); return r; };
+function vaultOf(p){
+  const v={}, add=(k,n)=>{ n=Math.floor(+n||0); if(n>0) v[k]=n; };
+  for(const k in (p.lv||{})) add('up:'+k,p.lv[k]);
+  for(const k in (p.cm||{})) add('cm:'+k,p.cm[k]);
+  for(const k in (p.own||{})) if(p.own[k]) add('world:'+k,1);
+  const c=p.cmd; if(c&&c.own) for(const k in c.own) add('cmd:'+k,(+c.own[k]||0)+1);
+  add('pass',p.pass); add('starter',p.starter);
+  for(const k in ((p.st||{}).ach||{})) add('ach:'+k,1);
+  for(const k in (p.prog||{})) add('best:'+k,(p.prog[k]||{}).best);
+  return v;
+}
+function vaultSync(){ P.vault=P.vault||{v:1,items:{}}; P.vault.items=vMax(P.vault.items,vaultOf(P)); }
+function vaultHeal(){
+  const it=(P.vault&&P.vault.items)||{};
+  for(const k in it){ const n=+it[k]||0, i=k.indexOf(':'), t=i<0?k:k.slice(0,i), id=i<0?'':k.slice(i+1);
+    if(t==='up') P.lv[id]=Math.max(P.lv[id]||0,n);
+    else if(t==='cm'){ P.cm=P.cm||{}; P.cm[id]=Math.max(+P.cm[id]||0,n); }
+    else if(t==='world') P.own[id]=true;
+    else if(t==='cmd'){ const q=cmdP(); q.own[id]=Math.max(q.own[id]===undefined?-1:+q.own[id],n-1); }
+    else if(t==='pass') P.pass=Math.max(+P.pass||0,n);
+    else if(t==='starter') P.starter=1;
+    else if(t==='ach'){ P.st.ach=P.st.ach||{}; if(!P.st.ach[id]) P.st.ach[id]=Date.now(); }
+    else if(t==='best'){ const q=P.prog[id]||(P.prog[id]=newPW()); q.best=Math.max(+q.best||0,n); }
+  }
+}
+const BAKK='nd-backup-v1';
+function hydrate(s){
     const o=JSON.parse(s); P.lv=o.lv||{};
     P.en=(o.enV===2&&isFinite(+o.en))?Math.max(0,Math.min(EN_MAX,+o.en)):EN_MAX; P.enT=+o.enT||Date.now();
     if(o.prog){ for(const k in o.prog){ const q=o.prog[k]||{}; P.prog[k]={best:+q.best||0,sel:+q.sel||1,perf:q.perf||{},eclr:q.eclr||{},stars:q.stars||{}}; } P.own=Object.assign({belt:true},o.own); if(WORLDS.some(w=>w.id===o.world)) P.world=o.world; }
@@ -1048,7 +1074,20 @@ try{
       for(const wd of WORLDS){ const b=(P.prog[wd.id]||{}).best||0; if(!b) continue; const uw=wd.uw||UW; for(const k in uw) if(Math.ceil(uw[k]/20)<=b+1) P.seen[k]=1; P.seen.small=1; if(P.seen.chunk) P.seen.small=1; if(P.seen.egg) P.seen.hatch=1; if(b>=10){ P.seen.boss=1; P.seen.orb=1; } }
     }
     P.intro=o.intro||(Object.keys(P.prog).some(k=>(P.prog[k].best||0)>0)?1:0);
-  } else {
+    if(o.cmd&&typeof o.cmd==='object') P.cmd=o.cmd;
+    if(o.tut&&typeof o.tut==='object') P.tut=o.tut;
+    P.epoch=+o.epoch||0;
+    if(o.vault&&o.vault.items&&typeof o.vault.items==='object') P.vault={v:1,items:Object.assign({},o.vault.items)};
+    /* forward compatibility: any field this build does not know about is carried through untouched, never dropped */
+    for(const k in o) if(!(k in P)) P[k]=o[k];
+    vaultHeal();
+}
+try{
+  let s=NDStore.get(SKEY), ok=false;
+  if(s){ try{ JSON.parse(s); ok=true; }catch(e){} }
+  if(!ok){ const b=NDStore.get(BAKK); if(b){ try{ JSON.parse(b); s=b; ok=true; NDStore.set(SKEY,b); }catch(e){} } }
+  if(ok) hydrate(s);
+  else {
     const old=NDStore.get('rave-rampart-v4');
     if(old){ const o=JSON.parse(old); P.prog.belt={best:+o.best||0,sel:+o.sel||1,perf:{},eclr:{}}; }
   }
@@ -1059,7 +1098,19 @@ try{ if(!NDStore.get(SEENK)&&Object.keys(P.prog||{}).some(k=>(P.prog[k].best||0)
 try{ const q=JSON.parse(NDStore.get(SEENK)||'{}'); P.seen=Object.assign({},q.m||{},P.seen||{}); P.seenW=Object.assign({},q.w||{},P.seenW||{}); }catch(e){}
 function persistSeen(){ try{ NDStore.set(SEENK,JSON.stringify({m:P.seen||{},w:P.seenW||{}})); }catch(e){} }
 applySkin(P.world);
-function save(){ persistSeen(); NDStore.set(SKEY,JSON.stringify(P)); try{ if(window.RRcloud&&RRcloud.enabled) RRcloud.push(); }catch(e){} }
+let lastBak=0;
+function save(){ persistSeen(); vaultSync(); const j=JSON.stringify(P); NDStore.set(SKEY,j); const n=Date.now(); if(n-lastBak>20000){ lastBak=n; NDStore.set(BAKK,j); } try{ if(window.RRcloud&&RRcloud.enabled) RRcloud.push(); }catch(e){} }
+/* a save merged in from the cloud (another device, or a stale one catching up) is taken into the live game the moment the player is on the home screen, so the next save can never write over it */
+let pendAdopt=null;
+function tryAdopt(){
+  try{ if(!pendAdopt||G.state!=='armory') return; const j=pendAdopt; pendAdopt=null;
+  P=newP(); hydrate(j); NDStore.set(SKEY,JSON.stringify(P)); applySkin(P.world); if(!armoryEl.hidden) renderArmory(); }catch(e){}
+}
+window.NDAdopt=j=>{ pendAdopt=j; tryAdopt(); };
+setInterval(tryAdopt,1500);
+function flushNow(){ try{ if(window.RRcloud&&RRcloud.flush) RRcloud.flush(); }catch(e){} }
+addEventListener('pagehide',()=>{ try{ save(); }catch(e){} flushNow(); });
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden'){ try{ save(); }catch(e){} flushNow(); } });
 const L=id=>P.lv[id]||0;
 
 /* ================= helpers ================= */
@@ -2087,7 +2138,7 @@ function cmdAct(s){
   else if(q[0]==='eq'){ if(p.own[q[1]]!==undefined) p.eq=q[1]; }
   else if(q[0]==='buy') cmdBuy(q[1],+q[2]);
   else if(q[0]==='node') cmdNodeBuy(q[1],q[2]);
-  else if(q[0]==='reset') p.tl[q[1]]={};
+  else if(q[0]==='reset'){ p.tl[q[1]]={}; p.rs=p.rs||{}; p.rs[q[1]]=(+p.rs[q[1]]||0)+1; }
   else if(q[0]==='pack'){ cmdPack(q[1]); return; }
   save(); renderArmory();
 }
@@ -3976,7 +4027,7 @@ armoryEl.addEventListener('click',e=>{
   else if(a==='deploy'){ save(); if(UI.elite&&!pw(P).perf[P.sel]) return; tryStart(P.sel,UI.elite); }
   else if(a==='reset'){ confirmReset=true; renderArmory(); }
   else if(a==='cancel'){ confirmReset=false; renderArmory(); }
-  else if(a==='reset2'){ P=newP(); UI.elite=false; confirmReset=false; save(); renderArmory(); }
+  else if(a==='reset2'){ P=newP(); P.epoch=Date.now(); UI.elite=false; confirmReset=false; save(); renderArmory(); }
   else if(a==='ad'){ rewardFlow('energy_refill',grantAdEnergy); }
 });
 
@@ -4315,15 +4366,15 @@ if(!P.intro){ const io=document.createElement('div'); io.id='introov'; io.innerH
 requestAnimationFrame(frame);
 
 /* test hook for headless checks */
-window.__rr={paintTurret:paintTurret,coachGrab:coachGrab,GR:GR,CTL:CTL,wReady:wReady,isManual:isManual,chainSnap:chainSnap,T:T,MOB:MOB,SKIN:SKIN,applySkin:applySkin,PKEYS:PKEYS,rollKey:rollKey,rollCard:rollCard,useCmd:useCmd,cmdBuy:cmdBuy,cmdNodeBuy:cmdNodeBuy,cmdP:cmdP,cmdLeft:cmdLeft,cmdEarned:cmdEarned,CMDS:CMDS,kName:kName,loadPools:loadPools,fireball:fireball,chip:chip,openTeach:openTeach,fireMortar:fireMortar,shape:shape,spawn:spawn,G:G,get P(){return P;},set P(v){P=v;},newP:newP,startLevel:startLevel,update:update,UPS:UPS,waveCount:waveCount,levelPool:levelPool,hpScale:hpScale,tune:(a,b,c,d,m,k,bk,wh,pm,lk,c0,cg)=>{if(lk!==undefined)LATEK=lk;if(pm!==undefined)PICKM=pm;if(wh!==undefined)WAVEHP=wh;if(k!==undefined)HPK=k;if(m!==undefined)MOBN=m;if(c0!==undefined)CDROP0=c0;if(cg!==undefined)CDROPG=cg;HPG=a;POOL0=b;POOLG=c;if(d!==undefined)HPA=d;},bst:bst,pickCard:pickCard,CARDS:CARDS,offerCards:offerCards,applyCard:applyCard,hasTool:hasTool,fireMortar:fireMortar,canMortar:canMortar,T:T,wcount:wcount,canBuy:canBuy,buyUp:buyUp,cardNeed:cardNeed,bandOf:bandOf,avail:avail,awardCards:awardCards,dropCount:dropCount,fuse:fuse,useEnergy:useEnergy,enTick:enTick,tryStart:tryStart,win:win,gameOver:gameOver,profileFor:profileFor,MOB:MOB,WORLDS:WORLDS,briefFor:briefFor};
+window.__rr={save:save,paintTurret:paintTurret,coachGrab:coachGrab,GR:GR,CTL:CTL,wReady:wReady,isManual:isManual,chainSnap:chainSnap,T:T,MOB:MOB,SKIN:SKIN,applySkin:applySkin,PKEYS:PKEYS,rollKey:rollKey,rollCard:rollCard,useCmd:useCmd,cmdBuy:cmdBuy,cmdNodeBuy:cmdNodeBuy,cmdP:cmdP,cmdLeft:cmdLeft,cmdEarned:cmdEarned,CMDS:CMDS,kName:kName,loadPools:loadPools,fireball:fireball,chip:chip,openTeach:openTeach,fireMortar:fireMortar,shape:shape,spawn:spawn,G:G,get P(){return P;},set P(v){P=v;},newP:newP,startLevel:startLevel,update:update,UPS:UPS,waveCount:waveCount,levelPool:levelPool,hpScale:hpScale,tune:(a,b,c,d,m,k,bk,wh,pm,lk,c0,cg)=>{if(lk!==undefined)LATEK=lk;if(pm!==undefined)PICKM=pm;if(wh!==undefined)WAVEHP=wh;if(k!==undefined)HPK=k;if(m!==undefined)MOBN=m;if(c0!==undefined)CDROP0=c0;if(cg!==undefined)CDROPG=cg;HPG=a;POOL0=b;POOLG=c;if(d!==undefined)HPA=d;},bst:bst,pickCard:pickCard,CARDS:CARDS,offerCards:offerCards,applyCard:applyCard,hasTool:hasTool,fireMortar:fireMortar,canMortar:canMortar,T:T,wcount:wcount,canBuy:canBuy,buyUp:buyUp,cardNeed:cardNeed,bandOf:bandOf,avail:avail,awardCards:awardCards,dropCount:dropCount,fuse:fuse,useEnergy:useEnergy,enTick:enTick,tryStart:tryStart,win:win,gameOver:gameOver,profileFor:profileFor,MOB:MOB,WORLDS:WORLDS,briefFor:briefFor};
 })();
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 78</div>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 79</div>
 <script>
 /* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
-(function(){ const BUILD=78; let busy=false, shown=false;
+(function(){ const BUILD=79; let busy=false, shown=false;
   const inRun=()=>{ try{ return typeof G!=='undefined'&&(G.state==='playing'||G.state==='cards'||G.state==='shop'||G.state==='paused'||G.state==='teach'||G.state==='ctl'); }catch(e){ return false; } };
   function wipeReload(){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
     if(n>=3) return;
