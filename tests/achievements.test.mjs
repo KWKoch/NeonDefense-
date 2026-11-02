@@ -79,15 +79,17 @@ const fight=(type,won,{weapons=['turret'],src='turret',resKind=null,m=1}={})=>{
 
 // 5. weapon success: a weapon is credited for mobs it hit, a miss that leaks counts against it
 {
-  reset();
+  reset(); A.G.run={rz:{},hold:{},kw:{}};
   for(let i=0;i<150;i++) fight('rock',true,{weapons:['mine','turret'],src:'mine'});
   for(let i=0;i<50;i++) fight('rock',false,{weapons:['mine']});
   const g=A.agg('belt'); const mine=g.wt.mine, tur=g.wt.turret;
   assert.deepEqual([mine[0],mine[1],mine[2]],[200,150,150],'mine engaged/defeated/killing blows');
   assert.deepEqual([tur[0],tur[1],tur[2]],[150,150,0],'turret assisted but never landed the killing blow');
   A.achCheck(true);
-  assert(!A.stOf().ach['w80_mine@belt'],'75% is not 80%'); assert(!A.stOf().ach['w92_mine@belt']);
-  assert(A.stOf().ach['w80_turret@belt'],'turret: 150 of 150 meets the 150 minimum'); assert(!A.stOf().ach['w80_turret@void']);
+  const ac=A.stOf().ach;
+  assert(ac['wl0_mine@belt'],'150 mine kills on rock meets the 60 mark'); assert(!ac['wl1_mine@belt'],'but not 300');
+  assert(!ac['wl0_turret@belt'],'turret only assisted'); assert(!ac['wl0_mine@void'],'other worlds stay separate');
+  assert(ac['wm2_mine@belt'],'150 kills in one match clears all three match tiers'); assert(!ac['wm0_turret@belt']);
 }
 
 // 6. off-type weapons: only the weapon's own damage type, and only at <=0.65x

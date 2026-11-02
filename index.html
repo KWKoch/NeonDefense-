@@ -1647,7 +1647,7 @@ const RESISTED=0.65;
 const TIER=[{n:'Bronze',c:'#cd7f32'},{n:'Silver',c:'#c4d0d8'},{n:'Gold',c:'#ffc400'},{n:'Platinum',c:'#7df9ff'}];
 const stOf=()=>P.st||(P.st=newSt());
 /* Awards are per world, so every count is also kept per world: s.pw[world] = {enc,kill,leak,rz,hold,w}. The global counters stay for the Record tab. */
-const newPwb=()=>({enc:{},kill:{},leak:{},rz:{},hold:{},w:{}});
+const newPwb=()=>({enc:{},kill:{},leak:{},rz:{},hold:{},w:{},mk:{}});
 const stWid=()=>(G.wd&&G.wd.id)||'belt';
 function pwOf(wid){ const s=stOf(); s.pw=s.pw||{}; return s.pw[wid]||(s.pw[wid]=newPwb()); }
 const fmtN=n=>Math.round(n).toLocaleString('en-US');
@@ -1671,7 +1671,8 @@ function stResolve(e,won,src){
   if(won){ s.kill[t]=(s.kill[t]||0)+1; q.kill[t]=(q.kill[t]||0)+1; } else { s.leak[t]=(s.leak[t]||0)+1; q.leak[t]=(q.leak[t]||0)+1; }
   const held=won&&!e.oz;   /* held = destroyed above the ozone line */
   s.rz[t]=(s.rz[t]||0)+1; q.rz[t]=(q.rz[t]||0)+1; if(held){ s.hold[t]=(s.hold[t]||0)+1; q.hold[t]=(q.hold[t]||0)+1; }
-  if(G.run){ G.run.rz[t]=(G.run.rz[t]||0)+1; if(held) G.run.hold[t]=(G.run.hold[t]||0)+1; }
+  if(G.run){ G.run.rz[t]=(G.run.rz[t]||0)+1; if(held) G.run.hold[t]=(G.run.hold[t]||0)+1;
+    if(won&&src){ const kw=G.run.kw||(G.run.kw={}); kw[src]=(kw[src]||0)+1; q.mk=q.mk||{}; if(kw[src]>(q.mk[src]||0)) q.mk[src]=kw[src]; } }   /* kills with each weapon this match; best per world is kept */
   if(e.wh) for(const w in e.wh){
     const n=e.wn&&e.wn[w];
     for(const r of [s,q]){
@@ -1703,7 +1704,7 @@ function stPwMigrate(){
 
 /* ---- aggregates: one pass over the record per check (wid = one world's record; none = everything, for the Record tab) ---- */
 function agg(wid){
-  const S=stOf(), s=wid?((S.pw||{})[wid]||newPwb()):S, a={sight:0,kill:0,leak:0,rz:0,hold:0,cls:{},mob:{},wc:{},wt:{},nk:0,nkTypes:0,ne:0,nd:0}, types={};
+  const S=stOf(), s=wid?((S.pw||{})[wid]||newPwb()):S, a={sight:0,kill:0,leak:0,rz:0,hold:0,cls:{},mob:{},wc:{},wt:{},mk:{},bm:{},nk:0,nkTypes:0,ne:0,nd:0}, types={};
   for(const c in CLS) a.cls[c]={enc:0,kill:0,leak:0,rz:0,hold:0};
   for(const k in MOB){
     const m={enc:s.enc[k]||0,kill:s.kill[k]||0,leak:s.leak[k]||0,rz:(s.rz||{})[k]||0,hold:(s.hold||{})[k]||0}; a.mob[k]=m; a.sight+=m.enc; a.kill+=m.kill; a.leak+=m.leak; a.rz+=m.rz; a.hold+=m.hold;
@@ -1711,9 +1712,10 @@ function agg(wid){
   }
   for(const w of WLIST){
     a.wt[w]=[0,0,0,0,0,0]; a.wc[w]={}; for(const c in CLS) a.wc[w][c]=[0,0,0,0,0,0];
+    a.mk[w]=(s.mk||{})[w]|0; a.bm[w]={n:0,k:''};
     const row=s.w[w]||{};
     for(const k in row){
-      if(!MOB[k]) continue; const r=row[k];
+      if(!MOB[k]) continue; const r=row[k]; if((r[2]|0)>a.bm[w].n) a.bm[w]={n:r[2]|0,k:k};
       for(let i=0;i<6;i++){ const v=r[i]||0; a.wt[w][i]+=v; a.wc[w][MOB[k].cls][i]+=v; }
       if((r[5]||0)>0) types[k]=1;
     }
@@ -1756,15 +1758,16 @@ function achList(){
   if(ACHS) return ACHS;
   const A=[], keys=Object.keys(MOB);
   const CLSN={mineral:'Geologist',mech:'Signals Analyst',bio:'Biologist'};
-  /* Weapons: six awards per weapon (two overall rates, one per mob class, one misfit). Numbers show on each tile's progress line. */
+  /* Weapons: six awards per weapon, all counts. Three for kills with that weapon in one match, three for lifetime kills of a single mob type. */
   const WAW={
-    turret:{p:["Steady Hand","Take down 80% of the mobs your Turret hits."],m:["Dead Eye","Take down 92% of the mobs your Turret hits. Nothing slips by."],mineral:["Stonecutter","Bullets glance off rock. Still drop 90% of the Minerals you hit."],mech:["Scrap Sniper","Drop 90% of the Mechs your bullets find."],bio:["Pest Control","Squash 90% of the Bios your bullets hit before they regrow."],x:["Pop Gun Hero","Win 60% of fights against mobs that shrug off bullets."]},
-    mine:{p:["Tripwire Pro","Blow up 80% of the mobs your mines catch."],m:["Boom Architect","Blow up 92% of the mobs your mines catch. The perfect trap."],mineral:["Quarry Master","Blasts crack rock best. Bring down 90% of the Minerals you catch."],mech:["Demolition Crew","Flatten 90% of the Mechs your mines catch."],bio:["Exterminator","Wipe out 90% of the Bios your mines catch."],x:["Dud Defier","Win 60% of fights against mobs that shrug off blasts."]},
-    field:{p:["Time Dilator","Slow and finish 80% of the mobs your field catches."],m:["Stasis Sovereign","Slow and finish 92% of the mobs your field catches."],mineral:["Heat Haze","Rock shrugs off energy. Still finish 90% of the Minerals in the field."],mech:["Short Circuit","Energy overloads machines. Finish 90% of the Mechs in the field."],bio:["Cold Snap","Freeze and finish 90% of the Bios that drift into the field."],x:["Against the Grain","Win 60% of fights against mobs that resist the field."]},
-    chain:{p:["Spark Gap","Finish 80% of the mobs your lightning touches."],m:["Storm Caller","Finish 92% of the mobs your lightning touches."],mineral:["Rock Shock","Fry 90% of the Minerals your lightning touches."],mech:["Circuit Breaker","Machines hate lightning. Fry 90% of the Mechs it touches."],bio:["Bug Zapper","Zap 90% of the Bios your lightning touches."],x:["Static Rebel","Win 60% of fights against mobs that resist lightning."]},
-    saw:{p:["Sharp Edge","Shred 80% of the mobs your saw cuts."],m:["Razor's Edge","Shred 92% of the mobs your saw cuts."],mineral:["Gravel Grinder","Grind down 90% of the Minerals your saw cuts."],mech:["Chop Shop","Carve up 90% of the Mechs your saw cuts."],bio:["Filleter","Carve up 90% of the Bios your saw cuts before they heal."],x:["Blunt Instrument","Win 60% of fights against mobs that resist the saw."]},
-    mortar:{p:["Lobber","Bring down 80% of the mobs your shells hit."],m:["Artillery Ace","Bring down 92% of the mobs your shells hit."],mineral:["Crater Maker","Shells crack rock. Bring down 90% of the Minerals you hit."],mech:["Siege Breaker","Level 90% of the Mechs your shells hit."],bio:["Hive Hammer","Pound 90% of the Bios your shells hit."],x:["Shell Game","Win 60% of fights against mobs that resist the mortar."]}
+    turret:{m:["Hot Barrel","Score 25 kills with the Turret in a single match."],m1:["Gunnery Sergeant","Score 60 kills with the Turret in a single match."],m2:["Bullet Storm","Score 120 kills with the Turret in a single match."],l:["Marksman","Land 100 Turret kills on one mob type."],l1:["Sharpshooter","Land 500 Turret kills on one mob type."],l2:["Ace Gunner","Land 2,000 Turret kills on one mob type."]},
+    mine:{m:["Trap Setter","Score 15 kills with Mines in a single match."],m1:["Minefield","Score 40 kills with Mines in a single match."],m2:["Boom Architect","Score 80 kills with Mines in a single match."],l:["Tripwire Pro","Land 60 Mine kills on one mob type."],l1:["Demolition Crew","Land 300 Mine kills on one mob type."],l2:["Blast Legend","Land 1,200 Mine kills on one mob type."]},
+    field:{m:["Slow Burn","Score 15 kills with the Field in a single match."],m1:["Time Dilator","Score 40 kills with the Field in a single match."],m2:["Stasis Sovereign","Score 80 kills with the Field in a single match."],l:["Cold Snap","Land 60 Field kills on one mob type."],l1:["Deep Freeze","Land 300 Field kills on one mob type."],l2:["Absolute Zero","Land 1,200 Field kills on one mob type."]},
+    chain:{m:["Spark Gap","Score 15 kills with Chain Lightning in a single match."],m1:["Storm Caller","Score 40 kills with Chain Lightning in a single match."],m2:["Thunder God","Score 80 kills with Chain Lightning in a single match."],l:["Bug Zapper","Land 60 Chain kills on one mob type."],l1:["Circuit Breaker","Land 300 Chain kills on one mob type."],l2:["Live Wire","Land 1,200 Chain kills on one mob type."]},
+    saw:{m:["Sharp Edge","Score 15 kills with the Saw in a single match."],m1:["Razor's Edge","Score 40 kills with the Saw in a single match."],m2:["Whirling Death","Score 80 kills with the Saw in a single match."],l:["Gravel Grinder","Land 60 Saw kills on one mob type."],l1:["Chop Shop","Land 300 Saw kills on one mob type."],l2:["Blade Master","Land 1,200 Saw kills on one mob type."]},
+    mortar:{m:["Lobber","Score 15 kills with the Mortar in a single match."],m1:["Artillery Ace","Score 40 kills with the Mortar in a single match."],m2:["Rain of Fire","Score 80 kills with the Mortar in a single match."],l:["Crater Maker","Land 60 Mortar kills on one mob type."],l1:["Siege Breaker","Land 300 Mortar kills on one mob type."],l2:["Hive Hammer","Land 1,200 Mortar kills on one mob type."]}
   };
+  const WMK={turret:[25,60,120],mine:[15,40,80],field:[15,40,80],chain:[15,40,80],saw:[15,40,80],mortar:[15,40,80]}, WLK={turret:[100,500,2000],mine:[60,300,1200],field:[60,300,1200],chain:[60,300,1200],saw:[60,300,1200],mortar:[60,300,1200]};
   /* Every award exists once per world: id 'base@world', counted from that world's own record only. */
   WORLDS.forEach(wd=>{
     const wid=wd.id, wn=wd.name;
@@ -1784,10 +1787,11 @@ function achList(){
     /* Weapons */
     WLIST.forEach(w=>{
       const T=WAW[w];
-      add('wpn','w80_'+w,T.p[0],T.p[1],1,a=>pRate(a.wt[w][1],a.wt[w][0],150,80),w,w);
-      add('wpn','w92_'+w,T.m[0],T.m[1],2,a=>pRate(a.wt[w][1],a.wt[w][0],150,92),w,w);
-      for(const c in CLS) add('wpn','ws_'+w+'_'+c,T[c][0],T[c][1],2,a=>pRate(a.wc[w][c][1],a.wc[w][c][0],60,90),w,w);
-      add('wpn','mis_'+w,T.x[0],T.x[1],1,a=>pRate(a.wt[w][4],a.wt[w][3],30,60),w,w);
+      [0,1,2].forEach(t=>{
+        const mk=WMK[w][t], lk=WLK[w][t], sf=t?String(t):'';
+        add('wpn','wm'+t+'_'+w,T['m'+sf][0],T['m'+sf][1],t+1,a=>pCount(a.mk[w],mk),w,w);
+        add('wpn','wl'+t+'_'+w,T['l'+sf][0],T['l'+sf][1],t+1,a=>{ const r=pCount(a.bm[w].n,lk); if(a.bm[w].k&&!r.done) r.txt+=' ('+skinName(wid,a.bm[w].k)+')'; return r; },w,w);
+      });
     });
 
     /* Underdog: weapons used against mobs that resist them */
@@ -3600,7 +3604,7 @@ function startWave(w){
 function startLevel(n,world,elite){
   G.wd=WORLDS.find(w=>w.id===(world||P.world))||WORLDS[0]; applySkin(G.wd.id); G.elite=!!elite; UI.elite=G.elite;
   G.n=n; G.hpS=hpScale(n)*(G.elite?1.6:1)*(G.wd.hp||1); G.spS=1+n*0.01; G.NW=waveCount(n); G.wave=0;
-  G.run={rz:{},hold:{}}; G.ozFlash=0; G.maxHp=ST.armor(0); G.hp=G.maxHp; G.shMax=ST.shield(L('armor')); G.sh=G.shMax; G.shRg=ST.shreg(L('armor')); G.shT=0; G.shFlash=0; G.shBreak=0; G.shOk=Math.random()<SH_CARD_P; G.mend=0; G.peeps=[]; G.scorch=[]; G.pplT=1; G.earned=0; G.kills=0; G.pot=0; G.credits=0; G.boost={}; G.pity={}; G.sinceW=0; G.revived=false; G.shieldUntil=0; G.tools={}; G.pickQ=0; G.rerolls=1; G.offer=[]; G.superOn=0; G.superCd=10; G.chainT=2; G.blobs=[]; G.chips=[]; G.teachQ=[]; { const to=document.getElementById('teachov'); if(to) to.remove(); } G.cpend=null; G.flashA=0; G.sawCd=0; G.stormT=12; G.mort=2; G.mortT=0; G.saws=[]; G.bolts=[]; G.shells=[]; G.fires=[]; G.delay=[]; lastCred=0;
+  G.run={rz:{},hold:{},kw:{}}; G.ozFlash=0; G.maxHp=ST.armor(0); G.hp=G.maxHp; G.shMax=ST.shield(L('armor')); G.sh=G.shMax; G.shRg=ST.shreg(L('armor')); G.shT=0; G.shFlash=0; G.shBreak=0; G.shOk=Math.random()<SH_CARD_P; G.mend=0; G.peeps=[]; G.scorch=[]; G.pplT=1; G.earned=0; G.kills=0; G.pot=0; G.credits=0; G.boost={}; G.pity={}; G.sinceW=0; G.revived=false; G.shieldUntil=0; G.tools={}; G.pickQ=0; G.rerolls=1; G.offer=[]; G.superOn=0; G.superCd=10; G.chainT=2; G.blobs=[]; G.chips=[]; G.teachQ=[]; { const to=document.getElementById('teachov'); if(to) to.remove(); } G.cpend=null; G.flashA=0; G.sawCd=0; G.stormT=12; G.mort=2; G.mortT=0; G.saws=[]; G.bolts=[]; G.shells=[]; G.fires=[]; G.delay=[]; lastCred=0;
   cmdStart();
   G.enemies=[]; G.bullets=[]; G.parts=[]; G.rings=[]; G.floats=[]; G.mines=[]; G.fields=[]; G.boss=null; G.tag=null; G.warps=[];
   { const pf=profileFor(G.wd,n,G.elite); G.prof=pf; G.mutHp=pf.mut==='armored'?1.3:pf.mut==='dense'?0.8:pf.mut==='swift'?0.85:1; G.mutSp=pf.mut==='swift'?1.25:1; if(pf.mut||n>1) setTimeout(()=>{ if(G.state==='playing'&&G.n===n&&G.wave<=1) say(pf.name,pf.mut?MUTS[pf.mut].note:(BRIEF[pf.feat]||'')); },1400); }
@@ -4568,10 +4572,10 @@ window.__rr={save:save,paintTurret:paintTurret,coachGrab:coachGrab,GR:GR,CTL:CTL
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 81</div>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 82</div>
 <script>
 /* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
-(function(){ const BUILD=81; let busy=false, shown=false;
+(function(){ const BUILD=82; let busy=false, shown=false;
   const inRun=()=>{ try{ return typeof G!=='undefined'&&(G.state==='playing'||G.state==='cards'||G.state==='shop'||G.state==='paused'||G.state==='teach'||G.state==='ctl'); }catch(e){ return false; } };
   function wipeReload(){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
     if(n>=3) return;
