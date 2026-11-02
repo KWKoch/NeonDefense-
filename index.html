@@ -1914,7 +1914,8 @@ function killEnemy(e,reward,src){
   if(e.dead) return; e.dead=true; explode(e);
   if(reward){
     G.kills++; stResolve(e,true,src);
-    if(e.type==='chunk') for(let k=-1;k<=1;k++) spawn('small',e.x+k*14,e.y,{vx:k*55+rnd(-10,10),vy:rnd(40,70)*G.spS,cr:0});
+    /* a Splitter blocked by the shield is simply gone; otherwise its pieces start above the line unless it had already crossed, so they can never skip the shield */
+    if(e.type==='chunk'&&src!=='shield') for(let k=-1;k<=1;k++) spawn('small',e.x+k*14,e.oz?e.y:Math.min(e.y,OZ_Y-10),{vx:k*55+rnd(-10,10),vy:rnd(40,70)*G.spS,cr:0});
   }
   Music.boom(e.type==='boss'||e.type==='chunk'||e.type==='brute');
   if(e.type==='boss'){ G.boss=null; for(const o of G.enemies) if(!o.dead&&o!==e) killEnemy(o,false); }
@@ -2863,7 +2864,7 @@ function updateEnemies(dt){
       else {
         e.y+=2.5*d; e.x=clamp(e.x+Math.sin(e.t*0.5+e.ph)*14*d,e.r,W-e.r); e.hc=(e.hc===undefined?1.5:e.hc)-d;
         if(e.hc<=0){ e.hc=Math.max(2.4,4.4-G.n*0.02); let hn=0; for(const o of G.enemies) if(!o.dead&&o.type==='hatch') hn++;
-          if(hn<14){ for(let k=0;k<2;k++) spawn('hatch',e.x+(k?14:-14),e.y+e.r,{cr:0}); G.rings.push({x:e.x,y:e.y,r:e.r*0.6,max:e.r*2,life:0.4,t:0,color:e.color}); } }
+          if(hn<14){ for(let k=0;k<2;k++) spawn('hatch',e.x+(k?14:-14),e.oz?e.y+e.r:Math.min(e.y+e.r,OZ_Y-10),{cr:0}); G.rings.push({x:e.x,y:e.y,r:e.r*0.6,max:e.r*2,life:0.4,t:0,color:e.color}); } }
       }
     }
     else if(e.type==='phantom'){
@@ -4701,15 +4702,15 @@ if(!P.intro){ const io=document.createElement('div'); io.id='introov'; io.innerH
 requestAnimationFrame(frame);
 
 /* test hook for headless checks */
-window.__rr={openPack:openPack,renderArmory:renderArmory,UI:UI,fuse:fuse,queueTeach:queueTeach,DEMO:DEMO,coach:coach,save:save,paintTurret:paintTurret,coachGrab:coachGrab,GR:GR,CTL:CTL,wReady:wReady,isManual:isManual,chainSnap:chainSnap,T:T,MOB:MOB,SKIN:SKIN,applySkin:applySkin,PKEYS:PKEYS,rollKey:rollKey,rollCard:rollCard,useCmd:useCmd,cmdBuy:cmdBuy,cmdNodeBuy:cmdNodeBuy,cmdP:cmdP,cmdLeft:cmdLeft,cmdEarned:cmdEarned,CMDS:CMDS,kName:kName,loadPools:loadPools,fireball:fireball,chip:chip,openTeach:openTeach,fireMortar:fireMortar,shape:shape,spawn:spawn,G:G,get P(){return P;},set P(v){P=v;},newP:newP,startLevel:startLevel,update:update,UPS:UPS,waveCount:waveCount,levelPool:levelPool,hpScale:hpScale,tune:(a,b,c,d,m,k,bk,wh,pm,lk,c0,cg)=>{if(lk!==undefined)LATEK=lk;if(pm!==undefined)PICKM=pm;if(wh!==undefined)WAVEHP=wh;if(k!==undefined)HPK=k;if(m!==undefined)MOBN=m;if(c0!==undefined)CDROP0=c0;if(cg!==undefined)CDROPG=cg;HPG=a;POOL0=b;POOLG=c;if(d!==undefined)HPA=d;},bst:bst,pickCard:pickCard,CARDS:CARDS,offerCards:offerCards,applyCard:applyCard,hasTool:hasTool,fireMortar:fireMortar,canMortar:canMortar,T:T,wcount:wcount,canBuy:canBuy,buyUp:buyUp,cardNeed:cardNeed,bandOf:bandOf,avail:avail,awardCards:awardCards,dropCount:dropCount,fuse:fuse,useEnergy:useEnergy,enTick:enTick,tryStart:tryStart,win:win,gameOver:gameOver,profileFor:profileFor,MOB:MOB,WORLDS:WORLDS,briefFor:briefFor};
+window.__rr={spawn:spawn,killEnemy:killEnemy,openPack:openPack,renderArmory:renderArmory,UI:UI,fuse:fuse,queueTeach:queueTeach,DEMO:DEMO,coach:coach,save:save,paintTurret:paintTurret,coachGrab:coachGrab,GR:GR,CTL:CTL,wReady:wReady,isManual:isManual,chainSnap:chainSnap,T:T,MOB:MOB,SKIN:SKIN,applySkin:applySkin,PKEYS:PKEYS,rollKey:rollKey,rollCard:rollCard,useCmd:useCmd,cmdBuy:cmdBuy,cmdNodeBuy:cmdNodeBuy,cmdP:cmdP,cmdLeft:cmdLeft,cmdEarned:cmdEarned,CMDS:CMDS,kName:kName,loadPools:loadPools,fireball:fireball,chip:chip,openTeach:openTeach,fireMortar:fireMortar,shape:shape,spawn:spawn,G:G,get P(){return P;},set P(v){P=v;},newP:newP,startLevel:startLevel,update:update,UPS:UPS,waveCount:waveCount,levelPool:levelPool,hpScale:hpScale,tune:(a,b,c,d,m,k,bk,wh,pm,lk,c0,cg)=>{if(lk!==undefined)LATEK=lk;if(pm!==undefined)PICKM=pm;if(wh!==undefined)WAVEHP=wh;if(k!==undefined)HPK=k;if(m!==undefined)MOBN=m;if(c0!==undefined)CDROP0=c0;if(cg!==undefined)CDROPG=cg;HPG=a;POOL0=b;POOLG=c;if(d!==undefined)HPA=d;},bst:bst,pickCard:pickCard,CARDS:CARDS,offerCards:offerCards,applyCard:applyCard,hasTool:hasTool,fireMortar:fireMortar,canMortar:canMortar,T:T,wcount:wcount,canBuy:canBuy,buyUp:buyUp,cardNeed:cardNeed,bandOf:bandOf,avail:avail,awardCards:awardCards,dropCount:dropCount,fuse:fuse,useEnergy:useEnergy,enTick:enTick,tryStart:tryStart,win:win,gameOver:gameOver,profileFor:profileFor,MOB:MOB,WORLDS:WORLDS,briefFor:briefFor};
 })();
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 91</div>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 92</div>
 <script>
 /* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
-(function(){ const BUILD=91; let busy=false, shown=false;
+(function(){ const BUILD=92; let busy=false, shown=false;
   const inRun=()=>{ try{ return typeof G!=='undefined'&&(G.state==='playing'||G.state==='cards'||G.state==='shop'||G.state==='paused'||G.state==='teach'||G.state==='ctl'); }catch(e){ return false; } };
   function wipeReload(){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
     if(n>=3) return;
