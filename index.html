@@ -1760,14 +1760,14 @@ function achList(){
   const CLSN={mineral:'Geologist',mech:'Signals Analyst',bio:'Biologist'};
   /* Weapons: six awards per weapon, all counts. Three for kills with that weapon in one match, three for lifetime kills of a single mob type. */
   const WAW={
-    turret:{m:["Hot Barrel","Score 25 kills with the Turret in a single match."],m1:["Gunnery Sergeant","Score 60 kills with the Turret in a single match."],m2:["Bullet Storm","Score 120 kills with the Turret in a single match."],l:["Marksman","Land 100 Turret kills on one mob type."],l1:["Sharpshooter","Land 500 Turret kills on one mob type."],l2:["Ace Gunner","Land 2,000 Turret kills on one mob type."]},
-    mine:{m:["Trap Setter","Score 15 kills with Mines in a single match."],m1:["Minefield","Score 40 kills with Mines in a single match."],m2:["Boom Architect","Score 80 kills with Mines in a single match."],l:["Tripwire Pro","Land 60 Mine kills on one mob type."],l1:["Demolition Crew","Land 300 Mine kills on one mob type."],l2:["Blast Legend","Land 1,200 Mine kills on one mob type."]},
-    field:{m:["Slow Burn","Score 15 kills with the Field in a single match."],m1:["Time Dilator","Score 40 kills with the Field in a single match."],m2:["Stasis Sovereign","Score 80 kills with the Field in a single match."],l:["Cold Snap","Land 60 Field kills on one mob type."],l1:["Deep Freeze","Land 300 Field kills on one mob type."],l2:["Absolute Zero","Land 1,200 Field kills on one mob type."]},
-    chain:{m:["Spark Gap","Score 15 kills with Chain Lightning in a single match."],m1:["Storm Caller","Score 40 kills with Chain Lightning in a single match."],m2:["Thunder God","Score 80 kills with Chain Lightning in a single match."],l:["Bug Zapper","Land 60 Chain kills on one mob type."],l1:["Circuit Breaker","Land 300 Chain kills on one mob type."],l2:["Live Wire","Land 1,200 Chain kills on one mob type."]},
-    saw:{m:["Sharp Edge","Score 15 kills with the Saw in a single match."],m1:["Razor's Edge","Score 40 kills with the Saw in a single match."],m2:["Whirling Death","Score 80 kills with the Saw in a single match."],l:["Gravel Grinder","Land 60 Saw kills on one mob type."],l1:["Chop Shop","Land 300 Saw kills on one mob type."],l2:["Blade Master","Land 1,200 Saw kills on one mob type."]},
-    mortar:{m:["Lobber","Score 15 kills with the Mortar in a single match."],m1:["Artillery Ace","Score 40 kills with the Mortar in a single match."],m2:["Rain of Fire","Score 80 kills with the Mortar in a single match."],l:["Crater Maker","Land 60 Mortar kills on one mob type."],l1:["Siege Breaker","Land 300 Mortar kills on one mob type."],l2:["Hive Hammer","Land 1,200 Mortar kills on one mob type."]}
+    turret:{m:["Hot Barrel","Score 25 kills with the Turret in a single match."],m1:["Gunnery Sergeant","Score 60 kills with the Turret in a single match."],m2:["Bullet Storm","Score 120 kills with the Turret in a single match."],l:["Marksman","Land 250 Turret kills on one mob type."],l1:["Sharpshooter","Land 2,000 Turret kills on one mob type."],l2:["Ace Gunner","Land 10,000 Turret kills on one mob type."]},
+    mine:{m:["Trap Setter","Score 15 kills with Mines in a single match."],m1:["Minefield","Score 40 kills with Mines in a single match."],m2:["Boom Architect","Score 80 kills with Mines in a single match."],l:["Tripwire Pro","Land 150 Mine kills on one mob type."],l1:["Demolition Crew","Land 1,000 Mine kills on one mob type."],l2:["Blast Legend","Land 5,000 Mine kills on one mob type."]},
+    field:{m:["Slow Burn","Score 15 kills with the Field in a single match."],m1:["Time Dilator","Score 40 kills with the Field in a single match."],m2:["Stasis Sovereign","Score 80 kills with the Field in a single match."],l:["Cold Snap","Land 150 Field kills on one mob type."],l1:["Deep Freeze","Land 1,000 Field kills on one mob type."],l2:["Absolute Zero","Land 5,000 Field kills on one mob type."]},
+    chain:{m:["Spark Gap","Score 15 kills with Chain Lightning in a single match."],m1:["Storm Caller","Score 40 kills with Chain Lightning in a single match."],m2:["Thunder God","Score 80 kills with Chain Lightning in a single match."],l:["Bug Zapper","Land 150 Chain kills on one mob type."],l1:["Circuit Breaker","Land 1,000 Chain kills on one mob type."],l2:["Live Wire","Land 5,000 Chain kills on one mob type."]},
+    saw:{m:["Sharp Edge","Score 15 kills with the Saw in a single match."],m1:["Razor's Edge","Score 40 kills with the Saw in a single match."],m2:["Whirling Death","Score 80 kills with the Saw in a single match."],l:["Gravel Grinder","Land 150 Saw kills on one mob type."],l1:["Chop Shop","Land 1,000 Saw kills on one mob type."],l2:["Blade Master","Land 5,000 Saw kills on one mob type."]},
+    mortar:{m:["Lobber","Score 15 kills with the Mortar in a single match."],m1:["Artillery Ace","Score 40 kills with the Mortar in a single match."],m2:["Rain of Fire","Score 80 kills with the Mortar in a single match."],l:["Crater Maker","Land 150 Mortar kills on one mob type."],l1:["Siege Breaker","Land 1,000 Mortar kills on one mob type."],l2:["Hive Hammer","Land 5,000 Mortar kills on one mob type."]}
   };
-  const WMK={turret:[25,60,120],mine:[15,40,80],field:[15,40,80],chain:[15,40,80],saw:[15,40,80],mortar:[15,40,80]}, WLK={turret:[100,500,2000],mine:[60,300,1200],field:[60,300,1200],chain:[60,300,1200],saw:[60,300,1200],mortar:[60,300,1200]};
+  const WMK={turret:[25,60,120],mine:[15,40,80],field:[15,40,80],chain:[15,40,80],saw:[15,40,80],mortar:[15,40,80]}, WLK={turret:[250,2000,10000],mine:[150,1000,5000],field:[150,1000,5000],chain:[150,1000,5000],saw:[150,1000,5000],mortar:[150,1000,5000]};
   /* Every award exists once per world: id 'base@world', counted from that world's own record only. */
   WORLDS.forEach(wd=>{
     const wid=wd.id, wn=wd.name;
@@ -4572,10 +4572,10 @@ window.__rr={save:save,paintTurret:paintTurret,coachGrab:coachGrab,GR:GR,CTL:CTL
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 82</div>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 83</div>
 <script>
 /* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
-(function(){ const BUILD=82; let busy=false, shown=false;
+(function(){ const BUILD=83; let busy=false, shown=false;
   const inRun=()=>{ try{ return typeof G!=='undefined'&&(G.state==='playing'||G.state==='cards'||G.state==='shop'||G.state==='paused'||G.state==='teach'||G.state==='ctl'); }catch(e){ return false; } };
   function wipeReload(){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
     if(n>=3) return;

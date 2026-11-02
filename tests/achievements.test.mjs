@@ -87,7 +87,7 @@ const fight=(type,won,{weapons=['turret'],src='turret',resKind=null,m=1}={})=>{
   assert.deepEqual([tur[0],tur[1],tur[2]],[150,150,0],'turret assisted but never landed the killing blow');
   A.achCheck(true);
   const ac=A.stOf().ach;
-  assert(ac['wl0_mine@belt'],'150 mine kills on rock meets the 60 mark'); assert(!ac['wl1_mine@belt'],'but not 300');
+  assert(ac['wl0_mine@belt'],'150 mine kills on rock meets the 150 mark'); assert(!ac['wl1_mine@belt'],'but not 1,000');
   assert(!ac['wl0_turret@belt'],'turret only assisted'); assert(!ac['wl0_mine@void'],'other worlds stay separate');
   assert(ac['wm2_mine@belt'],'150 kills in one match clears all three match tiers'); assert(!ac['wm0_turret@belt']);
 }
