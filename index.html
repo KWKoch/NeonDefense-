@@ -310,6 +310,23 @@ body.menu{background:radial-gradient(140% 55% at 50% -5%,rgba(255,43,214,.22),rg
 .tab{border-radius:999px; display:inline-flex; align-items:center; gap:6px; padding:8px 13px}
 .tab .ic{flex:none}
 .card{border-radius:18px}
+/* commander market: a wall of thumbnails; tapping one opens that commander */
+.cmflt{display:flex; gap:6px; flex-wrap:wrap; margin:8px 0}
+.cmflt .chip.cf{cursor:pointer; font:inherit; font-size:11px; opacity:.7; background:#000}
+.cmflt .chip.cf.on{opacity:1; box-shadow:0 0 10px var(--c); background:color-mix(in srgb,var(--c) 22%,#000)}
+.cmgrid{display:grid; grid-template-columns:repeat(3,1fr); gap:8px}
+@media (min-width:560px){ .cmgrid{grid-template-columns:repeat(4,1fr)} }
+.cmtile{position:relative; display:flex; flex-direction:column; align-items:center; gap:1px; padding:6px 4px 8px; border-radius:14px; cursor:pointer; font:inherit; color:var(--fg); min-width:0;
+  background:radial-gradient(ellipse at 50% 70%,color-mix(in srgb,var(--c) 16%,#070a10),#04060a 75%); border:1.5px solid color-mix(in srgb,var(--rc) 70%,#000); box-shadow:0 0 10px color-mix(in srgb,var(--rc) 22%,transparent); -webkit-tap-highlight-color:transparent}
+.cmtile.lk canvas.tprev{filter:saturate(.45) brightness(.72)}
+.cmtile.eq{box-shadow:0 0 0 1px var(--rc),0 0 16px color-mix(in srgb,var(--rc) 60%,transparent)}
+.cmtile canvas.tprev,.cmtile canvas.tprev.dim{width:100%; height:auto; aspect-ratio:240/170; border:0; background:none; border-radius:10px}
+.cmtile .tn{font-size:11px; font-weight:800; letter-spacing:.03em; color:var(--c); text-align:center; line-height:1.15; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.cmtile .tr{font-size:9px; letter-spacing:.12em; text-transform:uppercase; color:var(--dim)}
+.cmtile .ts2{font-size:10px; font-weight:700; margin-top:2px}
+.cmtile:active{transform:scale(.97)}
+canvas.tprev.big{width:100%; height:auto; aspect-ratio:440/260; max-width:none}
+.cmbtns{display:flex; gap:6px; flex-wrap:wrap}
 .cmmodal{position:fixed; inset:0; z-index:60; display:flex; align-items:center; justify-content:center; padding:14px; box-sizing:border-box}
 .cmbk{position:absolute; inset:0; background:rgba(0,0,0,.82)}
 .cmpanel{position:relative; width:min(460px,100%); max-height:calc(100dvh - 28px); overflow-y:auto; overscroll-behavior:contain; display:flex; flex-direction:column; gap:10px; padding:14px; box-sizing:border-box; background:#05070c; border:1px solid var(--c); border-radius:20px; box-shadow:0 0 30px color-mix(in srgb,var(--c) 45%,transparent)}
@@ -1909,8 +1926,8 @@ function leak(e){
   if(G.hp<=0) gameOver();
 }
 function fire(target){
-  const sup=G.superOn>0, n=1+L('barrels')+bst('barrel'), pierce=L('pierce')+bst('pierce')+2*bst('deep')+(G.cm?G.cm.M.pierce:0);
-  const base=ST.dmg(L('dmg'))*Math.pow(1.32,bq('dmg'))*(sup?1.5:1)*cmDmg(), cc=0.15*bst('crit');
+  const sup=G.superOn>0, n=1+L('barrels')+bst('barrel'), pierce=L('pierce')+bst('pierce')+2*bst('deep')+(G.cm?G.cm.M.pierce+(G.cm.pierceT>0?G.cm.pierceN:0):0);
+  const base=ST.dmg(L('dmg'))*Math.pow(1.32,bq('dmg'))*(sup?1.5:1)*cmDmg(), cc=0.15*bst('crit')+(G.cm?G.cm.M.crit:0);
   for(let i=0;i<n;i++){
     const a=(i-(n-1)/2)*BARREL_SPREAD, dmg=Math.random()<cc?base*2.5:base;
     G.bullets.push({x:T.x+Math.sin(a)*24,y:TURRET_Y-24,vx:Math.sin(a)*BS,vy:-Math.cos(a)*BS,dmg:dmg,pierce:pierce,hits:[],target:target});
@@ -2027,7 +2044,7 @@ function placeField(x,y){
 /* One commander card sits in the command slot. Each is a collectible in four rarities: rarity scales the buff, shrinks the weakness and unlocks the second ability natively.
    Three specialty branches per commander are bought with Command Points (earned from achievements), and branch capstones unlock new capabilities. */
 const CRAR=['Common','Rare','Epic','Legendary'], CRM=[1,1.2,1.45,1.8], CWK=[1,0.8,0.6,0.4], CRP=[30,120,360,900], CPT=[1,1,2,3], CNODE=[1,2,3], CCAP=5, CCAPNEED=6;
-const CSTAT={dmg:'Turret damage',rate:'Fire rate',hp:'City health',sh:'Ozone shield',shRg:'Shield recharge',blast:'Blast damage'};
+const CSTAT={dmg:'Turret damage',rate:'Fire rate',hp:'City health',sh:'Ozone shield',shRg:'Shield recharge',blast:'Blast damage',crit:'Critical chance',cd1:'Ability 1 recharge time',cd2:'Ability 2 recharge time',pow1:'Ability 1 power',pow2:'Ability 2 power'};
 const CMDS=[
  {id:'warden',name:'Warden Sol',role:'Guardian',color:'#00ffa3',pas:{sh:0.25,shRg:0.25},wk:{dmg:-0.12},
   ab:[{n:'Aegis',ic:'frt',cd:38,d:'Refills the ozone shield and repairs 10% of the city.'},{n:'Field Repair',ic:'heart',cd:50,d:'Repairs 25% of the city.'}],
@@ -2045,7 +2062,71 @@ const CMDS=[
       {n:'Bombardment',nodes:[{id:'s1',n:'Rapid Dispatch',max:3,fx:{cd1:-0.08},t:'-8% Airstrike cooldown per level'},{id:'s2',n:'Extra Bombs',max:2,fx:{strikes:1},t:'+1 bombing run per level'},{id:'s3',n:'Carpet Bombing',cap:1,max:1,fx:{strikes:2},t:'+2 more bombing runs'}]},
       {n:'Signals',nodes:[{id:'e1',n:'Wide Pulse',max:3,fx:{pow2:0.2},t:'+20% EMP freeze time per level'},{id:'e2',n:'Capacitors',max:3,fx:{cd2:-0.08},t:'-8% EMP cooldown per level'},{id:'e3',n:'Signals Corps',cap:1,max:1,flag:'unlock2',t:'Unlocks EMP Burst at any rarity'}]}]}
 ];
-const CMDBY={}; CMDS.forEach(c=>CMDBY[c.id]=c);
+const CMDBY={};
+/* ---- the wider roster: 15 more commanders across all four rarities. Each is built from the same parts: a passive buff, a weakness, two abilities from the effect library below, and a generated 3-branch specialty tree. tier = the rarity they are recruited at. ---- */
+function mkCmd(s){
+  const A=Object.keys(s.pas), a0=A[0], a1=A[1]||A[0], N=s.nm, lab=k=>(CSTAT[k]||k).toLowerCase(), pc=v=>Math.round(v*100);
+  const t0=!(s.tier>0), a=s.ab;
+  s.br=[
+    {n:s.role,nodes:[{id:'p1',n:N[0],max:3,fx:{[a0]:0.08},t:'+8% '+lab(a0)+' per level'},{id:'p2',n:N[1],max:3,fx:{[a1]:0.06},t:'+6% '+lab(a1)+' per level'},{id:'p3',n:N[2],cap:1,max:1,fx:{[a0]:0.3},t:'+30% '+lab(a0)}]},
+    {n:a[0].n,nodes:[{id:'x1',n:N[3],max:3,fx:{pow1:0.15},t:'+15% '+a[0].n+' power per level'},{id:'x2',n:N[4],max:3,fx:{cd1:-0.08},t:'-8% '+a[0].n+' cooldown per level'},{id:'x3',n:N[5],cap:1,max:1,fx:{pow1:0.4,cd1:-0.1},t:'+40% '+a[0].n+' power, -10% cooldown'}]},
+    {n:a[1].n,nodes:[{id:'y1',n:N[6],max:3,fx:{pow2:0.15},t:'+15% '+a[1].n+' power per level'},{id:'y2',n:N[7],max:3,fx:{cd2:-0.08},t:'-8% '+a[1].n+' cooldown per level'},t0?{id:'y3',n:N[8],cap:1,max:1,flag:'unlock2',t:'Unlocks '+a[1].n+' at any rarity'}:{id:'y3',n:N[8],cap:1,max:1,fx:{pow2:0.4,cd2:-0.1},t:'+40% '+a[1].n+' power, -10% cooldown'}]}];
+  return s;
+}
+const FXL=(k,o)=>Object.assign({k:k},o);
+[
+ /* ---- Common ---- */
+ {id:'flint',name:'Sgt. Flint',role:'Engineer',color:'#ffd23f',tier:0,pas:{blast:0.2,hp:0.1},wk:{rate:-0.1},
+  ab:[{n:'Minefield',ic:'mine',cd:32,d:'Scatters six armed mines across the densest lanes.',fx:[FXL('mines',{n:6})]},{n:'Demolition',ic:'wave',cd:42,d:'A shockwave hurts every mob on the field.',fx:[FXL('nova',{frac:0.12,boss:0.2})]}],
+  nm:['Shaped Charges','Sandbags','Master Sapper','Deep Pockets','Quick Hands','Carpet of Steel','Big Bang','Fast Fuses','Demo Crew'],look:{hull:'slab',brl:'cannon',side:'drums',fx:'sparks'}},
+ {id:'juno',name:'Medic Juno',role:'Support',color:'#ff6ec7',tier:0,pas:{hp:0.2,shRg:0.2},wk:{dmg:-0.15},
+  ab:[{n:'Triage',ic:'heart',cd:36,d:'Repairs 15% of the city and recharges half the ozone shield.',fx:[FXL('heal',{v:0.15}),FXL('shield',{v:0.5})]},{n:'Stim Pack',ic:'bolt',cd:44,d:'Turret fires 50% faster for 4 seconds and the city is patched up a little.',fx:[FXL('haste',{t:4,rate:1.5}),FXL('heal',{v:0.05})]}],
+  nm:['Thick Skin','Quick Mend','Field Surgeon','Deep Dressings','Fast Hands','Trauma Team','Strong Stim','Steady Supply','Combat Medic'],look:{hull:'dome',brl:'twin',side:'orbs',fx:'pulse'}},
+ {id:'pip',name:'Scout Pip',role:'Recon',color:'#4dd8ff',tier:0,pas:{rate:0.12,crit:0.08},wk:{hp:-0.15},
+  ab:[{n:'Flare',ic:'eye',cd:34,d:'A bright flare slows every mob to 45% speed for 5 seconds.',fx:[FXL('slow',{t:5,f:0.45})]},{n:'Spotlight',ic:'aim',cd:40,d:'Turret deals 35% more damage for 8 seconds.',fx:[FXL('focus',{t:8,dmg:1.35})]}],
+  nm:['Light Feet','Sharp Eyes','Ghost','Long Burn','Quick Signal','Daybreak','Bright Beam','Short Fuse','Deadeye'],look:{hull:'spire',brl:'rail',side:'fins',fx:'runes'}},
+ {id:'dax',name:'Pyro Dax',role:'Incendiary',color:'#ff3b3b',tier:0,pas:{blast:0.25},wk:{sh:-0.2},
+  ab:[{n:'Napalm',ic:'mortar',cd:36,d:'Three waves of fire roll over the densest clusters.',fx:[FXL('burn',{n:3,frac:0.16})]},{n:'Flashfire',ic:'wave',cd:44,d:'Scorches every mob and slows the field for 2 seconds.',fx:[FXL('nova',{frac:0.1,boss:0.2}),FXL('slow',{t:2,f:0.6})]}],
+  nm:['Hot Rounds','Fireproof','Firestorm','Thick Fuel','Fast Igniter','Inferno','Wide Flame','Quick Burn','Pyromaniac'],look:{hull:'wedge',brl:'cannon',side:'wings',fx:'flames'}},
+ /* ---- Rare ---- */
+ {id:'kestrel',name:'Cmdr Kestrel',role:'Skirmisher',color:'#7dff4d',tier:1,pas:{rate:0.15,crit:0.1},wk:{sh:-0.15},
+  ab:[{n:'Rapid Salvo',ic:'bolt',cd:28,d:'Turret fires 70% faster for 6 seconds.',fx:[FXL('haste',{t:6,rate:1.7})]},{n:'Strafe Run',ic:'turret',cd:36,d:'Four strafing bombs land on the densest clusters.',fx:[FXL('strike',{n:4,R:80,frac:0.3})]}],
+  nm:['Light Trigger','Hot Eyes','Ace','Long Salvo','Quick Reload','Overclock','Heavy Pass','Fast Wings','Top Gun'],look:{hull:'wedge',brl:'rail',side:'wings',fx:'sparks'}},
+ {id:'tessla',name:'Tessla',role:'Storm',color:'#33b5ff',tier:1,pas:{dmg:0.12,blast:0.15},wk:{hp:-0.15},
+  ab:[{n:'Chain Storm',ic:'chain',cd:30,d:'Lightning arcs to eight random mobs.',fx:[FXL('chainz',{n:8,frac:0.22,boss:0.15})]},{n:'Static Field',ic:'field',cd:40,d:'Freezes every mob for a moment and fries machines.',fx:[FXL('freeze',{t:1.6,mech:0.1})]}],
+  nm:['Charged Rounds','Surge','Stormcaller','High Voltage','Quick Charge','Thunderhead','Long Static','Fast Cycle','Faraday'],look:{hull:'dome',brl:'coil',side:'pods',fx:'rings'}},
+ {id:'dane',name:'Bulwark Dane',role:'Sentinel',color:'#8fa8ff',tier:1,pas:{sh:0.3,hp:0.15},wk:{rate:-0.12},
+  ab:[{n:'Bulwark',ic:'frt',cd:42,d:'The city takes no damage for 3 seconds and the shield is refilled.',fx:[FXL('invuln',{t:3}),FXL('shield',{v:1})]},{n:'Fortify',ic:'heart',cd:48,d:'Repairs 20% of the city and recharges half the shield.',fx:[FXL('heal',{v:0.2}),FXL('shield',{v:0.5})]}],
+  nm:['Iron Plate','Hardened Wall','Immovable','Long Guard','Fast Rally','Last Bastion','Heavy Patch','Quick Crews','Stone Wall'],look:{hull:'slab',brl:'twin',side:'fins',fx:'halo'}},
+ {id:'hex',name:'Hex',role:'Saboteur',color:'#cfd8ff',tier:1,pas:{dmg:0.1,shRg:0.15,cd1:-0.1},wk:{hp:-0.12},
+  ab:[{n:'Time Dilation',ic:'tmp',cd:40,d:'Every mob crawls at 35% speed for 6 seconds.',fx:[FXL('slow',{t:6,f:0.35})]},{n:'Meltdown',ic:'cog',cd:38,d:'Machines are fried and the field is stunned for half a second.',fx:[FXL('freeze',{t:0.5,mech:0.3})]}],
+  nm:['Bad Code','Backdoor','Zero Day','Long Lag','Fast Hack','Rootkit','Heavy Virus','Quick Crash','Blackout'],look:{hull:'spire',brl:'coil',side:'orbs',fx:'runes'}},
+ /* ---- Epic ---- */
+ {id:'corvus',name:'Adm. Corvus',role:'Fleet',color:'#2e6bff',tier:2,pas:{blast:0.3,cd1:-0.1},wk:{rate:-0.1},
+  ab:[{n:'Orbital Barrage',ic:'mortar',cd:44,d:'Six orbital strikes hammer the densest clusters.',fx:[FXL('strike',{n:6,R:110,frac:0.4})]},{n:'Reinforce',ic:'cards',cd:50,d:'Every weapon is ready again, the other ability recharges faster and the city is patched.',fx:[FXL('rally',{cd:0.5}),FXL('heal',{v:0.1})]}],
+  nm:['Heavy Shells','Fleet Doctrine','Flag Officer','Wide Barrage','Fast Guns','Broadside Fleet','Quick Logistics','Deep Reserve','Grand Admiral'],look:{hull:'crown',brl:'cannon',side:'pods',fx:'halo'}},
+ {id:'nyx',name:'Nyx',role:'Reaper',color:'#ff2e63',tier:2,pas:{dmg:0.22,crit:0.12},wk:{hp:-0.25},
+  ab:[{n:'Reap',ic:'lock',cd:34,d:'Every weakened mob is finished off and bosses take a heavy cut.',fx:[FXL('execute',{thr:0.3,boss:0.12})]},{n:'Harvest',ic:'aim',cd:42,d:'Three of the toughest mobs are struck down.',fx:[FXL('smite',{n:3,frac:0.5,boss:0.2})]}],
+  nm:['Sharp Edge','Cold Aim','Grim Mark','Long Scythe','Fast Blade','Soul Harvest','Heavy Reaper','Quick Cut','Death Knell'],look:{hull:'spire',brl:'rail',side:'wings',fx:'sparks'}},
+ {id:'solara',name:'Solara',role:'Radiant',color:'#ffb347',tier:2,pas:{sh:0.25,shRg:0.25,dmg:0.1},wk:{blast:-0.2},
+  ab:[{n:'Sunburst',ic:'spk',cd:38,d:'A wave of light burns every mob on the field.',fx:[FXL('nova',{frac:0.3,boss:0.2})]},{n:'Radiance',ic:'heart',cd:46,d:'The shield is refilled, the city repaired and nothing can hurt it for 1.5 seconds.',fx:[FXL('shield',{v:1}),FXL('heal',{v:0.15}),FXL('invuln',{t:1.5})]}],
+  nm:['Warm Light','Glow','High Noon','Long Day','Quick Dawn','Corona','Bright Heal','Fast Dusk','Eclipse'],look:{hull:'crown',brl:'twin',side:'orbs',fx:'pulse'}},
+ {id:'ironside',name:'Ironside',role:'Siegebreaker',color:'#9aa7b3',tier:2,pas:{dmg:0.2,hp:0.2},wk:{rate:-0.18},
+  ab:[{n:'Siege Cannon',ic:'turret',cd:32,d:'One colossal shell smashes the toughest mob on the field.',fx:[FXL('smite',{n:1,frac:0.6,boss:0.35})]},{n:'Breach',ic:'chev',cd:40,d:'Bullets pierce three extra mobs and hit 25% harder for 8 seconds.',fx:[FXL('pierce',{n:3,t:8}),FXL('focus',{t:8,dmg:1.25})]}],
+  nm:['Armour Piercing','Thick Hull','Siege Master','Heavy Shell','Quick Load','Wall Breaker','Deep Breach','Fast Rams','Fortress Fall'],look:{hull:'slab',brl:'cannon',side:'drums',fx:'flames'}},
+ /* ---- Legendary ---- */
+ {id:'aurora',name:'Aurora Prime',role:'Celestial',color:'#fff1b8',tier:3,pas:{sh:0.3,hp:0.2,shRg:0.3},wk:{dmg:-0.1},
+  ab:[{n:'Genesis',ic:'spk',cd:60,d:'Restores the city and shield completely, protects it for 3 seconds and readies every weapon.',fx:[FXL('heal',{v:1}),FXL('shield',{v:1}),FXL('invuln',{t:3}),FXL('rally',{})]},{n:'Judgement',ic:'wave',cd:48,d:'Divine light burns every mob for nearly half its health.',fx:[FXL('nova',{frac:0.45,boss:0.25})]}],
+  nm:['Halo','Grace','Ascension','Long Dawn','Quick Prayer','Rebirth','Holy Fire','Fast Verdict','Divinity'],look:{hull:'crown',brl:'rail',side:'wings',fx:'halo'}},
+ {id:'krait',name:'Overlord Krait',role:'Warlord',color:'#ff1a75',tier:3,pas:{dmg:0.3,rate:0.2,blast:0.2},wk:{hp:-0.2,sh:-0.2},
+  ab:[{n:'War Machine',ic:'bolt',cd:44,d:'Turret fires 2.5 times faster and hits 50% harder for 7 seconds.',fx:[FXL('haste',{t:7,rate:2.5,dmg:1.5})]},{n:'Annihilate',ic:'mortar',cd:52,d:'Eight devastating strikes obliterate the densest clusters.',fx:[FXL('strike',{n:8,R:110,frac:0.45})]}],
+  nm:['Blood Rounds','War Cry','Conqueror','Long Rampage','Quick Rage','Total War','Heavy Wrath','Fast Fury','Overlord'],look:{hull:'wedge',brl:'twin',side:'pods',fx:'flames'}},
+ {id:'chrona',name:'Chrona',role:'Timekeeper',color:'#6a5cff',tier:3,pas:{cd1:-0.2,cd2:-0.2,rate:0.15,crit:0.1},wk:{hp:-0.15},
+  ab:[{n:'Stasis',ic:'tmp',cd:54,d:'Time stops: every mob freezes for 3.5 seconds.',fx:[FXL('freeze',{t:3.5})]},{n:'Rewind',ic:'cards',cd:60,d:'Repairs 40% of the city, refills the shield, readies every weapon and halves your cooldowns.',fx:[FXL('heal',{v:0.4}),FXL('shield',{v:1}),FXL('rally',{cd:0.4})]}],
+  nm:['Fast Hands','Time Slip','Temporal Lord','Long Moment','Quick Tick','Paradox','Deep Echo','Short Loop','Eternity'],look:{hull:'dome',brl:'coil',side:'orbs',fx:'rings'}}
+].forEach(s=>CMDS.push(mkCmd(s)));
+CMDS.forEach(c=>{ if(!(c.tier>0)) c.tier=0; });
+CMDS.forEach(c=>CMDBY[c.id]=c);
 function cmdP(){ const q=P.cmd||(P.cmd={eq:'warden',own:{warden:0},tl:{}}); if(!q.own) q.own={warden:0}; if(!q.tl) q.tl={}; if(!q.eq||q.own[q.eq]===undefined) q.eq='warden'; if(q.own.warden===undefined) q.own.warden=0; return q; }
 const cmdTL=id=>cmdP().tl[id]||(cmdP().tl[id]={});
 function cmdEarned(){ const a=(stOf().ach)||{}; let n=0; for(const d of achList()) if(a[d.id]) n+=CPT[d.tier]||1; return n; }
@@ -2054,9 +2135,10 @@ function cmdBranchSpent(c,b){ const tl=cmdTL(c.id); let s=0; for(const nd of b.n
 function cmdSpent(){ let s=0; for(const c of CMDS){ const tl=(cmdP().tl[c.id])||{}; for(const b of c.br) for(const nd of b.nodes) for(let i=0;i<(tl[nd.id]|0);i++) s+=cmdCost(nd,i); } return s; }
 const cmdLeft=()=>Math.max(0,cmdEarned()-cmdSpent());
 function cmdMods(c,r,tl){
-  const M={dmg:1,rate:1,hp:1,sh:1,shRg:1,blast:1,cd1:1,cd2:1,pow1:1,pow2:1,pierce:0,strikes:0,f:{}};
+  const M={dmg:1,rate:1,hp:1,sh:1,shRg:1,blast:1,cd1:1,cd2:1,pow1:1,pow2:1,pierce:0,strikes:0,crit:0,f:{}};
   for(const k in c.pas) M[k]+=c.pas[k]*CRM[r];
   for(const k in c.wk) M[k]+=c.wk[k]*CWK[r];
+  M.crit=Math.max(0,M.crit);
   for(const b of c.br) for(const nd of b.nodes){ const l=tl[nd.id]|0; if(!l) continue; if(nd.flag) M.f[nd.flag]=1; for(const k in (nd.fx||{})) M[k]+=nd.fx[k]*l; }
   M.cd1=Math.max(0.4,M.cd1); M.cd2=Math.max(0.4,M.cd2); M.pow1*=CRM[r]; M.pow2*=CRM[r]; M.unlock2=r>=1||!!M.f.unlock2;
   return M;
@@ -2069,32 +2151,70 @@ function cmdNodeBuy(cid,nid){
   return false;
 }
 function cmdBuy(cid,r){
-  const c=CMDBY[cid], p=cmdP(); if(!c||!(r>=0&&r<4)) return false; const cur=p.own[cid];
+  const c=CMDBY[cid], p=cmdP(); if(!c||!(r>=0&&r<4)||r<(c.tier|0)) return false; const cur=p.own[cid];
   if(cur!==undefined&&r<=cur) return false; const price=CRP[r]-(cur!==undefined?CRP[cur]:0);
   if((P.gems||0)<price) return false; P.gems-=price; p.own[cid]=r; if(p.eq!==cid&&cur===undefined&&Object.keys(p.own).length===1) p.eq=cid; return true;
 }
 /* ---- in a run ---- */
 const cmM=k=>G.cm?G.cm.M[k]:1;
-const cmDmg=()=>{ if(!G.cm) return 1; let m=G.cm.M.dmg; if(G.cm.M.f.lastStand&&G.hp<G.maxHp*0.35) m*=1.4; return m; };
-const cmRate=()=>G.cm?G.cm.M.rate*(G.cm.over>0?2:1):1;
+const cmDmg=()=>{ if(!G.cm) return 1; let m=G.cm.M.dmg; if(G.cm.M.f.lastStand&&G.hp<G.maxHp*0.35) m*=1.4; if(G.cm.dmgT>0) m*=G.cm.dmgM||1; return m; };
+const cmRate=()=>G.cm?G.cm.M.rate*(G.cm.over>0?(G.cm.omul||2):1):1;
 function cmdStart(){
   const p=cmdP(), c=CMDBY[p.eq]; if(!c||p.own[c.id]===undefined||!cmdUnlocked()){ G.cm=null; cmdBtns(); return; }
   const r=p.own[c.id], M=cmdMods(c,r,p.tl[c.id]||{});
-  G.cm={c:c,r:r,M:M,t1:c.ab[0].cd*M.cd1*0.4,t2:c.ab[1].cd*M.cd2*0.4,over:0};
+  G.cm={c:c,r:r,M:M,t1:c.ab[0].cd*M.cd1*0.4,t2:c.ab[1].cd*M.cd2*0.4,over:0,omul:0,dmgT:0,dmgM:1,slowT:0,slowF:1,pierceT:0,pierceN:0};
   G.maxHp=Math.round(G.maxHp*M.hp); G.hp=G.maxHp; G.shMax=Math.round(G.shMax*M.sh); G.sh=G.shMax; G.shRg*=M.shRg;
   cmdBtns();
 }
-function updateCmd(dt){ const q=G.cm; if(!q) return; q.t1=Math.max(0,q.t1-dt); q.t2=Math.max(0,q.t2-dt); if(q.over>0) q.over-=dt; renderCmd(); }
-function cmdHit(e,frac){ if(e.dead) return; hurt(e,e.maxhp*frac*(e.type==='boss'?0.2:1),'e',false,1,null); }
+function updateCmd(dt){ const q=G.cm; if(!q) return; q.t1=Math.max(0,q.t1-dt); q.t2=Math.max(0,q.t2-dt); if(q.over>0) q.over-=dt; if(q.dmgT>0) q.dmgT-=dt; if(q.slowT>0) q.slowT-=dt; if(q.pierceT>0) q.pierceT-=dt; renderCmd(); }
+function cmdHit(e,frac,bm){ if(e.dead) return; hurt(e,e.maxhp*frac*(e.type==='boss'?(bm==null?0.2:bm):1),'e',false,1,null); }
 function cmdBoom(x,y,R,frac,col){
   G.rings.push({x:x,y:y,r:8,max:R,life:0.5,t:0,color:col}); G.rings.push({x:x,y:y,r:4,max:R*0.6,life:0.3,t:0,color:'#ffffff'}); fireball(x,y,R*0.9,col,3); burst(x,y,col,22,240,2); G.shake=Math.min(1,G.shake+0.5);
   Music.boom(true); for(const e of G.enemies){ if(e.dead) continue; const d=Math.hypot(e.x-x,e.y-y); if(d<=R+e.r*0.5) cmdHit(e,frac*(1-0.35*d/(R+e.r*0.5))); }
+}
+/* ---- ability effect library: every commander ability is a short list of these, scaled by the ability's power (rarity and specialties) ---- */
+const cmLive=()=>G.enemies.filter(e=>!e.dead&&e.y>20&&e.y<GROUND-10);
+function cmdStrike(n,R,frac,col){
+  const live=cmLive().filter(e=>e.y>40&&e.y<GROUND-60), used=[];
+  for(let k=0;k<n;k++){
+    let best=null,bs=-1; const cand=live.length?live:[{x:rnd(80,W-80),y:rnd(160,GROUND-200)}];
+    for(const e of cand){ if(used.some(u=>Math.hypot(u.x-e.x,u.y-e.y)<R*0.8)) continue; let sc=0; for(const o of live) if(Math.hypot(o.x-e.x,o.y-e.y)<R) sc+=o.type==='boss'?4:1; if(sc>bs){ bs=sc; best=e; } }
+    if(!best) best=cand[Math.floor(Math.random()*cand.length)];
+    const bx=best.x+(best.vx||0)*0.5, by=best.y+(best.vy||0)*0.5; used.push({x:bx,y:by});
+    G.rings.push({x:bx,y:by,r:6,max:R,life:0.4,t:0,color:'#ffffff'});
+    G.delay.push({t:0.45+k*0.3,fn:()=>cmdBoom(clamp(bx,20,W-20),clamp(by,60,GROUND-60),R,frac,col)});
+  }
+}
+const FX={
+  heal(f,p){ G.hp=Math.min(G.maxHp,G.hp+G.maxHp*f.v*p); },
+  shield(f){ G.sh=Math.min(G.shMax,G.sh+G.shMax*f.v); G.shFlash=1; },
+  haste(f,p,q){ q.over=Math.max(q.over,f.t*p); q.omul=f.rate; if(f.dmg){ q.dmgT=Math.max(q.dmgT||0,f.t*p); q.dmgM=f.dmg; } },
+  focus(f,p,q){ q.dmgT=Math.max(q.dmgT||0,f.t*p); q.dmgM=f.dmg; },
+  volley(f,p){ const n=f.n+Math.round((p-1)*3); for(let k=0;k<n;k++) G.delay.push({t:k*0.11,fn:()=>{ const cl=T.cool; fire(null); T.cool=cl; }}); },
+  strike(f,p,q,M){ cmdStrike(f.n+M.strikes,f.R*Math.sqrt(M.blast),f.frac*p*M.blast,q.c.color); },
+  burn(f,p,q,M){ for(let j=0;j<3;j++) G.delay.push({t:j*0.7,fn:()=>cmdStrike(f.n,95*Math.sqrt(M.blast),f.frac*p*M.blast,q.c.color)}); },
+  freeze(f,p){ for(const e of cmLive()){ e.frz=Math.max(e.frz||0,(e.type==='boss'?0.3:1)*f.t*p); if(f.mech&&MOB[e.type].cls==='mech') cmdHit(e,f.mech*p); } },
+  slow(f,p,q){ q.slowT=Math.max(q.slowT||0,f.t*p); q.slowF=f.f; },
+  nova(f,p,q,M){ G.flashA=Math.max(G.flashA||0,0.35); for(const e of cmLive()) cmdHit(e,f.frac*p*M.blast,f.boss); },
+  smite(f,p,q){ cmLive().sort((x,y)=>y.maxhp-x.maxhp).slice(0,f.n).forEach((e,k)=>{ G.delay.push({t:0.15*k,fn:()=>{ if(e.dead) return; cmdHit(e,f.frac*p,f.boss); G.rings.push({x:e.x,y:e.y,r:6,max:80,life:0.35,t:0,color:q.c.color}); burst(e.x,e.y,q.c.color,16,240,2); }}); }); },
+  chainz(f,p,q){ const a=cmLive(); for(let k=0;k<f.n&&a.length;k++){ const e=a.splice(Math.floor(Math.random()*a.length),1)[0]; G.delay.push({t:0.07*k,fn:()=>{ if(e.dead) return; cmdHit(e,f.frac*p,f.boss); G.rings.push({x:e.x,y:e.y,r:4,max:46,life:0.25,t:0,color:q.c.color}); burst(e.x,e.y,q.c.color,10,200,2); }}); } },
+  mines(f){ const a=cmLive(); for(let k=0;k<f.n;k++){ const e=a.length?a[Math.floor(Math.random()*a.length)]:null; G.mines.push({x:clamp(e?e.x+rnd(-30,30):rnd(60,W-60),24,W-24),y:clamp(e?e.y+rnd(20,80):rnd(300,600),200,GROUND-50),t:0.6,dead:false}); } Music.place(false); },
+  invuln(f,p){ G.shieldUntil=Math.max(G.shieldUntil||0,G.time+f.t*p); G.shFlash=1; },
+  rally(f,p,q){ G.chainT=0; G.sawCd=0; G.fieldCd=0; if(hasTool('mortar')&&G.mort<mortMax()) G.mort++; if(hasTool('mine')&&G.stock<mineMax()) G.stock++; if(f.cd!=null){ q.t1*=f.cd; q.t2*=f.cd; } },
+  execute(f,p){ for(const e of cmLive()){ if(e.type==='boss') cmdHit(e,f.boss*p,1); else if(e.hp<e.maxhp*f.thr*Math.min(1.6,p)) hurt(e,e.hp+1,'e',false,1,null); } },
+  pierce(f,p,q){ q.pierceT=Math.max(q.pierceT||0,f.t*p); q.pierceN=f.n; }
+};
+function runFx(q,i){
+  const ab=q.c.ab[i], M=q.M, p=i===0?M.pow1:M.pow2, col=q.c.color, ty=TURRET_Y-30;
+  float(T.x,ty-30,ab.n.toUpperCase(),col); G.rings.push({x:T.x,y:ty,r:10,max:300,life:0.6,t:0,color:col}); burst(T.x,ty,col,22,260,2);
+  for(const f of ab.fx) if(FX[f.k]) FX[f.k](f,p,q,M);
 }
 function useCmd(i){
   const q=G.cm; if(!q||G.state!=='playing') return false; const M=q.M, c=q.c;
   if(i===1&&!M.unlock2) return false; if((i===0?q.t1:q.t2)>0) return false;
   const col=c.color, ty=TURRET_Y-30;
-  if(c.id==='warden'){
+  if(c.ab[i].fx) runFx(q,i);
+  else if(c.id==='warden'){
     if(i===0){ G.sh=G.shMax; G.hp=Math.min(G.maxHp,G.hp+G.maxHp*0.1*M.pow1); G.shFlash=1; float(T.x,ty-30,'AEGIS',col);
       G.rings.push({x:T.x,y:ty,r:10,max:520,life:0.7,t:0,color:col}); burst(T.x,ty,col,28,320,2);
       if(M.f.aegisWave){ for(const e of G.enemies) if(!e.dead&&e.y>0) cmdHit(e,0.25*M.pow1); } }
@@ -2136,11 +2256,15 @@ function renderCmd(){
     el.style.setProperty('--p',(rdy?360:Math.round((1-x[0]/x[1])*360))+'deg'); el.classList.toggle('rdy',rdy); el.disabled=!rdy;
   });
 }
-const cmdPas=(c,r)=>Object.keys(c.pas).map(k=>'+'+Math.round(c.pas[k]*CRM[r]*100)+'% '+CSTAT[k]).join(', ');
-const cmdWk=(c,r)=>Object.keys(c.wk).map(k=>Math.round(c.wk[k]*CWK[r]*100)+'% '+CSTAT[k]).join(', ');
+const cmSg=v=>(v>0?'+':'')+Math.round(v*100)+'%';
+const cmdPas=(c,r)=>Object.keys(c.pas).map(k=>cmSg(c.pas[k]*CRM[r])+' '+CSTAT[k]).join(', ');
+const cmdWk=(c,r)=>Object.keys(c.wk).map(k=>cmSg(c.wk[k]*CWK[r])+' '+CSTAT[k]).join(', ');
 function cmdAct(s){
   const q=s.split(':'), p=cmdP();
-  if(q[0]==='sel'){ UI.cm=q[1]; UI.cmm=q[1]; UI.cmScroll=0; }
+  if(q[0]==='open'){ UI.cm=q[1]; UI.cmm=q[1]; UI.cmw=q[2]||'cmd'; UI.cmv='info'; }
+  else if(q[0]==='info'){ UI.cmv='info'; }
+  else if(q[0]==='spec'){ UI.cmv='spec'; }
+  else if(q[0]==='flt'){ UI.cmf=q[1]; if(q[2]) UI.cmw=q[2]; }
   else if(q[0]==='close'){ UI.cmm=''; }
   else if(q[0]==='eq'){ if(p.own[q[1]]!==undefined) p.eq=q[1]; }
   else if(q[0]==='buy') cmdBuy(q[1],+q[2]);
@@ -2149,26 +2273,30 @@ function cmdAct(s){
   else if(q[0]==='pack'){ cmdPack(q[1]); return; }
   const mp=armoryEl.querySelector('.cmpanel'), sc=mp?mp.scrollTop:0; save(); renderArmory(); const np=armoryEl.querySelector('.cmpanel'); if(np) np.scrollTop=sc;
 }
-function commandHtml(){
-  if(!cmdUnlocked()) return '<div class="wrap cmdv"><div class="card" style="--c:#6b7a85"><div class="ct"><span class="cn">Locked</span></div><div class="cv">Clear level '+CMD_LVL+' in any world to unlock commanders: leaders with a buff, a weakness and two abilities you tap during a level. Achievements will earn you the points to specialize them.</div></div></div>';
-  const p=cmdP(), left=cmdLeft(), sel=CMDBY[UI.cm]||CMDBY[p.eq];
-  let h='<div class="wrap cmdv"><div class="ahead" style="margin-bottom:6px"><span class="note"><b>Command</b></span><div class="cr"><span class="lbl">Command points</span><b>'+left+'</b></div></div>'
-    +'<div class="note"><b>One commander leads each run.</b> Each commander has a buff, a weakness and two abilities you tap during a level. Higher rarity strengthens the buff, softens the weakness and unlocks the second ability. Earn Command Points from achievements (1 for Bronze and Silver, 2 for Gold, 3 for Platinum) and spend them on specialties below. Capstones unlock new capabilities.</div>';
-  CMDS.forEach(c=>{
-    const own=p.own[c.id], has=own!==undefined, r=has?own:0, eq=p.eq===c.id;
-    h+='<div class="card" style="--c:'+c.color+'"><canvas class="tprev'+(has?'':' dim')+'" data-tp="'+c.id+'" data-r="'+r+'" width="440" height="260"></canvas><div class="ct"><span class="cn">'+c.name+'</span><span class="chip" style="--c:'+(has?RAR[r].color:'#6b7a85')+'">'+(has?CRAR[r]:'Not owned')+'</span></div>'
-      +'<div class="cv"><b style="color:'+c.color+'">'+c.role+'.</b> Buff: '+cmdPas(c,r)+'. Weakness: '+cmdWk(c,r)+'.</div>'
-      +'<div class="cv">1. <b>'+c.ab[0].n+'</b> ('+c.ab[0].cd+'s) '+c.ab[0].d+'<br>2. <b>'+c.ab[1].n+'</b> ('+c.ab[1].cd+'s) '+c.ab[1].d+(has&&r<1?' <span class="note">Unlocks at Rare, or with this commander\'s Branch capstone.</span>':'')+'</div>'
-      +'<div style="display:flex;gap:6px;flex-wrap:wrap">'
-      +(has?'<button class="btn" type="button" data-cmd="eq:'+c.id+'" style="--c:'+c.color+'" '+(eq?'disabled':'')+'>'+(eq?'In command':'Assign')+'</button><button class="btn" type="button" data-cmd="sel:'+c.id+'" style="--c:'+c.color+'">Specialties</button>':'')
-      +(r<3||!has?'<button class="btn" type="button" data-cmd="buy:'+c.id+':'+(has?r+1:0)+'" style="--c:#7df9ff" '+((P.gems||0)<CRP[has?r+1:0]-(has?CRP[r]:0)?'disabled':'')+'>'+(has?'Upgrade to '+CRAR[r+1]:'Recruit')+' <small>'+(CRP[has?r+1:0]-(has?CRP[r]:0))+' gems</small></button>':'')
-      +'</div></div>';
-  });
-  const c=CMDBY[UI.cmm], own=c?p.own[c.id]:undefined;
-  if(c&&own!==undefined){
-    let m='';
+const cmTier=c=>c.tier|0;
+const CMFLT=[['all','All'],['0','Common'],['1','Rare'],['2','Epic'],['3','Legendary'],['own','Owned']];
+function cmTile(c,view){
+  const p=cmdP(), own=p.own[c.id], has=own!==undefined, r=has?own:cmTier(c), eq=p.eq===c.id;
+  return '<button type="button" class="cmtile'+(has?'':' lk')+(eq?' eq':'')+'" data-cmd="open:'+c.id+':'+view+'" style="--c:'+c.color+';--rc:'+RAR[r].color+'" aria-label="'+c.name+', '+CRAR[r]+'">'
+    +'<canvas class="tprev" data-tp="'+c.id+'" data-r="'+r+'" width="240" height="170"></canvas>'
+    +'<span class="tn">'+c.name+'</span><span class="tr">'+c.role+'</span>'
+    +'<span class="ts2" style="color:'+RAR[r].color+'">'+(eq?'In command':has?CRAR[r]:CRAR[r]+' &middot; '+CRP[r])+'</span></button>';
+}
+function cmGrid(view){
+  const p=cmdP(), f=UI.cmf||'all', list=CMDS.filter(c=>{ const own=p.own[c.id], r=own!==undefined?own:cmTier(c); return f==='all'||(f==='own'?own!==undefined:+f===r); })
+    .sort((x,y)=>((p.own[y.id]!==undefined)-(p.own[x.id]!==undefined))||(cmTier(x)-cmTier(y)));
+  return '<div class="cmflt" role="group" aria-label="Filter commanders">'+CMFLT.map(x=>'<button type="button" class="chip cf'+(f===x[0]?' on':'')+'" data-cmd="flt:'+x[0]+':'+view+'" style="--c:'+(/^\d$/.test(x[0])?RAR[+x[0]].color:'#7df9ff')+'">'+x[1]+'</button>').join('')+'</div>'
+    +'<div class="cmgrid">'+(list.length?list.map(c=>cmTile(c,view)).join(''):'<div class="note" style="grid-column:1/-1">No commanders here yet.</div>')+'</div>';
+}
+/* the commander sheet: details and recruiting on one page, specialties on another */
+function cmModal(view){
+  if(!UI.cmm||UI.cmw!==view) return ''; const c=CMDBY[UI.cmm]; if(!c) return '';
+  const p=cmdP(), left=cmdLeft(), own=p.own[c.id], has=own!==undefined, tier=cmTier(c), r=has?own:tier, eq=p.eq===c.id, V=view;
+  let m='';
+  const head=(sub,back)=>'<div class="cmhead" style="--c:'+c.color+'"><div><div class="cn">'+c.name+'</div><div class="note">'+sub+'</div></div><div style="display:flex;gap:6px;flex:none">'+(back?'<button class="btn sm" type="button" data-cmd="info:'+c.id+'" style="--c:'+c.color+'">Back</button>':'')+'<button class="btn sm" type="button" data-cmd="close" style="--c:'+c.color+'" aria-label="Close">Done</button></div></div>';
+  if(UI.cmv==='spec'&&has){
     const tl=cmdTL(c.id);
-    m+='<div class="cmhead" style="--c:'+c.color+'"><div><div class="cn">'+c.name+'</div><div class="note">Specialties. Capstones need '+CCAPNEED+' points spent in their branch. You have <b>'+left+'</b> to spend.</div></div><button class="btn sm" type="button" data-cmd="close" style="--c:'+c.color+'" aria-label="Close">Done</button></div>';
+    m+=head('Specialties. Capstones need '+CCAPNEED+' points spent in their branch. You have <b>'+left+'</b> to spend.',true);
     c.br.forEach(b=>{
       const bs=cmdBranchSpent(c,b);
       m+='<div class="card" style="--c:'+c.color+'"><div class="ct"><span class="cn">'+b.n+'</span><span class="chip" style="--c:'+c.color+'">'+bs+' spent</span></div>';
@@ -2180,9 +2308,25 @@ function commandHtml(){
       m+='</div>';
     });
     m+='<button class="btn" type="button" data-cmd="reset:'+c.id+'" style="--c:#ff3860">Refund '+c.name+' points</button>';
-      h+='</div><div class="cmmodal" role="dialog" aria-modal="true"><div class="cmbk" data-cmd="close"></div><div class="cmpanel" style="--c:'+c.color+'">'+m+'</div></div>'; return h;
+  } else {
+    m+=head(c.role+' &middot; <span style="color:'+RAR[r].color+'">'+CRAR[r]+(has?'':' recruit')+'</span>');
+    m+='<canvas class="tprev big" data-tp="'+c.id+'" data-r="'+r+'" width="440" height="260"></canvas>';
+    m+='<div class="cv"><b style="color:'+c.color+'">Buff:</b> '+cmdPas(c,r)+'.<br><b style="color:#ff6b86">Weakness:</b> '+cmdWk(c,r)+'.</div>';
+    m+='<div class="cv">1. <b>'+c.ab[0].n+'</b> ('+c.ab[0].cd+'s) '+c.ab[0].d+'<br>2. <b>'+c.ab[1].n+'</b> ('+c.ab[1].cd+'s) '+c.ab[1].d+(r<1?' <span class="note">Unlocks at Rare, or with this commander\'s Branch capstone.</span>':'')+'</div>';
+    m+='<div class="cmbtns">';
+    if(has) m+='<button class="btn" type="button" data-cmd="eq:'+c.id+'" style="--c:'+c.color+'" '+(eq?'disabled':'')+'>'+(eq?'In command':'Assign')+'</button><button class="btn" type="button" data-cmd="spec:'+c.id+'" style="--c:'+c.color+'">Specialties</button>';
+    for(let k=Math.max(tier,has?own+1:0);k<4;k++){ const price=CRP[k]-(has?CRP[own]:0); m+='<button class="btn" type="button" data-cmd="buy:'+c.id+':'+k+'" style="--c:'+RAR[k].color+'" '+((P.gems||0)<price?'disabled':'')+'>'+(has?'Upgrade to ':'Recruit as ')+CRAR[k]+' <small>'+price+' gems</small></button>'; }
+    if(has&&own===3) m+='<span class="note">Maximum rarity</span>';
+    m+='</div>';
   }
-  return h+'</div>';
+  return '<div class="cmmodal" role="dialog" aria-modal="true"><div class="cmbk" data-cmd="close"></div><div class="cmpanel" style="--c:'+c.color+'">'+m+'</div></div>';
+}
+function commandHtml(){
+  if(!cmdUnlocked()) return '<div class="wrap cmdv"><div class="card" style="--c:#6b7a85"><div class="ct"><span class="cn">Locked</span></div><div class="cv">Clear level '+CMD_LVL+' in any world to unlock commanders: leaders with a buff, a weakness and two abilities you tap during a level. Achievements will earn you the points to specialize them.</div></div></div>';
+  const left=cmdLeft();
+  return '<div class="wrap cmdv"><div class="ahead" style="margin-bottom:6px"><span class="note"><b>Command</b></span><div class="cr"><span class="lbl">Command points</span><b>'+left+'</b></div></div>'
+    +'<div class="note"><b>One commander leads each run.</b> Tap a commander to see their buff, weakness and abilities, assign them, recruit or upgrade them, and spend Command Points on specialties. Higher rarity strengthens the buff, softens the weakness and unlocks the second ability. Earn Command Points from achievements (1 for Bronze and Silver, 2 for Gold, 3 for Platinum).</div>'
+    +cmGrid('cmd')+'</div>'+cmModal('cmd');
 }
 /* ================= guided tutorials ================= */
 /* Small, skippable coach cards that introduce each system the first time it matters. Seen flags live in P.tut; Settings can replay them all. */
@@ -2290,7 +2434,7 @@ function cmdPack(id){
   if((P.gems||0)<pk.cost){ toast('Not enough gems.'); return; }
   P.gems-=pk.cost;
   let x=Math.random()*pk.odds.reduce((a,b)=>a+b,0), r=0; for(let i=0;i<4;i++){ x-=pk.odds[i]; if(x<=0){ r=i; break; } }
-  const need=CMDS.filter(c=>p.own[c.id]===undefined||p.own[c.id]<r), pool=need.length?need:CMDS, c=pool[Math.floor(Math.random()*pool.length)], cur=p.own[c.id];
+  const ok=CMDS.filter(c=>(c.tier|0)<=r), need=ok.filter(c=>p.own[c.id]===undefined||p.own[c.id]<r), pool=need.length?need:ok, c=pool[Math.floor(Math.random()*pool.length)], cur=p.own[c.id];
   let res; if(cur===undefined){ p.own[c.id]=r; res='NEW COMMANDER'; } else if(r>cur){ p.own[c.id]=r; res='UPGRADED TO '+CRAR[r].toUpperCase(); } else { const g=Math.round(CRP[r]*0.4); P.gems+=g; res='DUPLICATE: +'+g+' gems'; }
   try{ logEv('cpack',id); }catch(e){} save(); showCmdReveal(pk,c,r,res); renderArmory();
 }
@@ -2300,18 +2444,11 @@ function showCmdReveal(pk,c,r,res){
   o.addEventListener('click',e=>{ if(e.target.closest('button')) o.remove(); }); document.body.appendChild(o); const b=o.querySelector('button'); if(b) b.focus({preventScroll:true});
 }
 function marketHtml(){
-  const p=cmdP(); let h='<div class="note" style="margin:10px 0 4px" id="cmarket"><b>Commander Market.</b> '+(cmdUnlocked()?'Recruit commanders and raise their rarity with gems. Rarity strengthens the buff, softens the weakness and unlocks the second ability.':'Opens when you clear level '+CMD_LVL+'.')+'</div>';
+  const p=cmdP(); let h='<div class="note" style="margin:10px 0 4px" id="cmarket"><b>Commander Market.</b> '+(cmdUnlocked()?'Tap a commander to see them and recruit or upgrade them with gems. Rarity strengthens the buff, softens the weakness and unlocks the second ability.':'Opens when you clear level '+CMD_LVL+'.')+'</div>';
   if(!cmdUnlocked()) return h;
   CPACKS.forEach(pk=>{ h+='<div class="card" style="--c:'+pk.color+'"><div class="ct"><span class="cn">'+pk.name+'</span><span class="chip" style="--c:'+pk.color+'">Command pack</span></div><div class="cv">'+pk.blurb+' Duplicates refund gems.</div><button class="btn" type="button" data-cmd="pack:'+pk.id+'" style="--c:'+pk.color+'" '+((P.gems||0)<pk.cost?'disabled':'')+'>Open <small>'+pk.cost+' gems</small></button></div>'; });
-  CMDS.forEach(c=>{
-    const own=p.own[c.id], has=own!==undefined, top=has?own:-1;
-    h+='<div class="card" style="--c:'+c.color+'"><div class="ct"><span class="cn">'+c.name+'</span><span class="chip" style="--c:'+(has?RAR[own].color:'#6b7a85')+'">'+(has?CRAR[own]:'Not owned')+'</span></div>'
-      +'<div class="cv"><b style="color:'+c.color+'">'+c.role+'.</b> '+cmdPas(c,Math.max(0,top))+'. Weakness: '+cmdWk(c,Math.max(0,top))+'.</div><div style="display:flex;gap:6px;flex-wrap:wrap">';
-    for(let r=0;r<4;r++){ if(r<=top) continue; const price=CRP[r]-(has?CRP[own]:0); h+='<button class="btn" type="button" data-cmd="buy:'+c.id+':'+r+'" style="--c:'+RAR[r].color+'" '+((P.gems||0)<price?'disabled':'')+'>'+CRAR[r]+' <small>'+price+' gems</small></button>'; }
-    if(top===3) h+='<span class="note">Maximum rarity</span>';
-    h+='</div></div>';
-  });
-  return h;
+  h+=cmGrid('shop');
+  return h+cmModal('shop');
 }
 function blast(x,y,R,dmg,floor,src){
   dmg*=cmM('blast');
@@ -2687,7 +2824,7 @@ function update(dt){
       if(G.nextT!==null){ G.nextT-=dt; if(G.nextT<=0) startWave(G.wave+1); }
     }
   }
-  for(const e of G.enemies){ e.slow=1; if(e.frz>0){ e.frz-=dt; e.slow=0.04; } }
+  { const csl=G.cm&&G.cm.slowT>0?G.cm.slowF:1; for(const e of G.enemies){ e.slow=1; if(e.frz>0){ e.frz-=dt; e.slow=0.04; } else if(csl<1) e.slow=csl; } }
   updateFields(dt); updateMines(dt);
   updateTurret(dt);
   tickPins(dt); autoTools(dt); autoMortar(dt); updateCmd(dt);
@@ -3136,30 +3273,81 @@ function skVex(g,o,rgb,t,r,rr,hot){
   tsGlow(g,0,2.5,12,rgb,.7+.25*Math.sin(t*4)); tsGlow(g,0,2.5,4,'255,255,255',.9);
   if(r>=2){ for(let k=0;k<2;k++){ const a=t*1.1+k*3.1416, px=Math.cos(a)*33, py=-2+Math.sin(a)*10; tsBevel(g,tsPoly([px,py-4,px+2.6,py,px,py+4,px-2.6,py]),tsLin(g,0,py-4,0,py+4,[[0,'#fff'],[1,'#8a4bff']]),'rgba('+rr+',.9)'); tsGlow(g,px,py,7,rr,.4); } }
 }
+/* Generic commander turret: hull x barrel x side-gear x effect, all tinted by the commander's colour, so every commander has their own silhouette. */
+const tsMix=(rgb,k,base)=>rgb.split(',').map((v,i)=>Math.round(+v*k+base[i]*(1-k)));
+const tsC=(a,al)=>al==null?'rgb('+a.join(',')+')':'rgba('+a.join(',')+','+al+')';
+function skGeneric(g,o,rgb,t,r,rr,hot){
+  const L=o.look||{}, n=o.n, rec=(o.recoil||0)*5, act=(o.over>0)?1:0, sh=o.sh==null?1:o.sh, fl=Math.min(1,o.flash||0), pu=.5+.5*Math.sin(t*3);
+  const dk=tsMix(rgb,.16,[8,10,16]), md=tsMix(rgb,.2,[72,84,100]), lt=tsMix(rgb,.16,[200,212,228]), A=a=>'rgba('+rgb+','+a+')';
+  const metal=(y0,y1)=>tsLin(g,0,y0,0,y1,[[0,tsC(lt)],[.4,tsC(md)],[1,tsC(dk)]]), metalH=(x0,x1)=>tsLin(g,x0,0,x1,0,[[0,tsC(dk)],[.35,tsC(lt)],[.6,tsC(md)],[1,tsC(dk)]]);
+  /* ---- effects behind the body ---- */
+  const fx=L.fx;
+  if(fx==='halo'){ for(let k=0;k<2;k++){ g.save(); g.translate(0,2); g.rotate(t*(k?-.35:.4)); g.setLineDash(k?[2,6]:[6,8]); g.strokeStyle=A((k?.28:.4)+.2*sh); g.lineWidth=1.2; g.beginPath(); g.arc(0,0,k?33:40,0,6.2832); g.stroke(); g.restore(); } }
+  if(fx==='rings'){ for(let k=0;k<2;k++){ const ph=(t*.6+k*.5)%1; g.strokeStyle=A(.6*(1-ph)); g.lineWidth=1.3; g.beginPath(); g.ellipse(0,17,14+ph*30,3+ph*7,0,0,6.2832); g.stroke(); } }
+  if(fx==='pulse') tsGlow(g,0,6,36,rgb,.14+.12*pu+.2*fl);
+  if(fx==='runes'){ for(let k=0;k<4;k++){ const a=t*.8+k*1.5708, x=Math.cos(a)*31, y=-6+Math.sin(a)*12, d=a%6.28>3.14?.6:1; g.save(); g.translate(x,y); g.rotate(a); g.strokeStyle=A(.8*d); g.lineWidth=1; g.strokeRect(-2.4,-2.4,4.8,4.8); g.restore(); tsGlow(g,x,y,6,rgb,.3*d); } }
+  if(fx==='sparks'){ for(let k=0;k<9;k++){ const ph=(t*.9+k/9)%1, x=(tsFr(k*7.3+Math.floor(t*.9+k/9))-.5)*44, y=16-ph*50; tsGlow(g,x,y,2.6*(1-ph)+.7,rgb,.95*(1-ph)); } }
+  /* ---- side gear ---- */
+  for(const sg of [-1,1]){
+    if(L.side==='drums'){ const cx=24*sg, cy=9; const dg=g.createRadialGradient(cx-2.5,cy-3,1,cx,cy,10); dg.addColorStop(0,tsC(lt)); dg.addColorStop(.5,tsC(md)); dg.addColorStop(1,tsC(dk)); g.fillStyle=dg; g.beginPath(); g.arc(cx,cy,9,0,6.2832); g.fill(); g.strokeStyle='rgba(0,0,0,.8)'; g.lineWidth=1; g.stroke(); g.strokeStyle=A(.95); g.lineWidth=1.5; g.beginPath(); g.arc(cx,cy,6.4,0,6.2832); g.stroke(); g.save(); g.translate(cx,cy); g.rotate(t*(act?6:1)*sg); g.fillStyle='#07090c'; for(let i=0;i<6;i++){ g.rotate(1.0472); g.fillRect(-1,-5.2,2,3); } g.restore(); tsGlow(g,cx,cy,7,rgb,.25+.3*act); }
+    else if(L.side==='pods'){ g.save(); g.translate(25*sg,5); g.rotate(.18*sg); tsBevel(g,tsPoly([-7,-11,7,-11,8,12,-8,12]),metalH(-8,8)); for(let k=0;k<3;k++){ g.fillStyle=A(.35+.5*(.5+.5*Math.sin(t*4+k+sg))); g.fillRect(-4,-8+k*7,8,4); } g.strokeStyle=A(.8); g.lineWidth=.9; g.beginPath(); g.moveTo(-7,-3); g.lineTo(7,-3); g.stroke(); g.restore(); }
+    else if(L.side==='orbs'){ const x=27*sg, y=2+Math.sin(t*2+sg)*3; g.strokeStyle=A(.28); g.lineWidth=1; g.beginPath(); g.moveTo(10*sg,6); g.lineTo(x,y); g.stroke(); tsGlow(g,x,y,13,rgb,.5+.2*pu); const og=g.createRadialGradient(x-2,y-2.5,.5,x,y,6.5); og.addColorStop(0,'#fff'); og.addColorStop(.35,tsC(tsMix(rgb,.9,[255,255,255]))); og.addColorStop(1,tsC(dk)); g.fillStyle=og; g.beginPath(); g.arc(x,y,6,0,6.2832); g.fill(); g.save(); g.translate(x,y); g.rotate(.5*sg+t*.6); g.strokeStyle=A(.9); g.lineWidth=1; g.beginPath(); g.ellipse(0,0,10,3,0,0,6.2832); g.stroke(); g.restore(); }
+    else if(L.side==='wings'){ tsBevel(g,tsPoly(tsMir([5,-4,22,-13,40,-5,31,6,27,17,9,14],sg)),tsLin(g,0,-13,0,17,[[0,tsC(lt)],[.5,tsC(md)],[1,tsC(dk)]])); g.strokeStyle=A(.95); g.lineWidth=1.4; g.beginPath(); g.moveTo(6*sg,-4); g.lineTo(22*sg,-12); g.lineTo(39*sg,-5); g.stroke(); g.strokeStyle=A(.4); g.lineWidth=.8; g.beginPath(); g.moveTo(11*sg,6); g.lineTo(31*sg,4); g.stroke(); tsGlow(g,39*sg,-5,8,rgb,.6+.2*pu); }
+    else { /* fins */ tsBevel(g,tsPoly(tsMir([11,17,14,-12,22,-22,25,11],sg)),metalH(11*sg,25*sg)); g.strokeStyle=A(.95); g.lineWidth=1.6; g.beginPath(); g.moveTo(18*sg,9); g.lineTo(19*sg,-14); g.stroke(); tsGlow(g,19*sg,-8,9,rgb,.35+.25*pu); tsDot(g,22*sg,-21,1.6,A(1)); }
+  }
+  /* ---- barrels ---- */
+  const tip=L.brl==='rail'?-37:L.brl==='cannon'?-30:L.brl==='coil'?-34:-32;
+  for(let i=0;i<n;i++){
+    g.save(); g.rotate((i-(n-1)/2)*BARREL_SPREAD);
+    if(L.brl==='rail'){ tsBevel(g,tsPoly([-3,-3,-1.7,-37+rec,1.7,-37+rec,3,-3]),metalH(-3,3)); g.globalCompositeOperation='lighter'; g.fillStyle=A(.85); g.fillRect(-.5,-35+rec,1,30); g.globalCompositeOperation='source-over'; for(const sg of [-1,1]) tsBevel(g,tsPoly([2.2*sg,-12+rec*.5,4.8*sg,-17+rec*.5,2*sg,-21+rec*.5]),metalH(-4,4)); }
+    else if(L.brl==='cannon'){ tsBevel(g,tsPoly([-5.6,-3,-4.6,-28+rec,4.6,-28+rec,5.6,-3]),metalH(-5,5)); tsBevel(g,tsPoly([-7,-28+rec,-7,-33+rec,7,-33+rec,7,-28+rec]),metalH(-7,7)); g.fillStyle='#050608'; g.fillRect(-4.5,-32+rec,1.2,2.6); g.fillRect(3.3,-32+rec,1.2,2.6); g.fillStyle=A(.9); g.fillRect(-5,-17+rec*.5,10,1.2); }
+    else if(L.brl==='coil'){ tsBevel(g,tsPoly([-3.4,-3,-2.6,-34+rec,2.6,-34+rec,3.4,-3]),metalH(-3,3)); for(let k=0;k<4;k++){ const y=-9-k*7+rec*.5; g.strokeStyle=A(.45+.5*(.5+.5*Math.sin(t*6-k*1.2))); g.lineWidth=1.5; g.beginPath(); g.ellipse(0,y,4.2,1.5,0,0,6.2832); g.stroke(); } }
+    else { tsBevel(g,tsPoly([-4.4,-3,-3.4,-32+rec,3.4,-32+rec,4.4,-3]),metalH(-4,4)); for(const y of [-12,-22]){ g.fillStyle=A(.9); g.fillRect(-4.6,y+rec*.5,9.2,1.3); } g.fillStyle='#07090c'; g.fillRect(-3.6,-34+rec,7.2,3); }
+    tsGlow(g,0,tip+rec-1,6+hot*6,rgb,.4+.5*hot+.35*act);
+    if(fx==='flames'||act){ for(let k=0;k<3;k++){ const ph=(t*7+k*.37+i*.2)%1, fx2=(tsFr(Math.floor(t*14)+k+i*9)-.5)*4*ph; tsGlow(g,fx2,tip-4+rec-ph*15,5*(1-ph)+2,k?'255,160,50':'255,235,190',(act?.8:.5)*(1-ph)); } }
+    g.restore();
+  }
+  /* ---- hull ---- */
+  const HP={dome:[-14,17,-16,4,'q'],wedge:[-13,17,-16,5,-8,-9,8,-9,16,5,13,17],slab:[-17,17,-18,0,-12,-8,12,-8,18,0,17,17],spire:[-10,17,-14,2,0,-22,14,2,10,17],crown:[-14,17,-16,4,-12,-4,-8,-14,-4,-6,0,-19,4,-6,8,-14,12,-4,16,4,14,17]};
+  const pf=L.hull==='dome'?(g2=>{ g2.beginPath(); g2.moveTo(-14,17); g2.lineTo(-16,4); g2.quadraticCurveTo(0,-19,16,4); g2.lineTo(14,17); g2.closePath(); }):tsPoly(HP[L.hull||'wedge']);
+  tsBevel(g,pf,metal(-14,17));
+  g.save(); pf(g); g.clip(); g.fillStyle=tsLin(g,-16,0,0,0,[[0,'rgba(0,0,0,.45)'],[1,'rgba(0,0,0,0)']]); g.fillRect(-20,-24,20,44); g.fillStyle=tsLin(g,0,0,16,0,[[0,'rgba(255,255,255,0)'],[1,'rgba(255,255,255,.2)']]); g.fillRect(0,-24,20,44);
+  g.strokeStyle=A(.5); g.lineWidth=.8; g.beginPath(); g.moveTo(-14,12); g.lineTo(-4,6); g.lineTo(0,17); g.moveTo(14,12); g.lineTo(4,6); g.lineTo(0,17); g.stroke(); g.restore();
+  g.strokeStyle=A(.75+.2*pu); g.lineWidth=1; pf(g); g.stroke();
+  if(r>=1){ g.strokeStyle='rgba('+rr+',.9)'; g.lineWidth=1.1; g.beginPath(); g.moveTo(-12,8); g.lineTo(0,-2); g.lineTo(12,8); g.stroke(); }
+  /* core / visor */
+  if(L.hull==='slab'){ tsBevel(g,tsPoly([-9,-1,9,-1,7,5,-7,5]),'#05070a',A(.9)); tsGlow(g,0,2,12,rgb,.6+.2*pu); g.fillStyle='rgba(255,255,255,.9)'; g.fillRect(-6,1.2,12,1.3); }
+  else if(L.hull==='spire'){ tsBevel(g,tsPoly([0,-8,3,2,0,12,-3,2]),'#05070a',A(.95)); tsGlow(g,0,3,12,rgb,.7+.2*pu); tsGlow(g,0,3,4,'255,255,255',.9); }
+  else { tsGlow(g,0,6,10+hot*3+pu*1.5,rgb,.95); tsGlow(g,0,6,4,'255,255,255',.9); }
+  tsRivets(g,[-12,12,12,12,-9,-1,9,-1]);
+  if(r>=2){ for(let k=0;k<2;k++){ const a=t*1.1+k*3.1416, px=Math.cos(a)*35, py=-4+Math.sin(a)*10; tsBevel(g,tsPoly([px,py-4,px+2.6,py,px,py+4,px-2.6,py]),tsLin(g,0,py-4,0,py+4,[[0,'#fff'],[1,tsC(md)]]),'rgba('+rr+',.9)'); tsGlow(g,px,py,7,rr,.4); } }
+}
 const TSK={warden:skWarden,rook:skRook,vex:skVex};
 function paintTurret(g,o){
-  const rgb=TSKIN[o.id], t=o.t, r=o.r|0, rr=hexRgb(RAR[r].color), hot=Math.min(1,o.hot||0);
+  const rgb=o.rgb||TSKIN[o.id], t=o.t, r=o.r|0, rr=hexRgb(RAR[r].color), hot=Math.min(1,o.hot||0);
   g.save(); g.lineJoin='round'; g.lineCap='round';
   if(r>=3) tsGlow(g,0,4,48,rr,.2+.06*Math.sin(t*3));
   tsGlow(g,0,18,30,rgb,.3+.08*Math.sin(t*10));
-  TSK[o.id](g,o,rgb,t,r,rr,hot);
+  (TSK[o.id]||skGeneric)(g,o,rgb,t,r,rr,hot);
   if(r>=3){ for(let k=0;k<6;k++){ const ph=(t*.5+k/6)%1, a=k*2.4+t*.3; const px=Math.cos(a)*(14+ph*26), py=4-ph*34; tsGlow(g,px,py,3.2*(1-ph)+1,rr,.9*(1-ph)); } }
   g.restore();
 }
-/* Arsenal preview: a live turret on every commander card, shown at the rarity the player owns */
+/* Arsenal previews: a live turret on every commander tile and sheet; only the ones on screen are drawn */
+let prevTick=0;
 setInterval(()=>{
   if(typeof armoryEl==='undefined'||armoryEl.hidden) return;
   const cs=armoryEl.querySelectorAll('canvas.tprev'); if(!cs.length) return;
-  const t=performance.now()/1000;
-  cs.forEach(cv=>{ const g=cv.getContext('2d'), id=cv.dataset.tp, r=+cv.dataset.r||0, k=(t*.55)%3, pulse=Math.max(0,Math.sin(t*2.2));
-    g.setTransform(1,0,0,1,0,0); g.clearRect(0,0,cv.width,cv.height); g.setTransform(2.9,0,0,2.9,cv.width/2,cv.height*.66);
-    paintTurret(g,{id:id,r:r,t:t,hot:pulse>.9?.8:0,recoil:pulse>.9?.8:0,over:id==='rook'&&k>2?1:0,n:1+Math.min(2,r),sh:.55+.45*Math.sin(t*1.2)**2,flash:id==='warden'&&k<.3?1-k/.3:0,a1:true,a2:r>=1,c1:1}); });
+  const t=performance.now()/1000, vh=innerHeight; prevTick++;
+  cs.forEach(cv=>{ const big=cv.classList.contains('big'); if(!big&&(prevTick&1)) return; const b=cv.getBoundingClientRect(); if(b.bottom<0||b.top>vh) return;
+    const g=cv.getContext('2d'), id=cv.dataset.tp, c=CMDBY[id]; if(!c) return; const r=+cv.dataset.r||0, k=(t*.55)%3, pulse=Math.max(0,Math.sin(t*2.2)), sc=Math.min(cv.width/150,cv.height/105);
+    g.setTransform(1,0,0,1,0,0); g.clearRect(0,0,cv.width,cv.height); g.setTransform(sc,0,0,sc,cv.width/2,cv.height*.66);
+    paintTurret(g,{id:id,rgb:hexRgb(c.color),look:c.look,r:r,t:t,hot:pulse>.9?.8:0,recoil:pulse>.9?.8:0,over:(id==='rook'||c.look&&c.look.fx==='flames')&&k>2?1:0,n:1+Math.min(2,r),sh:.55+.45*Math.sin(t*1.2)**2,flash:id==='warden'&&k<.3?1-k/.3:0,a1:true,a2:r>=1,c1:1}); });
 },40);
 function drawTurret(){
   const q=G.cm;
-  if(q&&TSKIN[q.c.id]){
+  if(q){
     ctx.save(); ctx.translate(T.x,TURRET_Y);
-    paintTurret(ctx,{id:q.c.id,r:q.r,t:G.time,hot:T.recoil,recoil:T.recoil,over:q.over,n:1+L('barrels')+bst('barrel'),
+    paintTurret(ctx,{id:q.c.id,rgb:hexRgb(q.c.color),look:q.c.look,r:q.r,t:G.time,hot:T.recoil,recoil:T.recoil,over:(q.over>0||q.dmgT>0)?1:0,n:1+L('barrels')+bst('barrel'),
       sh:G.shMax?Math.max(0,G.sh)/G.shMax:0,flash:G.shFlash,a1:q.t1<=0,a2:q.M.unlock2&&q.t2<=0,c1:1-q.t1/Math.max(1,q.c.ab[0].cd*q.M.cd1)});
     ctx.restore(); return;
   }
@@ -3720,7 +3908,7 @@ function cmBuy(id){ const c=CARDBY[id]; if(!c) return false; const r=cmRank(id),
 function fuse(t,r){ if(r>=3||P.inv[t][r]<3) return false; P.inv[t][r]-=3; P.inv[t][r+1]++; save(); return true; }
 
 /* ================= home (armory) ================= */
-const UI={cm:'',cmm:'',nav:'battle',elite:false,cx:'mobs',ac:'wpn',uc:'',a0:'',ag:{wpn:'turret',disc:'survey',odds:'rate'}};
+const UI={cm:'',cmm:'',cmw:'cmd',cmv:'info',cmf:'all',nav:'battle',elite:false,cx:'mobs',ac:'wpn',uc:'',a0:'',ag:{wpn:'turret',disc:'survey',odds:'rate'}};
 let tab='turret', confirmReset=false;
 const worldOpen=i=>{ if(i===0) return true; if((((P.prog[WORLDS[i].id])||{}).best||0)>0) return true; /* already played: stays open */ return (((P.prog[WORLDS[i-1].id]||{}).best||0)>=LEVELS)&&starsOfWorld(WORLDS[i-1].id)>=ECON.gate; };
 const curWorld=()=>WORLDS.find(w=>w.id===P.world)||WORLDS[0];
@@ -4380,10 +4568,10 @@ window.__rr={save:save,paintTurret:paintTurret,coachGrab:coachGrab,GR:GR,CTL:CTL
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 80</div>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 81</div>
 <script>
 /* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
-(function(){ const BUILD=80; let busy=false, shown=false;
+(function(){ const BUILD=81; let busy=false, shown=false;
   const inRun=()=>{ try{ return typeof G!=='undefined'&&(G.state==='playing'||G.state==='cards'||G.state==='shop'||G.state==='paused'||G.state==='teach'||G.state==='ctl'); }catch(e){ return false; } };
   function wipeReload(){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
     if(n>=3) return;
