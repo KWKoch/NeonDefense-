@@ -310,6 +310,12 @@ body.menu{background:radial-gradient(140% 55% at 50% -5%,rgba(255,43,214,.22),rg
 .tab{border-radius:999px; display:inline-flex; align-items:center; gap:6px; padding:8px 13px}
 .tab .ic{flex:none}
 .card{border-radius:18px}
+.cmmodal{position:fixed; inset:0; z-index:60; display:flex; align-items:center; justify-content:center; padding:14px; box-sizing:border-box}
+.cmbk{position:absolute; inset:0; background:rgba(0,0,0,.82)}
+.cmpanel{position:relative; width:min(460px,100%); max-height:calc(100dvh - 28px); overflow-y:auto; overscroll-behavior:contain; display:flex; flex-direction:column; gap:10px; padding:14px; box-sizing:border-box; background:#05070c; border:1px solid var(--c); border-radius:20px; box-shadow:0 0 30px color-mix(in srgb,var(--c) 45%,transparent)}
+.cmhead{display:flex; justify-content:space-between; align-items:flex-start; gap:10px; position:sticky; top:-14px; margin:-14px -14px 0; padding:14px; background:#05070c; z-index:1; border-bottom:1px solid color-mix(in srgb,var(--c) 40%,#000)}
+.cmhead .btn{flex:none; white-space:nowrap; letter-spacing:.08em}
+.cmhead .cn{font-size:18px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--c)}
 canvas.tprev{align-self:center; width:220px; height:130px; max-width:100%; border-radius:14px; background:radial-gradient(ellipse at 50% 85%,color-mix(in srgb,var(--c) 22%,#05070c),#04060b 70%); border:1px solid color-mix(in srgb,var(--c) 30%,#000)}
 canvas.tprev.dim{filter:saturate(.35) brightness(.7)}
 .chip,.rtag{border-radius:999px}
@@ -2134,13 +2140,14 @@ const cmdPas=(c,r)=>Object.keys(c.pas).map(k=>'+'+Math.round(c.pas[k]*CRM[r]*100
 const cmdWk=(c,r)=>Object.keys(c.wk).map(k=>Math.round(c.wk[k]*CWK[r]*100)+'% '+CSTAT[k]).join(', ');
 function cmdAct(s){
   const q=s.split(':'), p=cmdP();
-  if(q[0]==='sel') UI.cm=q[1];
+  if(q[0]==='sel'){ UI.cm=q[1]; UI.cmm=q[1]; UI.cmScroll=0; }
+  else if(q[0]==='close'){ UI.cmm=''; }
   else if(q[0]==='eq'){ if(p.own[q[1]]!==undefined) p.eq=q[1]; }
   else if(q[0]==='buy') cmdBuy(q[1],+q[2]);
   else if(q[0]==='node') cmdNodeBuy(q[1],q[2]);
   else if(q[0]==='reset'){ p.tl[q[1]]={}; p.rs=p.rs||{}; p.rs[q[1]]=(+p.rs[q[1]]||0)+1; }
   else if(q[0]==='pack'){ cmdPack(q[1]); return; }
-  save(); renderArmory();
+  const mp=armoryEl.querySelector('.cmpanel'), sc=mp?mp.scrollTop:0; save(); renderArmory(); const np=armoryEl.querySelector('.cmpanel'); if(np) np.scrollTop=sc;
 }
 function commandHtml(){
   if(!cmdUnlocked()) return '<div class="wrap cmdv"><div class="card" style="--c:#6b7a85"><div class="ct"><span class="cn">Locked</span></div><div class="cv">Clear level '+CMD_LVL+' in any world to unlock commanders: leaders with a buff, a weakness and two abilities you tap during a level. Achievements will earn you the points to specialize them.</div></div></div>';
@@ -2157,21 +2164,23 @@ function commandHtml(){
       +(r<3||!has?'<button class="btn" type="button" data-cmd="buy:'+c.id+':'+(has?r+1:0)+'" style="--c:#7df9ff" '+((P.gems||0)<CRP[has?r+1:0]-(has?CRP[r]:0)?'disabled':'')+'>'+(has?'Upgrade to '+CRAR[r+1]:'Recruit')+' <small>'+(CRP[has?r+1:0]-(has?CRP[r]:0))+' gems</small></button>':'')
       +'</div></div>';
   });
-  const c=sel, own=p.own[c.id];
-  if(own!==undefined){
+  const c=CMDBY[UI.cmm], own=c?p.own[c.id]:undefined;
+  if(c&&own!==undefined){
+    let m='';
     const tl=cmdTL(c.id);
-    h+='<div class="note" style="margin:12px 0 4px"><b>'+c.name+' specialties.</b> Capstones need '+CCAPNEED+' points spent in their branch.</div>';
+    m+='<div class="cmhead" style="--c:'+c.color+'"><div><div class="cn">'+c.name+'</div><div class="note">Specialties. Capstones need '+CCAPNEED+' points spent in their branch. You have <b>'+left+'</b> to spend.</div></div><button class="btn sm" type="button" data-cmd="close" style="--c:'+c.color+'" aria-label="Close">Done</button></div>';
     c.br.forEach(b=>{
       const bs=cmdBranchSpent(c,b);
-      h+='<div class="card" style="--c:'+c.color+'"><div class="ct"><span class="cn">'+b.n+'</span><span class="chip" style="--c:'+c.color+'">'+bs+' spent</span></div>';
+      m+='<div class="card" style="--c:'+c.color+'"><div class="ct"><span class="cn">'+b.n+'</span><span class="chip" style="--c:'+c.color+'">'+bs+' spent</span></div>';
       b.nodes.forEach(nd=>{
         const l=tl[nd.id]|0, done=l>=nd.max, cost=done?0:cmdCost(nd,l), lock=nd.cap&&bs<CCAPNEED, can=!done&&!lock&&left>=cost;
-        h+='<div class="nd" style="display:flex;justify-content:space-between;align-items:center;gap:8px"><div class="cv"><b>'+nd.n+(nd.cap?' (capstone)':'')+'</b> <span class="note">'+l+'/'+nd.max+'</span><br><span class="note">'+nd.t+'</span></div>'
+        m+='<div class="nd" style="display:flex;justify-content:space-between;align-items:center;gap:8px"><div class="cv"><b>'+nd.n+(nd.cap?' (capstone)':'')+'</b> <span class="note">'+l+'/'+nd.max+'</span><br><span class="note">'+nd.t+'</span></div>'
           +'<button class="btn" type="button" data-cmd="node:'+c.id+':'+nd.id+'" style="--c:'+c.color+'" '+(can?'':'disabled')+'>'+(done?'Max':lock?'Locked':cost+' pt')+'</button></div>';
       });
-      h+='</div>';
+      m+='</div>';
     });
-    h+='<button class="btn" type="button" data-cmd="reset:'+c.id+'" style="--c:#ff3860">Refund '+c.name+' points</button>';
+    m+='<button class="btn" type="button" data-cmd="reset:'+c.id+'" style="--c:#ff3860">Refund '+c.name+' points</button>';
+      h+='</div><div class="cmmodal" role="dialog" aria-modal="true"><div class="cmbk" data-cmd="close"></div><div class="cmpanel" style="--c:'+c.color+'">'+m+'</div></div>'; return h;
   }
   return h+'</div>';
 }
@@ -3711,7 +3720,7 @@ function cmBuy(id){ const c=CARDBY[id]; if(!c) return false; const r=cmRank(id),
 function fuse(t,r){ if(r>=3||P.inv[t][r]<3) return false; P.inv[t][r]-=3; P.inv[t][r+1]++; save(); return true; }
 
 /* ================= home (armory) ================= */
-const UI={cm:'',nav:'battle',elite:false,cx:'mobs',ac:'wpn',uc:'',a0:'',ag:{wpn:'turret',disc:'survey',odds:'rate'}};
+const UI={cm:'',cmm:'',nav:'battle',elite:false,cx:'mobs',ac:'wpn',uc:'',a0:'',ag:{wpn:'turret',disc:'survey',odds:'rate'}};
 let tab='turret', confirmReset=false;
 const worldOpen=i=>{ if(i===0) return true; if((((P.prog[WORLDS[i].id])||{}).best||0)>0) return true; /* already played: stays open */ return (((P.prog[WORLDS[i-1].id]||{}).best||0)>=LEVELS)&&starsOfWorld(WORLDS[i-1].id)>=ECON.gate; };
 const curWorld=()=>WORLDS.find(w=>w.id===P.world)||WORLDS[0];
@@ -4371,10 +4380,10 @@ window.__rr={save:save,paintTurret:paintTurret,coachGrab:coachGrab,GR:GR,CTL:CTL
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 79</div>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 80</div>
 <script>
 /* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
-(function(){ const BUILD=79; let busy=false, shown=false;
+(function(){ const BUILD=80; let busy=false, shown=false;
   const inRun=()=>{ try{ return typeof G!=='undefined'&&(G.state==='playing'||G.state==='cards'||G.state==='shop'||G.state==='paused'||G.state==='teach'||G.state==='ctl'); }catch(e){ return false; } };
   function wipeReload(){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
     if(n>=3) return;
