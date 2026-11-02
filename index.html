@@ -2598,19 +2598,22 @@ function updateFields(dt){
   }
   G.fields=G.fields.filter(f=>f.t<f.dur);
 }
+/* AI placement rule: defend the ozone line from above. Ground weapons (mines, fields, mortar shells) only land below it when a mob is already at the line or about to cross it. */
+const OZ_NEAR=60, OZ_CAP=34;
+const isLeaker=e=>!e.dead&&e.type!=='orb'&&e.y>=OZ_Y-OZ_NEAR&&e.y<GROUND-20;
 function autoTools(dt){
   G.autoT-=dt; if(G.autoT>0) return; G.autoT=0.4;
   if(canMine()&&!aiOff('mine')){
     let best=null,bs=-1e9,bx=0,by=0;
     for(const e of G.enemies){
       if(e.dead||e.y<40||e.y>GROUND-150||!supportOK(e)) continue;
-      const ym=clamp(e.y+(e.type==='boss'?70:130),230,GROUND-60);
+      const lk=isLeaker(e), ym=clamp(e.y+(e.type==='boss'?70:130),230,lk?GROUND-60:OZ_Y-OZ_CAP);
       if(ym<e.y-10) continue;
       const tt=e.vy>1?(ym-e.y)/e.vy:0, xm=clamp(e.x+(e.vx||0)*tt,30,W-30);
       let near=false; for(const m of G.mines) if(Math.hypot(m.x-xm,m.y-ym)<mineR()*0.8){ near=true; break; }
       if(near) continue;
-      const sc=e.y+90*(e.res.b-1)+(e.type==='swarm'?40:0);
-      if(e.res.b<0.7&&G.enemies.length>1) continue;
+      const sc=e.y+90*(e.res.b-1)+(e.type==='swarm'?40:0)+(lk?1e4:0);
+      if(e.res.b<0.7&&G.enemies.length>1&&!lk) continue;
       if(sc>bs){ bs=sc; best=e; bx=xm; by=ym; }
     }
     if(best) placeMine(bx,by);
@@ -2620,10 +2623,11 @@ function autoTools(dt){
     const hw=fieldHW(); let best=null,bs=0;
     for(const e of G.enemies){
       if(e.dead||e.y<110||e.y>GROUND-230||e.type==='orb') continue;
-      const fy=Math.min(GROUND-170,e.y+(e.vy||30)*1.1+30), fx=clamp(e.x+(e.vx||0)*1.1,hw*0.4,W-hw*0.4);
+      const lk=isLeaker(e), fy=Math.min(lk?GROUND-170:OZ_Y-40,e.y+(e.vy||30)*1.1+30), fx=clamp(e.x+(e.vx||0)*1.1,hw*0.4,W-hw*0.4);
       if(G.fields.some(f=>Math.abs(f.x-fx)<hw*0.5&&Math.abs(f.y-fy)<45)) continue;
       let sc=0;
       for(const o of G.enemies){ if(o.dead||o.type==='orb') continue; if(G.fields.some(f=>Math.abs(o.x-f.x)<=f.hw&&Math.abs(o.y-f.y)<=f.h+o.r)) continue; if(Math.abs(o.x-fx)<=hw&&o.y<fy+10&&o.y>fy-150){ sc+=(o.type==='brute'||o.type==='shield'||o.type==='boss'||o.type==='chunk'||o.type==='egg')?3:1; } }
+      if(lk) sc+=4;
       if(sc>bs){ bs=sc; best={x:fx,y:fy}; }
     }
     if(best&&bs>=3) placeField(best.x,best.y);
@@ -2744,14 +2748,15 @@ function autoMortar(dt){
   const R=mortR(), live=G.enemies.filter(e=>!e.dead&&e.y>50&&e.y<GROUND-60);
   if(!live.length) return;
   let best=null, bs=0;
-  const sx=T.x, sy=TURRET_Y-30;
+  const sx=T.x, sy=TURRET_Y-30, lkOn=live.some(isLeaker), yCap=lkOn?GROUND-90:OZ_Y-OZ_CAP;
   for(const c of live){
+    if(!lkOn&&c.y>OZ_Y-OZ_CAP) continue;      /* nothing is leaking: only shell mobs that are still above the line */
     let tx=c.x, ty=c.y;
-    for(let k=0;k<2;k++){ const d=Math.hypot(tx-sx,ty-sy), t=0.8+0.9*d/700; tx=clamp(c.x+(c.vx||0)*t,24,W-24); ty=clamp(c.y+(c.vy||0)*t,110,GROUND-90); }
+    for(let k=0;k<2;k++){ const d=Math.hypot(tx-sx,ty-sy), t=0.8+0.9*d/700; tx=clamp(c.x+(c.vx||0)*t,24,W-24); ty=clamp(c.y+(c.vy||0)*t,110,yCap); }
     let sc=0;
     for(const e of live){
       const t=0.8+0.9*Math.hypot(tx-sx,ty-sy)/700, ex=e.x+(e.vx||0)*t, ey=e.y+(e.vy||0)*t, d=Math.hypot(ex-tx,ey-ty);
-      if(d<R*0.85+e.r*0.4){ const m=(e.res&&e.res.b)||1; sc+=(e.type==='boss'?8:1+Math.min(4,(e.maxhp||e.hp)/8))*Math.min(1.5,m)*(1-0.4*d/(R+e.r)); if(e.y>GROUND-300) sc+=1.5; }
+      if(d<R*0.85+e.r*0.4){ const m=(e.res&&e.res.b)||1; sc+=(e.type==='boss'?8:1+Math.min(4,(e.maxhp||e.hp)/8))*Math.min(1.5,m)*(1-0.4*d/(R+e.r)); if(isLeaker(e)) sc+=1.5; }
     }
     if(sc>bs){ bs=sc; best={x:tx,y:ty}; }
   }
@@ -4700,10 +4705,10 @@ window.__rr={openPack:openPack,renderArmory:renderArmory,UI:UI,fuse:fuse,queueTe
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 89</div>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 90</div>
 <script>
 /* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
-(function(){ const BUILD=89; let busy=false, shown=false;
+(function(){ const BUILD=90; let busy=false, shown=false;
   const inRun=()=>{ try{ return typeof G!=='undefined'&&(G.state==='playing'||G.state==='cards'||G.state==='shop'||G.state==='paused'||G.state==='teach'||G.state==='ctl'); }catch(e){ return false; } };
   function wipeReload(){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
     if(n>=3) return;
