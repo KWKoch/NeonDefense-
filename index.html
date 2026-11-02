@@ -414,6 +414,8 @@ canvas.tprev.dim{filter:saturate(.35) brightness(.7)}
 #coach.flat{background:rgba(0,0,0,.78)}
 #coach .chole{position:fixed; border-radius:10px; border:2px solid var(--cyan); box-shadow:0 0 0 100vmax rgba(0,0,0,.78),0 0 18px var(--cyan); pointer-events:none; transition:all .2s}
 #coach .ccard{position:fixed; box-sizing:border-box; padding:14px; background:#0a0f1a; border:1px solid var(--cyan); box-shadow:0 0 24px rgba(0,240,255,.25); display:flex; flex-direction:column; gap:8px}
+#coach .cdemo,.tcard .cdemo{display:block; width:100%; height:auto; border:1px solid color-mix(in srgb,var(--cyan) 35%,transparent); border-radius:10px; background:#04070d}
+.tcard .cdemo{margin:6px 0 4px}
 #coach .ck{font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--dim)}
 #coach h3{margin:0; font-family:var(--display); font-weight:400; font-size:20px; color:var(--cyan)}
 #coach p{margin:0; font-size:14px; line-height:1.45}
@@ -433,6 +435,7 @@ canvas.tprev.dim{filter:saturate(.35) brightness(.7)}
 #teachov .tcard{width:min(340px,100%); background:#05070c; border:1px solid var(--c); box-shadow:0 0 26px color-mix(in srgb,var(--c) 50%,transparent); border-radius:18px; padding:18px 18px 16px; text-align:center; display:flex; flex-direction:column; align-items:center; gap:8px}
 #teachov .tk{font-size:12px; letter-spacing:.3em; color:var(--c); font-weight:700}
 #teachov canvas{width:120px; height:120px}
+#teachov canvas.cdemo{width:100%; height:auto}
 #teachov .wic{height:84px; display:flex; align-items:center}
 #teachov h2{margin:0; font-size:26px; color:#fff; text-shadow:0 0 12px var(--c)}
 #teachov .tcls{font-size:12px; letter-spacing:.18em; text-transform:uppercase; font-weight:700}
@@ -762,7 +765,7 @@ body.menu{background:
     </div>
     <div id="cmdDock"><button type="button" class="cmo" id="cmdA2" hidden></button><button type="button" class="cmo" id="cmdA1" hidden></button></div>
     <div id="row1">
-      <span id="hint">AI fires everything. Hold the field to steer the turret, hold a weapon icon and drag to aim it</span>
+      <span id="hint">Hold the field to aim. Hold a weapon icon and drag to place it.</span>
       <div style="display:flex;gap:6px">
         <button type="button" class="mini" id="ctlBtn" aria-label="Weapon control: auto or manual">Aim</button>
         <button type="button" class="mini" id="shopBtn">Perks</button>
@@ -2051,17 +2054,17 @@ const CRAR=['Common','Rare','Epic','Legendary'], CRM=[1,1.2,1.45,1.8], CWK=[1,0.
 const CSTAT={dmg:'Turret damage',rate:'Fire rate',hp:'City health',sh:'Ozone shield',shRg:'Shield recharge',blast:'Blast damage',crit:'Critical chance',cd1:'Ability 1 recharge time',cd2:'Ability 2 recharge time',pow1:'Ability 1 power',pow2:'Ability 2 power'};
 const CMDS=[
  {id:'warden',name:'Warden Sol',role:'Guardian',color:'#00ffa3',pas:{sh:0.25,shRg:0.25},wk:{dmg:-0.12},
-  ab:[{n:'Aegis',ic:'frt',cd:38,d:'Refills the ozone shield and repairs 10% of the city.'},{n:'Field Repair',ic:'heart',cd:50,d:'Repairs 25% of the city.'}],
+  ab:[{n:'Ozone Mend',ic:'frt',cd:38,d:'Pours power into the ozone shield for 6 seconds. About half of it grows back.'},{n:'Field Repair',ic:'heart',cd:50,d:'Patches 25% of the city.'}],
   br:[{n:'Bastion',nodes:[{id:'b1',n:'Hardened Shield',max:3,fx:{sh:0.1},t:'+10% ozone shield per level'},{id:'b2',n:'Rapid Regen',max:3,fx:{shRg:0.2},t:'+20% shield recharge per level'},{id:'b3',n:'Reactive Plating',cap:1,max:1,fx:{sh:0.4},t:'+40% ozone shield'}]},
-      {n:'Aegis',nodes:[{id:'a1',n:'Quick Aegis',max:3,fx:{cd1:-0.08},t:'-8% Aegis cooldown per level'},{id:'a2',n:'Deep Reserves',max:3,fx:{pow1:0.15},t:'+15% Aegis repair per level'},{id:'a3',n:'Retaliation',cap:1,max:1,flag:'aegisWave',t:'Aegis also unleashes a shockwave that hurts every mob'}]},
+      {n:'Mend',nodes:[{id:'a1',n:'Quick Mend',max:3,fx:{cd1:-0.08},t:'-8% Mend cooldown per level'},{id:'a2',n:'Deep Reserves',max:3,fx:{pow1:0.15},t:'+15% Mend regrowth per level'},{id:'a3',n:'Retaliation',cap:1,max:1,flag:'aegisWave',t:'Mend also sends a shockwave through every mob'}]},
       {n:'Resolve',nodes:[{id:'r1',n:'Reinforced Walls',max:3,fx:{hp:0.08},t:'+8% city health per level'},{id:'r2',n:'Rapid Crews',max:3,fx:{cd2:-0.08},t:'-8% Field Repair cooldown per level'},{id:'r3',n:'Field Engineers',cap:1,max:1,flag:'unlock2',t:'Unlocks Field Repair at any rarity'}]}]},
  {id:'rook',name:'Cmdr Rook',role:'Gunnery',color:'#ff8a00',pas:{dmg:0.18,rate:0.1},wk:{hp:-0.2},
-  ab:[{n:'Overdrive',ic:'bolt',cd:30,d:'Turret fires twice as fast for 5 seconds.'},{n:'Broadside',ic:'turret',cd:26,d:'Fires three rapid volleys at once.'}],
+  ab:[{n:'Overdrive',ic:'bolt',cd:30,d:'Turret fires twice as fast for 5 seconds.'},{n:'Broadside',ic:'turret',cd:26,d:'Three extra turret volleys, back to back.'}],
   br:[{n:'Gunnery',nodes:[{id:'g1',n:'Heavy Rounds',max:3,fx:{dmg:0.08},t:'+8% turret damage per level'},{id:'g2',n:'Hair Trigger',max:3,fx:{rate:0.06},t:'+6% fire rate per level'},{id:'g3',n:'Armor Piercing',cap:1,max:1,fx:{pierce:1},t:'Bullets pierce one extra mob'}]},
       {n:'Overdrive',nodes:[{id:'o1',n:'Extended Burn',max:3,fx:{pow1:0.2},t:'+20% Overdrive duration per level'},{id:'o2',n:'Quick Cycle',max:3,fx:{cd1:-0.08},t:'-8% Overdrive cooldown per level'},{id:'o3',n:'Heavy Battery',cap:1,max:1,flag:'unlock2',t:'Unlocks Broadside at any rarity'}]},
       {n:'Crew',nodes:[{id:'c1',n:'Flak Vests',max:3,fx:{hp:0.1},t:'+10% city health per level'},{id:'c2',n:'Drill Sergeant',max:3,fx:{pow2:0.2},t:'+20% Broadside volleys per level'},{id:'c3',n:'Last Stand',cap:1,max:1,flag:'lastStand',t:'+40% turret damage while the city is below 35% health'}]}]},
  {id:'vex',name:'Cmdr Vex',role:'Ordnance',color:'#9d4dff',pas:{blast:0.3},wk:{sh:-0.25},
-  ab:[{n:'Airstrike',ic:'mortar',cd:34,d:'Calls three bombing runs onto the densest clusters.'},{n:'EMP Burst',ic:'chain',cd:42,d:'Freezes every mob for a moment and fries machines.'}],
+  ab:[{n:'Airstrike',ic:'mortar',cd:34,d:'Three bombs land on the thickest clusters.'},{n:'EMP Burst',ic:'chain',cd:42,d:'Freezes the whole field for a beat. Mechs take damage.'}],
   br:[{n:'Ordnance',nodes:[{id:'n1',n:'High Explosive',max:3,fx:{blast:0.1},t:'+10% blast damage per level'},{id:'n2',n:'Shaped Charges',max:3,fx:{pow1:0.12},t:'+12% Airstrike damage per level'},{id:'n3',n:'Heavy Ordnance',cap:1,max:1,fx:{blast:0.4},t:'+40% blast damage'}]},
       {n:'Bombardment',nodes:[{id:'s1',n:'Rapid Dispatch',max:3,fx:{cd1:-0.08},t:'-8% Airstrike cooldown per level'},{id:'s2',n:'Extra Bombs',max:2,fx:{strikes:1},t:'+1 bombing run per level'},{id:'s3',n:'Carpet Bombing',cap:1,max:1,fx:{strikes:2},t:'+2 more bombing runs'}]},
       {n:'Signals',nodes:[{id:'e1',n:'Wide Pulse',max:3,fx:{pow2:0.2},t:'+20% EMP freeze time per level'},{id:'e2',n:'Capacitors',max:3,fx:{cd2:-0.08},t:'-8% EMP cooldown per level'},{id:'e3',n:'Signals Corps',cap:1,max:1,flag:'unlock2',t:'Unlocks EMP Burst at any rarity'}]}]}
@@ -2081,52 +2084,52 @@ const FXL=(k,o)=>Object.assign({k:k},o);
 [
  /* ---- Common ---- */
  {id:'flint',name:'Sgt. Flint',role:'Engineer',color:'#ffd23f',tier:0,pas:{blast:0.2,hp:0.1},wk:{rate:-0.1},
-  ab:[{n:'Minefield',ic:'mine',cd:32,d:'Scatters six armed mines across the densest lanes.',fx:[FXL('mines',{n:6})]},{n:'Demolition',ic:'wave',cd:42,d:'A shockwave hurts every mob on the field.',fx:[FXL('nova',{frac:0.12,boss:0.2})]}],
+  ab:[{n:'Minefield',ic:'mine',cd:32,d:'Six live mines drop where mobs are heaviest.',fx:[FXL('mines',{n:6})]},{n:'Demolition',ic:'wave',cd:42,d:'One shockwave, every mob on the field takes a hit.',fx:[FXL('nova',{frac:0.12,boss:0.2})]}],
   nm:['Shaped Charges','Sandbags','Master Sapper','Deep Pockets','Quick Hands','Carpet of Steel','Big Bang','Fast Fuses','Demo Crew'],look:{hull:'slab',brl:'cannon',side:'drums',fx:'sparks'}},
  {id:'juno',name:'Medic Juno',role:'Support',color:'#ff6ec7',tier:0,pas:{hp:0.2,shRg:0.2},wk:{dmg:-0.15},
-  ab:[{n:'Triage',ic:'heart',cd:36,d:'Repairs 15% of the city and recharges half the ozone shield.',fx:[FXL('heal',{v:0.15}),FXL('shield',{v:0.5})]},{n:'Stim Pack',ic:'bolt',cd:44,d:'Turret fires 50% faster for 4 seconds and the city is patched up a little.',fx:[FXL('haste',{t:4,rate:1.5}),FXL('heal',{v:0.05})]}],
+  ab:[{n:'Triage',ic:'heart',cd:36,d:'Patches 15% of the city and feeds the shield for 4 seconds.',fx:[FXL('heal',{v:0.15}),FXL('regen',{t:4,v:0.08})]},{n:'Stim Pack',ic:'bolt',cd:44,d:'Turret fires 50% faster for 4 seconds. Patches a little of the city.',fx:[FXL('haste',{t:4,rate:1.5}),FXL('heal',{v:0.05})]}],
   nm:['Thick Skin','Quick Mend','Field Surgeon','Deep Dressings','Fast Hands','Trauma Team','Strong Stim','Steady Supply','Combat Medic'],look:{hull:'dome',brl:'twin',side:'orbs',fx:'pulse'}},
  {id:'pip',name:'Scout Pip',role:'Recon',color:'#4dd8ff',tier:0,pas:{rate:0.12,crit:0.08},wk:{hp:-0.15},
-  ab:[{n:'Flare',ic:'eye',cd:34,d:'A bright flare slows every mob to 45% speed for 5 seconds.',fx:[FXL('slow',{t:5,f:0.45})]},{n:'Spotlight',ic:'aim',cd:40,d:'Turret deals 35% more damage for 8 seconds.',fx:[FXL('focus',{t:8,dmg:1.35})]}],
+  ab:[{n:'Flare',ic:'eye',cd:34,d:'A flare slows every mob to 45% speed for 5 seconds.',fx:[FXL('slow',{t:5,f:0.45})]},{n:'Spotlight',ic:'aim',cd:40,d:'Turret hits 35% harder for 8 seconds.',fx:[FXL('focus',{t:8,dmg:1.35})]}],
   nm:['Light Feet','Sharp Eyes','Ghost','Long Burn','Quick Signal','Daybreak','Bright Beam','Short Fuse','Deadeye'],look:{hull:'spire',brl:'rail',side:'fins',fx:'runes'}},
  {id:'dax',name:'Pyro Dax',role:'Incendiary',color:'#ff3b3b',tier:0,pas:{blast:0.25},wk:{sh:-0.2},
-  ab:[{n:'Napalm',ic:'mortar',cd:36,d:'Three waves of fire roll over the densest clusters.',fx:[FXL('burn',{n:3,frac:0.16})]},{n:'Flashfire',ic:'wave',cd:44,d:'Scorches every mob and slows the field for 2 seconds.',fx:[FXL('nova',{frac:0.1,boss:0.2}),FXL('slow',{t:2,f:0.6})]}],
+  ab:[{n:'Napalm',ic:'mortar',cd:36,d:'Three waves of fire sweep the thickest clusters.',fx:[FXL('burn',{n:3,frac:0.16})]},{n:'Flashfire',ic:'wave',cd:44,d:'Scorches every mob and slows the field for 2 seconds.',fx:[FXL('nova',{frac:0.1,boss:0.2}),FXL('slow',{t:2,f:0.6})]}],
   nm:['Hot Rounds','Fireproof','Firestorm','Thick Fuel','Fast Igniter','Inferno','Wide Flame','Quick Burn','Pyromaniac'],look:{hull:'wedge',brl:'cannon',side:'wings',fx:'flames'}},
  /* ---- Rare ---- */
  {id:'kestrel',name:'Cmdr Kestrel',role:'Skirmisher',color:'#7dff4d',tier:1,pas:{rate:0.15,crit:0.1},wk:{sh:-0.15},
-  ab:[{n:'Rapid Salvo',ic:'bolt',cd:28,d:'Turret fires 70% faster for 6 seconds.',fx:[FXL('haste',{t:6,rate:1.7})]},{n:'Strafe Run',ic:'turret',cd:36,d:'Four strafing bombs land on the densest clusters.',fx:[FXL('strike',{n:4,R:80,frac:0.3})]}],
+  ab:[{n:'Rapid Salvo',ic:'bolt',cd:28,d:'Turret fires 70% faster for 6 seconds.',fx:[FXL('haste',{t:6,rate:1.7})]},{n:'Strafe Run',ic:'turret',cd:36,d:'Four strafing bombs hit the thickest clusters.',fx:[FXL('strike',{n:4,R:80,frac:0.3})]}],
   nm:['Light Trigger','Hot Eyes','Ace','Long Salvo','Quick Reload','Overclock','Heavy Pass','Fast Wings','Top Gun'],look:{hull:'wedge',brl:'rail',side:'wings',fx:'sparks'}},
  {id:'tessla',name:'Tessla',role:'Storm',color:'#33b5ff',tier:1,pas:{dmg:0.12,blast:0.15},wk:{hp:-0.15},
-  ab:[{n:'Chain Storm',ic:'chain',cd:30,d:'Lightning arcs to eight random mobs.',fx:[FXL('chainz',{n:8,frac:0.22,boss:0.15})]},{n:'Static Field',ic:'field',cd:40,d:'Freezes every mob for a moment and fries machines.',fx:[FXL('freeze',{t:1.6,mech:0.1})]}],
+  ab:[{n:'Chain Storm',ic:'chain',cd:30,d:'Lightning jumps to eight random mobs.',fx:[FXL('chainz',{n:8,frac:0.22,boss:0.15})]},{n:'Static Field',ic:'field',cd:40,d:'Freezes the whole field for a beat. Mechs take damage.',fx:[FXL('freeze',{t:1.6,mech:0.1})]}],
   nm:['Charged Rounds','Surge','Stormcaller','High Voltage','Quick Charge','Thunderhead','Long Static','Fast Cycle','Faraday'],look:{hull:'dome',brl:'coil',side:'pods',fx:'rings'}},
  {id:'dane',name:'Bulwark Dane',role:'Sentinel',color:'#8fa8ff',tier:1,pas:{sh:0.3,hp:0.15},wk:{rate:-0.12},
-  ab:[{n:'Bulwark',ic:'frt',cd:42,d:'The city takes no damage for 3 seconds and the shield is refilled.',fx:[FXL('invuln',{t:3}),FXL('shield',{v:1})]},{n:'Fortify',ic:'heart',cd:48,d:'Repairs 20% of the city and recharges half the shield.',fx:[FXL('heal',{v:0.2}),FXL('shield',{v:0.5})]}],
+  ab:[{n:'Bulwark',ic:'frt',cd:42,d:'The city takes no damage for 3 seconds while the shield grows back.',fx:[FXL('invuln',{t:3}),FXL('regen',{t:3,v:0.2})]},{n:'Fortify',ic:'heart',cd:48,d:'Patches 20% of the city and feeds the shield for 4 seconds.',fx:[FXL('heal',{v:0.2}),FXL('regen',{t:4,v:0.08})]}],
   nm:['Iron Plate','Hardened Wall','Immovable','Long Guard','Fast Rally','Last Bastion','Heavy Patch','Quick Crews','Stone Wall'],look:{hull:'slab',brl:'twin',side:'fins',fx:'halo'}},
  {id:'hex',name:'Hex',role:'Saboteur',color:'#cfd8ff',tier:1,pas:{dmg:0.1,shRg:0.15,cd1:-0.1},wk:{hp:-0.12},
-  ab:[{n:'Time Dilation',ic:'tmp',cd:40,d:'Every mob crawls at 35% speed for 6 seconds.',fx:[FXL('slow',{t:6,f:0.35})]},{n:'Meltdown',ic:'cog',cd:38,d:'Machines are fried and the field is stunned for half a second.',fx:[FXL('freeze',{t:0.5,mech:0.3})]}],
+  ab:[{n:'Time Dilation',ic:'tmp',cd:40,d:'Every mob crawls at 35% speed for 6 seconds.',fx:[FXL('slow',{t:6,f:0.35})]},{n:'Meltdown',ic:'cog',cd:38,d:'Mechs take damage and the field stalls for half a second.',fx:[FXL('freeze',{t:0.5,mech:0.3})]}],
   nm:['Bad Code','Backdoor','Zero Day','Long Lag','Fast Hack','Rootkit','Heavy Virus','Quick Crash','Blackout'],look:{hull:'spire',brl:'coil',side:'orbs',fx:'runes'}},
  /* ---- Epic ---- */
  {id:'corvus',name:'Adm. Corvus',role:'Fleet',color:'#2e6bff',tier:2,pas:{blast:0.3,cd1:-0.1},wk:{rate:-0.1},
-  ab:[{n:'Orbital Barrage',ic:'mortar',cd:44,d:'Six orbital strikes hammer the densest clusters.',fx:[FXL('strike',{n:6,R:110,frac:0.4})]},{n:'Reinforce',ic:'cards',cd:50,d:'Every weapon is ready again, the other ability recharges faster and the city is patched.',fx:[FXL('rally',{cd:0.5}),FXL('heal',{v:0.1})]}],
+  ab:[{n:'Orbital Barrage',ic:'mortar',cd:44,d:'Six orbital strikes on the thickest clusters.',fx:[FXL('strike',{n:6,R:110,frac:0.4})]},{n:'Reinforce',ic:'cards',cd:50,d:'Every weapon recharges, your other ability cools faster, and the city gets patched.',fx:[FXL('rally',{cd:0.5}),FXL('heal',{v:0.1})]}],
   nm:['Heavy Shells','Fleet Doctrine','Flag Officer','Wide Barrage','Fast Guns','Broadside Fleet','Quick Logistics','Deep Reserve','Grand Admiral'],look:{hull:'crown',brl:'cannon',side:'pods',fx:'halo'}},
  {id:'nyx',name:'Nyx',role:'Reaper',color:'#ff2e63',tier:2,pas:{dmg:0.22,crit:0.12},wk:{hp:-0.25},
-  ab:[{n:'Reap',ic:'lock',cd:34,d:'Every weakened mob is finished off and bosses take a heavy cut.',fx:[FXL('execute',{thr:0.3,boss:0.12})]},{n:'Harvest',ic:'aim',cd:42,d:'Three of the toughest mobs are struck down.',fx:[FXL('smite',{n:3,frac:0.5,boss:0.2})]}],
+  ab:[{n:'Reap',ic:'lock',cd:34,d:'Every wounded mob dies. Bosses lose a big chunk.',fx:[FXL('execute',{thr:0.3,boss:0.12})]},{n:'Harvest',ic:'aim',cd:42,d:'Strikes down the three toughest mobs on the field.',fx:[FXL('smite',{n:3,frac:0.5,boss:0.2})]}],
   nm:['Sharp Edge','Cold Aim','Grim Mark','Long Scythe','Fast Blade','Soul Harvest','Heavy Reaper','Quick Cut','Death Knell'],look:{hull:'spire',brl:'rail',side:'wings',fx:'sparks'}},
  {id:'solara',name:'Solara',role:'Radiant',color:'#ffb347',tier:2,pas:{sh:0.25,shRg:0.25,dmg:0.1},wk:{blast:-0.2},
-  ab:[{n:'Sunburst',ic:'spk',cd:38,d:'A wave of light burns every mob on the field.',fx:[FXL('nova',{frac:0.3,boss:0.2})]},{n:'Radiance',ic:'heart',cd:46,d:'The shield is refilled, the city repaired and nothing can hurt it for 1.5 seconds.',fx:[FXL('shield',{v:1}),FXL('heal',{v:0.15}),FXL('invuln',{t:1.5})]}],
+  ab:[{n:'Sunburst',ic:'spk',cd:38,d:'A wave of light burns every mob on the field.',fx:[FXL('nova',{frac:0.3,boss:0.2})]},{n:'Radiance',ic:'heart',cd:46,d:'Patches the city, makes it untouchable for 1.5 seconds, and grows the shield back over 4.',fx:[FXL('regen',{t:4,v:0.15}),FXL('heal',{v:0.15}),FXL('invuln',{t:1.5})]}],
   nm:['Warm Light','Glow','High Noon','Long Day','Quick Dawn','Corona','Bright Heal','Fast Dusk','Eclipse'],look:{hull:'crown',brl:'twin',side:'orbs',fx:'pulse'}},
  {id:'ironside',name:'Ironside',role:'Siegebreaker',color:'#9aa7b3',tier:2,pas:{dmg:0.2,hp:0.2},wk:{rate:-0.18},
-  ab:[{n:'Siege Cannon',ic:'turret',cd:32,d:'One colossal shell smashes the toughest mob on the field.',fx:[FXL('smite',{n:1,frac:0.6,boss:0.35})]},{n:'Breach',ic:'chev',cd:40,d:'Bullets pierce three extra mobs and hit 25% harder for 8 seconds.',fx:[FXL('pierce',{n:3,t:8}),FXL('focus',{t:8,dmg:1.25})]}],
+  ab:[{n:'Siege Cannon',ic:'turret',cd:32,d:'One huge shell lands on the toughest mob on the field.',fx:[FXL('smite',{n:1,frac:0.6,boss:0.35})]},{n:'Breach',ic:'chev',cd:40,d:'Bullets punch through three extra mobs and hit 25% harder for 8 seconds.',fx:[FXL('pierce',{n:3,t:8}),FXL('focus',{t:8,dmg:1.25})]}],
   nm:['Armour Piercing','Thick Hull','Siege Master','Heavy Shell','Quick Load','Wall Breaker','Deep Breach','Fast Rams','Fortress Fall'],look:{hull:'slab',brl:'cannon',side:'drums',fx:'flames'}},
  /* ---- Legendary ---- */
  {id:'aurora',name:'Aurora Prime',role:'Celestial',color:'#fff1b8',tier:3,pas:{sh:0.3,hp:0.2,shRg:0.3},wk:{dmg:-0.1},
-  ab:[{n:'Genesis',ic:'spk',cd:60,d:'Restores the city and shield completely, protects it for 3 seconds and readies every weapon.',fx:[FXL('heal',{v:1}),FXL('shield',{v:1}),FXL('invuln',{t:3}),FXL('rally',{})]},{n:'Judgement',ic:'wave',cd:48,d:'Divine light burns every mob for nearly half its health.',fx:[FXL('nova',{frac:0.45,boss:0.25})]}],
+  ab:[{n:'Genesis',ic:'spk',cd:60,d:'Full city repair, full shield, 3 seconds untouchable, every weapon recharged.',fx:[FXL('heal',{v:1}),FXL('shield',{v:1}),FXL('invuln',{t:3}),FXL('rally',{})]},{n:'Judgement',ic:'wave',cd:48,d:'Burns every mob for nearly half its health.',fx:[FXL('nova',{frac:0.45,boss:0.25})]}],
   nm:['Halo','Grace','Ascension','Long Dawn','Quick Prayer','Rebirth','Holy Fire','Fast Verdict','Divinity'],look:{hull:'crown',brl:'rail',side:'wings',fx:'halo'}},
  {id:'krait',name:'Overlord Krait',role:'Warlord',color:'#ff1a75',tier:3,pas:{dmg:0.3,rate:0.2,blast:0.2},wk:{hp:-0.2,sh:-0.2},
-  ab:[{n:'War Machine',ic:'bolt',cd:44,d:'Turret fires 2.5 times faster and hits 50% harder for 7 seconds.',fx:[FXL('haste',{t:7,rate:2.5,dmg:1.5})]},{n:'Annihilate',ic:'mortar',cd:52,d:'Eight devastating strikes obliterate the densest clusters.',fx:[FXL('strike',{n:8,R:110,frac:0.45})]}],
+  ab:[{n:'War Machine',ic:'bolt',cd:44,d:'Turret fires 2.5x as fast and hits 50% harder for 7 seconds.',fx:[FXL('haste',{t:7,rate:2.5,dmg:1.5})]},{n:'Annihilate',ic:'mortar',cd:52,d:'Eight strikes flatten the thickest clusters.',fx:[FXL('strike',{n:8,R:110,frac:0.45})]}],
   nm:['Blood Rounds','War Cry','Conqueror','Long Rampage','Quick Rage','Total War','Heavy Wrath','Fast Fury','Overlord'],look:{hull:'wedge',brl:'twin',side:'pods',fx:'flames'}},
  {id:'chrona',name:'Chrona',role:'Timekeeper',color:'#6a5cff',tier:3,pas:{cd1:-0.2,cd2:-0.2,rate:0.15,crit:0.1},wk:{hp:-0.15},
-  ab:[{n:'Stasis',ic:'tmp',cd:54,d:'Time stops: every mob freezes for 3.5 seconds.',fx:[FXL('freeze',{t:3.5})]},{n:'Rewind',ic:'cards',cd:60,d:'Repairs 40% of the city, refills the shield, readies every weapon and halves your cooldowns.',fx:[FXL('heal',{v:0.4}),FXL('shield',{v:1}),FXL('rally',{cd:0.4})]}],
+  ab:[{n:'Stasis',ic:'tmp',cd:54,d:'Time stops. Every mob freezes for 3.5 seconds.',fx:[FXL('freeze',{t:3.5})]},{n:'Rewind',ic:'cards',cd:60,d:'Patches 40% of the city, grows the shield back over 5 seconds, recharges every weapon and cuts your cooldowns.',fx:[FXL('heal',{v:0.4}),FXL('regen',{t:5,v:0.15}),FXL('rally',{cd:0.4})]}],
   nm:['Fast Hands','Time Slip','Temporal Lord','Long Moment','Quick Tick','Paradox','Deep Echo','Short Loop','Eternity'],look:{hull:'dome',brl:'coil',side:'orbs',fx:'rings'}}
 ].forEach(s=>CMDS.push(mkCmd(s)));
 CMDS.forEach(c=>{ if(!(c.tier>0)) c.tier=0; });
@@ -2170,7 +2173,8 @@ function cmdStart(){
   G.maxHp=Math.round(G.maxHp*M.hp); G.hp=G.maxHp; G.shMax=Math.round(G.shMax*M.sh); G.sh=G.shMax; G.shRg*=M.shRg;
   cmdBtns();
 }
-function updateCmd(dt){ const q=G.cm; if(!q) return; q.t1=Math.max(0,q.t1-dt); q.t2=Math.max(0,q.t2-dt); if(q.over>0) q.over-=dt; if(q.dmgT>0) q.dmgT-=dt; if(q.slowT>0) q.slowT-=dt; if(q.pierceT>0) q.pierceT-=dt; renderCmd(); }
+function updateCmd(dt){ const q=G.cm; if(!q) return; q.t1=Math.max(0,q.t1-dt); q.t2=Math.max(0,q.t2-dt); if(q.over>0) q.over-=dt; if(q.dmgT>0) q.dmgT-=dt; if(q.slowT>0) q.slowT-=dt; if(q.pierceT>0) q.pierceT-=dt;
+  if(q.mendT>0){ q.mendT-=dt; if(G.shMax&&G.hp>0){ G.sh=Math.min(G.shMax,G.sh+G.shMax*q.mendV*dt); G.shT=0; if(G.sh>0.5) G.shBreak=0; } } renderCmd(); }
 function cmdHit(e,frac,bm){ if(e.dead) return; hurt(e,e.maxhp*frac*(e.type==='boss'?(bm==null?0.2:bm):1),'e',false,1,null); }
 function cmdBoom(x,y,R,frac,col){
   G.rings.push({x:x,y:y,r:8,max:R,life:0.5,t:0,color:col}); G.rings.push({x:x,y:y,r:4,max:R*0.6,life:0.3,t:0,color:'#ffffff'}); fireball(x,y,R*0.9,col,3); burst(x,y,col,22,240,2); G.shake=Math.min(1,G.shake+0.5);
@@ -2192,6 +2196,7 @@ function cmdStrike(n,R,frac,col){
 const FX={
   heal(f,p){ G.hp=Math.min(G.maxHp,G.hp+G.maxHp*f.v*p); },
   shield(f){ G.sh=Math.min(G.shMax,G.sh+G.shMax*f.v); G.shFlash=1; },
+  regen(f,p,q){ q.mendT=f.t; q.mendMax=f.t; q.mendV=f.v*p; },   /* shield regen over time, drawn as a tether from the turret to the ozone */
   haste(f,p,q){ q.over=Math.max(q.over,f.t*p); q.omul=f.rate; if(f.dmg){ q.dmgT=Math.max(q.dmgT||0,f.t*p); q.dmgM=f.dmg; } },
   focus(f,p,q){ q.dmgT=Math.max(q.dmgT||0,f.t*p); q.dmgM=f.dmg; },
   volley(f,p){ const n=f.n+Math.round((p-1)*3); for(let k=0;k<n;k++) G.delay.push({t:k*0.11,fn:()=>{ const cl=T.cool; fire(null); T.cool=cl; }}); },
@@ -2219,8 +2224,8 @@ function useCmd(i){
   const col=c.color, ty=TURRET_Y-30;
   if(c.ab[i].fx) runFx(q,i);
   else if(c.id==='warden'){
-    if(i===0){ G.sh=G.shMax; G.hp=Math.min(G.maxHp,G.hp+G.maxHp*0.1*M.pow1); G.shFlash=1; float(T.x,ty-30,'AEGIS',col);
-      G.rings.push({x:T.x,y:ty,r:10,max:520,life:0.7,t:0,color:col}); burst(T.x,ty,col,28,320,2);
+    if(i===0){ FX.regen({t:6,v:0.09},M.pow1,q); float(T.x,ty-30,'OZONE MEND',col);
+      G.rings.push({x:T.x,y:ty,r:10,max:200,life:0.6,t:0,color:col}); burst(T.x,ty,col,16,200,2);
       if(M.f.aegisWave){ for(const e of G.enemies) if(!e.dead&&e.y>0) cmdHit(e,0.25*M.pow1); } }
     else { G.hp=Math.min(G.maxHp,G.hp+G.maxHp*0.25*M.pow2); float(T.x,ty-30,'REPAIRED',col); G.rings.push({x:T.x,y:ty,r:10,max:300,life:0.6,t:0,color:col}); burst(T.x,ty,col,20,200,2); }
   } else if(c.id==='rook'){
@@ -2335,37 +2340,102 @@ function commandHtml(){
 /* ================= guided tutorials ================= */
 /* Small, skippable coach cards that introduce each system the first time it matters. Seen flags live in P.tut; Settings can replay them all. */
 const CMD_LVL=6;
+
+/* ---- visual trainers: looping neon scenes drawn on a small canvas (300x150 logical). They show the move instead of describing it. ---- */
+const DC={cy:'#00f0ff',mg:'#ff2bd6',lime:'#b6ff3a',yel:'#ffe14a',red:'#ff5c78',mint:'#00ffa3',vio:'#9d6bff'};
+const dGlow=(g,c,w,b)=>{ g.strokeStyle=c; g.fillStyle=c; g.shadowColor=c; g.shadowBlur=b==null?8:b; g.lineWidth=w||1.5; g.lineCap='round'; g.lineJoin='round'; };
+const dEase=x=>x<0?0:x>1?1:x*x*(3-2*x);
+function dTurret(g,x,y,ang,c){ dGlow(g,c||DC.cy,1.6); g.beginPath(); g.arc(x,y,10,Math.PI,0); g.stroke(); g.save(); g.translate(x,y-5); g.rotate(ang); g.beginPath(); g.moveTo(0,0); g.lineTo(0,-17); g.stroke(); g.restore(); }
+function dMob(g,x,y,c,r){ r=r||7; dGlow(g,c||DC.mg,1.5,7); g.beginPath(); g.moveTo(x,y+r); g.lineTo(x-r,y-r*0.7); g.lineTo(x+r,y-r*0.7); g.closePath(); g.stroke(); }
+function dFinger(g,x,y,press,a){ g.save(); g.globalAlpha=a==null?1:a; g.shadowBlur=0; g.fillStyle='rgba(255,255,255,'+(press?0.5:0.24)+')'; g.strokeStyle='rgba(255,255,255,.85)'; g.lineWidth=1.5; const r=press?8:11; g.beginPath(); g.arc(x,y,r,0,6.2832); g.fill(); g.stroke(); g.restore(); }
+function dGround(g){ dGlow(g,'rgba(0,240,255,.35)',1,0); g.beginPath(); g.moveTo(0,134); g.lineTo(300,134); g.stroke(); }
+function dBurst(g,x,y,k,c){ if(k<=0||k>=1) return; g.save(); dGlow(g,c||DC.yel,1.6,10); g.globalAlpha=1-k; g.beginPath(); g.arc(x,y,4+k*26,0,6.2832); g.stroke(); g.beginPath(); g.arc(x,y,2+k*12,0,6.2832); g.stroke(); g.restore(); }
+function dReticle(g,x,y,c){ dGlow(g,c||DC.yel,1.4,8); g.beginPath(); g.arc(x,y,9,0,6.2832); g.moveTo(x-14,y); g.lineTo(x-5,y); g.moveTo(x+5,y); g.lineTo(x+14,y); g.moveTo(x,y-14); g.lineTo(x,y-5); g.moveTo(x,y+5); g.lineTo(x,y+14); g.stroke(); }
+function dLine(g,y,flash){ dGlow(g,flash>0?'rgba(255,92,120,'+(0.5+0.5*flash)+')':'rgba(125,249,255,.7)',1.3,flash>0?10:5); g.setLineDash([8,6]); g.beginPath(); g.moveTo(0,y); g.lineTo(300,y); g.stroke(); g.setLineDash([]); }
+const DEMO={
+  steer(g,t){ const fx=150+95*Math.sin(t*1.3), fy=52+14*Math.sin(t*2.1), ang=Math.atan2(fx-150,134-fy);
+    dGround(g); for(let j=0;j<4;j++){ const my=((t*16+j*34)%140)-6; dMob(g,36+j*76+10*Math.sin(t+j),my,j%2?DC.mg:DC.lime); }
+    g.save(); for(let k=0;k<6;k++){ const f=(t*2.2+k/6)%1, d=20+f*130; dGlow(g,DC.cy,2,6); g.globalAlpha=1-f*0.5; g.beginPath(); g.arc(150+Math.sin(ang)*d,134-5-Math.cos(ang)*d,1.8,0,6.2832); g.fill(); } g.restore();
+    dTurret(g,150,134,ang); dFinger(g,fx,fy,true); },
+  ozone(g,t){ const Y=92; let fl=0; dGround(g);
+    for(let j=0;j<4;j++){ const hold=j%2===0, cut=hold?56:104, m=((t+j*0.9)%3.4)/3.4, y=6+m*(hold?150:128);
+      if(y<cut){ dMob(g,40+j*74,y,hold?DC.lime:DC.mg); } else { const k=(y-cut)/22; if(hold) dBurst(g,40+j*74,cut,k,DC.lime); else if(k<1&&y<cut+22) fl=Math.max(fl,1-k); } }
+    dLine(g,Y,fl); g.save(); g.shadowBlur=0; g.fillStyle='rgba(125,249,255,.5)'; g.font='600 9px "Chakra Petch",monospace'; g.textAlign='right'; g.fillText('OZONE',294,Y-5); g.restore();
+    dTurret(g,150,134,0);
+    g.save(); g.shadowBlur=0; g.fillStyle='rgba(255,255,255,.12)'; g.fillRect(10,10,80,7); const hp=1-0.35*Math.min(1,((t%3.4)/3.4)); g.fillStyle=fl>0?DC.red:DC.lime; g.fillRect(10,10,80*hp,7); g.restore(); },
+  drag(g,t){ const T=t%4.6, ix=40, iy=122, tx=212, ty=48; dGround(g);
+    dMob(g,tx-14,ty-4+((T*6)%10),DC.mg); dMob(g,tx+12,ty+6+((T*6)%10),DC.lime);
+    dGlow(g,DC.yel,1.6,8); g.beginPath(); g.arc(ix,iy,13,0,6.2832); g.stroke(); g.beginPath(); g.moveTo(ix-5,iy+4); g.lineTo(ix,iy-6); g.lineTo(ix+5,iy+4); g.stroke();
+    const mv=dEase((T-0.7)/1.4), fx=ix+(tx-ix)*mv, fy=iy+(ty-iy)*mv, down=T>0.4&&T<2.9;
+    if(down&&T>0.7){ g.save(); g.globalAlpha=0.5; dGlow(g,DC.yel,1,0); g.setLineDash([3,4]); g.beginPath(); g.moveTo(ix,iy); g.lineTo(fx,fy); g.stroke(); g.restore(); dReticle(g,fx,fy); }
+    if(T>=2.9&&T<3.9) dBurst(g,tx,ty,(T-2.9)/1.0,DC.yel);
+    if(T>0.2&&T<3.1) dFinger(g,down?fx:ix,down?fy:iy,down,T<0.4?(T-0.2)/0.2:T>2.9?1-(T-2.9)/0.2:1);
+    dTurret(g,150,134,0.3); },
+  ability(g,t){ const T=t%4.2, bx=236, by=104, r=17, ready=T>1.0, pr=ready?1:T/1.0; dGround(g);
+    for(let j=0;j<5;j++){ const dead=T>2.1&&T<2.5?0:1, my=30+((j*29+T*8)%80); if(T<2.2||T>3.4) dMob(g,34+j*38,my,j%2?DC.mg:DC.lime); }
+    dGlow(g,DC.mint,2,ready?14+6*Math.sin(t*8):4); g.globalAlpha=ready?1:0.6; g.beginPath(); g.arc(bx,by,r,-1.5708,-1.5708+6.2832*pr); g.stroke(); g.globalAlpha=1;
+    g.beginPath(); g.moveTo(bx,by-7); g.lineTo(bx+6,by-3); g.lineTo(bx+4,by+6); g.lineTo(bx-4,by+6); g.lineTo(bx-6,by-3); g.closePath(); g.stroke();
+    if(T>1.4&&T<2.4) dFinger(g,bx,by+2,T>1.7,T<1.6?(T-1.4)/0.2:T>2.2?1-(T-2.2)/0.2:1);
+    if(T>1.8&&T<2.7){ const k=(T-1.8)/0.9; g.save(); dGlow(g,DC.mint,2,14); g.globalAlpha=1-k; g.beginPath(); g.arc(150,128,10+k*190,Math.PI,0); g.stroke(); g.restore(); }
+    dTurret(g,150,134,0); },
+  mend(g,t){ const T=t%4.2, Y=26; dGround(g); const f=Math.min(1,0.15+T/4*0.75), N=14;
+    for(let i=0;i<N;i++){ const lit=i<Math.round(f*N); dGlow(g,lit?'rgba(130,250,255,.85)':'rgba(130,250,255,.14)',lit?2.2:1,lit?6:0); g.beginPath(); g.moveTo(8+i*20.5,Y); g.lineTo(8+i*20.5+16,Y); g.stroke(); }
+    const x0=150,y0=118,hh=y0-Y; for(let s=0;s<2;s++){ dGlow(g,s?'rgba(200,255,255,.7)':DC.mint,s?1.1:2.2,12); g.beginPath(); for(let k=0;k<=24;k++){ const q=k/24, yy=y0-hh*q, xx=x0+13*Math.sin(q*Math.PI)*(s?-1:1)*Math.sin(q*9-t*7+s*3.1); k?g.lineTo(xx,yy):g.moveTo(xx,yy); } g.stroke(); }
+    g.save(); dGlow(g,'#fff',1,10); for(let k=0;k<4;k++){ const q=(t*0.9+k/4)%1; g.globalAlpha=0.3+0.7*Math.sin(q*Math.PI); g.beginPath(); g.arc(x0,y0-hh*q,2,0,6.2832); g.fill(); } g.restore();
+    dTurret(g,150,134,0,DC.mint); },
+  mine(g,t){ const T=t%4; dGround(g); const my=T<2.5?10+T*40:-99; dTurret(g,60,134,0);
+    dGlow(g,DC.lime,1.6,8); g.beginPath(); g.arc(150,114,5+(T<2.5?1.2*Math.sin(t*8):0),0,6.2832); g.stroke(); if(T<2.5) dMob(g,150,my,DC.mg); dBurst(g,150,112,(T-2.5)/0.9,DC.yel); },
+  field(g,t){ const T=t%4.4; g.save(); g.shadowBlur=0; g.fillStyle='rgba(0,240,255,.10)'; g.fillRect(92,50,116,56); dGlow(g,'rgba(0,240,255,.6)',1,6); g.setLineDash([5,4]); g.strokeRect(92,50,116,56); g.setLineDash([]); g.restore();
+    dGround(g); const yy=u=>{ const a=Math.max(0,Math.min(u,50/30)), b=Math.max(0,Math.min(u-50/30,56/9)), c=Math.max(0,u-50/30-56/9); return 0+a*30+b*9+c*30; };
+    for(let j=0;j<2;j++){ const u=(T+j*1.6)%4.4, y=yy(u); if(y<130) dMob(g,128+j*44,y,j?DC.lime:DC.mg); } dTurret(g,150,134,0); },
+  chain(g,t){ const T=t%3, P=[[70,40],[130,78],[196,50],[236,98]]; dGround(g); P.forEach(q=>dMob(g,q[0],q[1]+4*Math.sin(t*2+q[0]),DC.mg)); const n=Math.floor(T/0.35)+1;
+    dGlow(g,DC.cy,1.8,12); let px=150,py=124; g.globalAlpha=T<2.6?1:Math.max(0,1-(T-2.6)/0.4); for(let i=0;i<Math.min(n,4);i++){ const q=P[[1,0,2,3][i]]; g.beginPath(); g.moveTo(px,py); const mx=(px+q[0])/2+(Math.random()-0.5)*10, my=(py+q[1])/2+(Math.random()-0.5)*10; g.lineTo(mx,my); g.lineTo(q[0],q[1]); g.stroke(); px=q[0]; py=q[1]; } g.globalAlpha=1; dTurret(g,150,134,0); },
+  saw(g,t){ dGround(g); const bx=22+256*Math.abs(((t*0.28)%2)-1), by=40+34*Math.abs(((t*0.42)%2)-1)+30*0; [[84,58],[150,92],[214,64]].forEach(q=>{ if(Math.hypot(q[0]-bx,q[1]-by)>14) dMob(g,q[0],q[1],DC.mg); else dBurst(g,q[0],q[1],((t*3)%1),DC.red); });
+    g.save(); g.translate(bx,by); g.rotate(t*10); dGlow(g,DC.lime,1.6,10); g.beginPath(); for(let k=0;k<16;k++){ const a=k/16*6.2832, r=k%2?7:11; g.lineTo(Math.cos(a)*r,Math.sin(a)*r); } g.closePath(); g.stroke(); g.restore(); dTurret(g,150,134,0); },
+  mortar(g,t){ const T=t%3.6, sx0=60, sy0=126, tx=224, ty=104; dGround(g); dMob(g,tx-6,ty-8+((T*4)%8),DC.mg); dMob(g,tx+12,ty-2+((T*4)%8),DC.lime); const f=Math.min(1,T/1.5);
+    if(T<1.5||T<2.4){ dGlow(g,DC.yel,1.2,6); g.globalAlpha=0.5+0.5*Math.sin(t*10); g.beginPath(); g.ellipse(tx,ty+8,16+4*Math.sin(t*10),6,0,0,6.2832); g.stroke(); g.globalAlpha=1; }
+    if(T<1.5){ const x=sx0+(tx-sx0)*f, y=sy0+(ty-sy0)*f-70*Math.sin(f*Math.PI); dGlow(g,DC.yel,2,10); g.beginPath(); g.arc(x,y,3,0,6.2832); g.fill(); }
+    dBurst(g,tx,ty,(T-1.5)/0.9,DC.yel); dTurret(g,60,134,0); }
+};
+function demoHtml(name){ return DEMO[name]?'<canvas class="cdemo" data-demo="'+name+'" width="600" height="300"></canvas>':''; }
+let demoIv=0;
+function demoRun(root){
+  if(demoIv){ clearInterval(demoIv); demoIv=0; }
+  const cv=root&&root.querySelector('canvas[data-demo]'); if(!cv||!DEMO[cv.dataset.demo]) return;
+  const fn=DEMO[cv.dataset.demo], g=cv.getContext('2d'), t0=performance.now();
+  const draw=()=>{ if(!cv.isConnected){ clearInterval(demoIv); demoIv=0; return; } g.setTransform(1,0,0,1,0,0); g.clearRect(0,0,600,300); g.setTransform(2,0,0,2,0,0); g.fillStyle='#04070d'; g.fillRect(0,0,300,150); try{ fn(g,(performance.now()-t0)/1000); }catch(e){} };
+  draw(); demoIv=setInterval(draw,33);
+}
 const cmdUnlocked=()=>Object.keys(P.prog||{}).some(k=>((P.prog[k]||{}).best||0)>=CMD_LVL);
 const COACH={
   tour:[
-    {t:'Welcome, Commander',x:'A quick tour of the controls. You can skip it now and replay it any time from Settings (the gear at the top).'},
-    {sel:'.topbar .pill[title="Gems"]',t:'Gems and cards',x:'Gems buy packs and commanders. Cards upgrade your weapons. Levels, achievements and the daily chest all pay out.'},
-    {sel:'#enBox',t:'Energy',x:'Each attempt costs energy. It refills over time, so pace yourself.'},
-    {sel:'nav.nav [data-nav="battle"]',t:'Battle',x:'Pick a level and deploy. The AI fires every weapon for you. Hold the field to steer the turret, or hold a weapon icon and drag to aim that weapon yourself.'},
-    {sel:'#gearBtn',t:'Weapon control',x:'Any weapon, or all of them, can be set to Manual here so the AI never fires it. You can also change this in battle with the Aim button.'},
-    {sel:'nav.nav [data-nav="arsenal"]',t:'Arsenal',x:'Spend upgrade cards to power up the turret and every weapon you unlock. Commanders live here too, on their own tab, and unlock at level '+CMD_LVL+'.'},
-    {sel:'nav.nav [data-nav="codex"]',t:'Codex',x:'Everything you have met: mobs, what they resist, what they fear, and your achievements.'},
-    {sel:'nav.nav [data-nav="shop"]',t:'Shop',x:'Daily chest, free gems and card packs.'},
-    {sel:'nav.nav [data-nav="worlds"]',t:'Worlds',x:'Earn stars to open new worlds. Every world sends a different enemy faction.'}
+    {t:'Rampart online',x:'Quick tour. Skip whenever. Settings replays it.'},
+    {sel:'.topbar .pill[title="Gems"]',t:'Gems',x:'Gems buy packs and commanders. Cards level your weapons.'},
+    {sel:'#enBox',t:'Energy',x:'One run, one charge. It refills on its own.'},
+    {sel:'nav.nav [data-nav="battle"]',t:'Battle',x:'Pick a level and deploy. The AI fires every weapon until you step in.'},
+    {sel:'#gearBtn',t:'Take the wheel',x:'Set any weapon to Manual and the AI never touches it. Same switch in battle: Aim.'},
+    {sel:'nav.nav [data-nav="arsenal"]',t:'Arsenal',x:'Spend cards on the turret and each weapon. Commanders unlock at level '+CMD_LVL+'.'},
+    {sel:'nav.nav [data-nav="codex"]',t:'Codex',x:'Every mob you have met, what it fears, and your achievements.'},
+    {sel:'nav.nav [data-nav="shop"]',t:'Shop',x:'Daily chest, free gems, card packs.'},
+    {sel:'nav.nav [data-nav="worlds"]',t:'Worlds',x:'Stars open new worlds. Each one sends a different faction.'}
   ],
   command:[
-    {nav:'arsenal',tab:'command',sel:'.wpn[data-tab="command"]',t:'Commanders unlocked',x:'You can now bring a commander into battle. They add a buff, carry a weakness, and give you two abilities to tap. Find them on the Command tab in the Arsenal.'},
-    {nav:'arsenal',tab:'command',sel:'.cmdv .cr',t:'Command Points',x:'Achievements earn points. Spend them on specialty branches that boost a commander and unlock new capabilities.'},
-    {nav:'arsenal',tab:'command',sel:'.cmdv .card',t:'Your commander',x:'Warden Sol is yours for free. Check the buff, the weakness and the two abilities, then tap Specialties to invest points.'},
-    {nav:'shop',sel:'#cmarket',t:'Commander Market',x:'Open Command Packs or recruit directly with gems. Higher rarity means a stronger buff, a softer weakness and the second ability.'}
+    {nav:'arsenal',tab:'command',sel:'.wpn[data-tab="command"]',t:'Commanders',x:'Bring one into battle. Each gives you a buff, a weakness and two abilities to tap.'},
+    {nav:'arsenal',tab:'command',sel:'.cmdv .cr',t:'Command points',x:'Achievements pay points. Spend them on specialty branches.'},
+    {nav:'arsenal',tab:'command',sel:'.cmdv .card',t:'Warden Sol',x:'Yours free. Read the buff, the weakness and the abilities, then open Specialties.'},
+    {nav:'shop',sel:'#cmarket',t:'Market',x:'Recruit with gems or open a pack. Higher rarity means a bigger buff, a smaller weakness and the second ability.'}
   ],
   run:[
-    {sel:'#bar',t:'City health',x:'This bar is the city. If mobs slip past the ozone line it drops. The thin bar under it is your ozone shield, which absorbs hits first and recharges.'},
-    {t:'Steer the turret',x:'The AI aims automatically. Touch and hold anywhere on the field to take over and fire where you point. Let go and the AI resumes. Your other weapons work the same way: hold their icons below.'}
+    {sel:'#bar',demo:'ozone',t:'Hold the line',x:'Kill mobs above the dashed ozone line. Anything that crosses it hits the city bar. Your shield soaks the first hits.'},
+    {demo:'steer',t:'Hold to aim',x:'Press anywhere on the field and the turret follows your finger. Let go and the AI takes over.'}
   ],
   grab:[
-    {sel:'#row0 .tool[data-w]:not([hidden])',t:'Weapons fire themselves',x:'Every weapon is run by the AI and recharges on its own timer. You choose when to step in.'},
-    {sel:'#row0 .tool[data-w]:not([hidden])',t:'Hold and drag',x:'Press and hold a weapon icon. Its AI stops and a reticle follows your finger. Drag up onto the field to pick the spot.'},
-    {t:'Release to fire',x:'Let go to fire there. If the weapon is still recharging, your aim stays pinned and fires the moment it is ready, then the AI takes over again. Drag back down to the icons and let go to cancel.'},
-    {sel:'#ctlBtn',t:'Manual mode',x:'Want full control? Tap Aim to set any weapon, or all of them, to Manual so the AI never fires them. The turret works the same way: hold the field to steer it.'}
+    {sel:'#row0 .tool[data-w]:not([hidden])',t:'Weapons run themselves',x:'Each one fires when its timer fills. You pick the moment.'},
+    {sel:'#row0 .tool[data-w]:not([hidden])',demo:'drag',t:'Hold, drag, release',x:'Press a weapon icon, drag onto the field, let go to fire there. Drag back down to cancel.'},
+    {sel:'#ctlBtn',t:'Manual',x:'Aim sets any weapon to Manual, or all of them. Nothing fires unless you do.'}
   ],
   cmdrun:[
-    {sel:'#cmdA1',t:'Commander abilities',x:'Your commander has their own big buttons at the bottom right, on a row of their own below the weapons. Tap one when it glows. Abilities have a cooldown, so use them for bad moments. On a keyboard press Q (first) and E (second).'}
+    {sel:'#cmdA1',demo:'ability',t:'Commander abilities',x:'Tap a button when it glows. Cooldowns run long, so save them for bad moments. Keys: Q and E.'}
   ]
 };
 let coachSt=null, coachQ=[];
@@ -2387,8 +2457,9 @@ function coachShow(){
     ov.addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; if(b.dataset.c==='skip') coachEnd(); else if(b.dataset.c==='next'){ s.i++; if(coachSt.i>=coachSt.steps.length) coachEnd(); else coachShow(); } });
     document.body.appendChild(ov); addEventListener('resize',coachPlace); }
   const last=s.i>=s.steps.length-1, card=ov.querySelector('.ccard');
-  card.innerHTML='<div class="ck">'+(s.steps.length>1?'Step '+(s.i+1)+' of '+s.steps.length:'Tip')+'</div><h3>'+st.t+'</h3><p>'+st.x+'</p><div class="cb">'+(last?'':'<button type="button" class="btn ghost" data-c="skip">Skip</button>')+'<button type="button" class="btn" data-c="next">'+(last?'Got it':'Next')+'</button></div>';
+  card.innerHTML='<div class="ck">'+(s.steps.length>1?'Step '+(s.i+1)+' of '+s.steps.length:'Tip')+'</div><h3>'+st.t+'</h3>'+demoHtml(st.demo)+'<p>'+st.x+'</p><div class="cb">'+(last?'':'<button type="button" class="btn ghost" data-c="skip">Skip</button>')+'<button type="button" class="btn" data-c="next">'+(last?'Got it':'Next')+'</button></div>';
   requestAnimationFrame(()=>{ const el=st.sel&&document.querySelector(st.sel); if(el&&el.scrollIntoView) try{ el.scrollIntoView({block:'center'}); }catch(e){} requestAnimationFrame(coachPlace); });
+  demoRun(card);
   const nb=card.querySelector('[data-c="next"]'); if(nb) nb.focus({preventScroll:true});
 }
 function coachPlace(){
@@ -2403,7 +2474,7 @@ function coachPlace(){
   card.style.top=top+'px'; card.style.left=left+'px';
 }
 function coachEnd(){
-  const s=coachSt; if(!s) return; coachMark(s.id); coachSt=null;
+  const s=coachSt; if(!s) return; coachMark(s.id); coachSt=null; if(demoIv){ clearInterval(demoIv); demoIv=0; }
   const ov=document.getElementById('coach'); if(ov) ov.remove(); removeEventListener('resize',coachPlace);
   if(s.pause&&G.state==='teach'){ G.state='playing'; toolKey=''; hudKey=''; }
   if(coachQ.length){ const n=coachQ.shift(); setTimeout(()=>coach(n,true),250); }
@@ -2984,6 +3055,24 @@ function drawOzone(){
   ctx.strokeStyle=fl>0?'rgba(255,90,120,'+(0.55+0.4*fl)+')':'rgba(125,249,255,'+a*0.55+')'; ctx.lineWidth=1.4; ctx.setLineDash([14,9]); ctx.lineDashOffset=-t*18;
   ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); ctx.setLineDash([]);
   ctx.fillStyle='rgba(125,249,255,.38)'; ctx.font='600 10px "Chakra Petch", monospace'; ctx.textAlign='right'; ctx.fillText('OZONE',W-8,y-6); ctx.textAlign='left';
+  ctx.restore();
+  drawMend();
+}
+/* Commander shield regen: a twin-strand neon tether climbs from the turret to the ozone, with light pulses riding up it */
+function drawMend(){
+  const q=G.cm; if(!q||!(q.mendT>0)) return;
+  const t=G.time, a=Math.min(1,q.mendT*3,(q.mendMax-q.mendT)*5), x0=T.x, y0=TURRET_Y-38, y1=OZ_Y+2, col=q.c.color, hh=y0-y1;
+  ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.lineCap='round';
+  for(let s=0;s<2;s++){
+    ctx.strokeStyle=s?'rgba(190,255,255,'+(0.5*a)+')':col; ctx.globalAlpha=(s?1:0.75)*a; ctx.shadowColor=col; ctx.shadowBlur=14*sx; ctx.lineWidth=s?1.2:2.2;
+    ctx.beginPath();
+    for(let k=0;k<=24;k++){ const f=k/24, yy=y0-hh*f, amp=12*Math.sin(f*Math.PI)*(s?-1:1); const xx=x0+amp*Math.sin(f*9-t*7+s*3.1); k?ctx.lineTo(xx,yy):ctx.moveTo(xx,yy); }
+    ctx.stroke();
+  }
+  ctx.shadowBlur=10*sx; ctx.fillStyle='#fff';
+  for(let k=0;k<5;k++){ const f=((t*0.9+k/5)%1), yy=y0-hh*f; ctx.globalAlpha=a*(0.35+0.65*Math.sin(f*Math.PI)); ctx.beginPath(); ctx.arc(x0+10*Math.sin(f*9-t*7)*Math.sin(f*Math.PI),yy,2.4,0,6.2832); ctx.fill(); }
+  const gr=ctx.createRadialGradient(x0,y1,0,x0,y1,70); gr.addColorStop(0,'rgba(180,255,255,'+(0.55*a)+')'); gr.addColorStop(1,'rgba(0,240,255,0)');
+  ctx.globalAlpha=1; ctx.shadowBlur=0; ctx.fillStyle=gr; ctx.fillRect(x0-70,y1-60,140,120);
   ctx.restore();
 }
 function fireAt(x,y,sc,t,sd){
@@ -3568,7 +3657,7 @@ function renderTools(){
 }
 function setMode(m){
   G.mode='auto'; input.active=false;
-  $('hint').textContent='AI fires everything. Hold the field to steer the turret, hold a weapon icon and drag to aim it';
+  $('hint').textContent='Hold the field to aim. Hold a weapon icon and drag to place it.';
 }
 function arm(kind){
   if(G.state!=='playing') return;
@@ -4383,11 +4472,11 @@ function renderCards(){
 /* ---- teaching pauses: a first-time mob or weapon stops the game until the player acknowledges it ---- */
 const TEACH=()=>!navigator.webdriver||window.__forceTeach;
 const WTEACH={
-  mine:{kind:'Blast',good:'Packs of small ships and anything armored.',bad:'Light darts and blast-proof hulls.',how:'Auto mode drops mines for you. In Manual, tap Mine, then drag to place one yourself.'},
-  field:{kind:'Energy',good:'Slowing fast or heavy mobs so every weapon gets more hits.',bad:'Energy-dampened (Ionized) levels.',how:'Auto mode lays fields where mobs will pass. In Manual, tap Field, then drag to place it.'},
-  chain:{kind:'Energy',good:'Crowds: the bolt jumps from mob to mob.',bad:'Shielded ships and Ionized levels.',how:'Fires on its own at mobs away from your turret. Watch for the crackle: that is where it strikes.'},
-  saw:{kind:'Kinetic',good:'Tight groups, and slicing through weak mobs.',bad:'Hardened plating and bosses.',how:'Launches itself and bounces around on its own. No aiming needed.'},
-  mortar:{kind:'Blast',good:'Big targets and tight clusters.',bad:'Fast movers: lead your shot.',how:'Fully automatic. The AI picks clusters and big targets and leads its shots. A flare shows where each shell will land.'}
+  mine:{kind:'Blast',good:'Packs and armored hulls.',bad:'Fast darts and blast-proof plating.',how:'Plants itself where mobs bunch up. Hold the icon and drag to plant one yourself.'},
+  field:{kind:'Energy',good:'Fast or heavy mobs. Slowed targets eat more of everything else.',bad:'Ionized levels, where energy dies.',how:'Lays a slow zone across the lane. Hold the icon and drag to drop it where you want.'},
+  chain:{kind:'Energy',good:'Crowds. The bolt jumps from mob to mob.',bad:'Shield drones and Ionized levels.',how:'Arcs on its own at mobs away from the turret. Hold the icon and drag to pick the first target.'},
+  saw:{kind:'Kinetic',good:'Tight groups and soft mobs.',bad:'Hard plating and bosses.',how:'Launches itself and ricochets around the field. Hold the icon and drag to throw it yourself.'},
+  mortar:{kind:'Blast',good:'Big targets and clusters.',bad:'Fast movers.',how:'Lobs shells at clusters. A flare marks each landing spot. Hold the icon and drag to choose it.'}
 };
 function teachRes(res){ const nm={k:'Kinetic (turret, saw)',b:'Blast (mines, mortar)',e:'Energy (field, chain)'}, w=[],r=[]; for(const k of ['k','b','e']){ if(res[k]>=1.3) w.push(nm[k]); else if(res[k]<=0.7) r.push(nm[k]); } return {w:w,r:r}; }
 function queueTeach(it){ if(!TEACH()) return; if(!G.teachQ) G.teachQ=[]; G.teachQ.push(it); if(G.state==='playing') openTeach(); }
@@ -4402,17 +4491,18 @@ function openTeach(){
     body='<div class="tcls" style="color:'+cl.color+'">'+cl.name+'</div><p>'+d.note+'</p>'+(tr.w.length?'<div class="tr tw"><b>Weak to</b> '+tr.w.join(', ')+'</div>':'')+(tr.r.length?'<div class="tr tx"><b>Resists</b> '+tr.r.join(', ')+'</div>':'');
   } else {
     const w=WTEACH[it.w], wp=WEAPN[it.w]; col=wp.color; head='NEW WEAPON'; name=wp.name; wait=4;
-    pic='<div class="wic" style="color:'+col+'">'+ico(WIC[it.w],72)+'</div>';
+    pic=demoHtml(it.w)||'<div class="wic" style="color:'+col+'">'+ico(WIC[it.w],72)+'</div>';
     body='<div class="tcls" style="color:'+col+'">'+w.kind+' damage</div><p>'+w.how+'</p><div class="tr tw"><b>Great against</b> '+w.good+'</div><div class="tr tx"><b>Struggles with</b> '+w.bad+'</div>';
   }
   ov.innerHTML='<div class="tcard" style="--c:'+col+'"><div class="tk">'+head+'</div>'+pic+'<h2>'+name+'</h2>'+body+'<button class="btn big" type="button">Got it</button></div>';
   document.body.appendChild(ov);
   const btn=ov.querySelector('button'); btn.focus();
+  demoRun(ov);
   const cv=ov.querySelector('#tpic'), t0=performance.now();
   const iv=setInterval(()=>{
     if(cv){ const g=cv.getContext('2d'), d=MOB[it.type], k=Math.min(3,80/d.r); g.setTransform(1,0,0,1,0,0); g.clearRect(0,0,240,240); g.setTransform(2,0,0,2,0,0); g.translate(60,60); g.scale(k,k); g.lineJoin='round'; const tt=(performance.now()-t0)/1000; shape(g,it.type,d.r,{color:d.color,flash:0,t:tt,rot:tt*0.5,vx:0,vy:1,bs:1,lw:2.2/k*1.3,col:0,seed:3}); }
   },100);
-  btn.addEventListener('click',()=>{ if(btn.disabled) return; clearInterval(iv); ov.remove(); G.state='playing'; toolKey=''; hudKey=''; if(G.teachQ&&G.teachQ.length) openTeach(); });
+  btn.addEventListener('click',()=>{ if(btn.disabled) return; clearInterval(iv); if(demoIv){ clearInterval(demoIv); demoIv=0; } ov.remove(); G.state='playing'; toolKey=''; hudKey=''; if(G.teachQ&&G.teachQ.length) openTeach(); });
 }
 function nextOffer(){ G.offer=offerCards(); if(!G.offer.length){ G.pickQ=0; closeCards(); return; } renderCards(); }
 function openCards(){
@@ -4567,15 +4657,15 @@ if(!P.intro){ const io=document.createElement('div'); io.id='introov'; io.innerH
 requestAnimationFrame(frame);
 
 /* test hook for headless checks */
-window.__rr={save:save,paintTurret:paintTurret,coachGrab:coachGrab,GR:GR,CTL:CTL,wReady:wReady,isManual:isManual,chainSnap:chainSnap,T:T,MOB:MOB,SKIN:SKIN,applySkin:applySkin,PKEYS:PKEYS,rollKey:rollKey,rollCard:rollCard,useCmd:useCmd,cmdBuy:cmdBuy,cmdNodeBuy:cmdNodeBuy,cmdP:cmdP,cmdLeft:cmdLeft,cmdEarned:cmdEarned,CMDS:CMDS,kName:kName,loadPools:loadPools,fireball:fireball,chip:chip,openTeach:openTeach,fireMortar:fireMortar,shape:shape,spawn:spawn,G:G,get P(){return P;},set P(v){P=v;},newP:newP,startLevel:startLevel,update:update,UPS:UPS,waveCount:waveCount,levelPool:levelPool,hpScale:hpScale,tune:(a,b,c,d,m,k,bk,wh,pm,lk,c0,cg)=>{if(lk!==undefined)LATEK=lk;if(pm!==undefined)PICKM=pm;if(wh!==undefined)WAVEHP=wh;if(k!==undefined)HPK=k;if(m!==undefined)MOBN=m;if(c0!==undefined)CDROP0=c0;if(cg!==undefined)CDROPG=cg;HPG=a;POOL0=b;POOLG=c;if(d!==undefined)HPA=d;},bst:bst,pickCard:pickCard,CARDS:CARDS,offerCards:offerCards,applyCard:applyCard,hasTool:hasTool,fireMortar:fireMortar,canMortar:canMortar,T:T,wcount:wcount,canBuy:canBuy,buyUp:buyUp,cardNeed:cardNeed,bandOf:bandOf,avail:avail,awardCards:awardCards,dropCount:dropCount,fuse:fuse,useEnergy:useEnergy,enTick:enTick,tryStart:tryStart,win:win,gameOver:gameOver,profileFor:profileFor,MOB:MOB,WORLDS:WORLDS,briefFor:briefFor};
+window.__rr={queueTeach:queueTeach,DEMO:DEMO,coach:coach,save:save,paintTurret:paintTurret,coachGrab:coachGrab,GR:GR,CTL:CTL,wReady:wReady,isManual:isManual,chainSnap:chainSnap,T:T,MOB:MOB,SKIN:SKIN,applySkin:applySkin,PKEYS:PKEYS,rollKey:rollKey,rollCard:rollCard,useCmd:useCmd,cmdBuy:cmdBuy,cmdNodeBuy:cmdNodeBuy,cmdP:cmdP,cmdLeft:cmdLeft,cmdEarned:cmdEarned,CMDS:CMDS,kName:kName,loadPools:loadPools,fireball:fireball,chip:chip,openTeach:openTeach,fireMortar:fireMortar,shape:shape,spawn:spawn,G:G,get P(){return P;},set P(v){P=v;},newP:newP,startLevel:startLevel,update:update,UPS:UPS,waveCount:waveCount,levelPool:levelPool,hpScale:hpScale,tune:(a,b,c,d,m,k,bk,wh,pm,lk,c0,cg)=>{if(lk!==undefined)LATEK=lk;if(pm!==undefined)PICKM=pm;if(wh!==undefined)WAVEHP=wh;if(k!==undefined)HPK=k;if(m!==undefined)MOBN=m;if(c0!==undefined)CDROP0=c0;if(cg!==undefined)CDROPG=cg;HPG=a;POOL0=b;POOLG=c;if(d!==undefined)HPA=d;},bst:bst,pickCard:pickCard,CARDS:CARDS,offerCards:offerCards,applyCard:applyCard,hasTool:hasTool,fireMortar:fireMortar,canMortar:canMortar,T:T,wcount:wcount,canBuy:canBuy,buyUp:buyUp,cardNeed:cardNeed,bandOf:bandOf,avail:avail,awardCards:awardCards,dropCount:dropCount,fuse:fuse,useEnergy:useEnergy,enTick:enTick,tryStart:tryStart,win:win,gameOver:gameOver,profileFor:profileFor,MOB:MOB,WORLDS:WORLDS,briefFor:briefFor};
 })();
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 83</div>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 84</div>
 <script>
 /* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
-(function(){ const BUILD=83; let busy=false, shown=false;
+(function(){ const BUILD=84; let busy=false, shown=false;
   const inRun=()=>{ try{ return typeof G!=='undefined'&&(G.state==='playing'||G.state==='cards'||G.state==='shop'||G.state==='paused'||G.state==='teach'||G.state==='ctl'); }catch(e){ return false; } };
   function wipeReload(){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
     if(n>=3) return;
