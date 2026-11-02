@@ -381,7 +381,11 @@ canvas.tprev.dim{filter:saturate(.35) brightness(.7)}
 .pvstar{position:absolute; right:12px; top:8px; color:var(--yellow)}
 .facts{display:flex; gap:18px; justify-content:center; font-size:14px; font-weight:700; font-variant-numeric:tabular-nums}
 .facts span{display:inline-flex; align-items:center; gap:6px}
-#armory .pvwrap .pvgo{position:absolute; left:50%; right:auto; top:auto; bottom:16px; margin:0; transform:translateX(-50%); z-index:3; width:min(78%,300px)!important; box-shadow:0 0 24px rgba(255,43,214,.55),0 6px 18px rgba(0,0,0,.6)}
+#armory .pvwrap .btn.go.pvgo{position:absolute; left:50%; right:auto; top:auto; bottom:58px; margin:0; transform:translateX(-50%); z-index:3; width:min(78%,300px)!important; box-shadow:0 0 24px rgba(255,43,214,.55),0 6px 18px rgba(0,0,0,.6)}
+#armory .pvwrap .btn.go.pvgo{background:rgba(255,255,255,.02); background-image:none; border:1.5px solid rgba(255,255,255,.55); box-shadow:none; color:#fff; text-shadow:0 0 8px rgba(0,0,0,.85); backdrop-filter:none; -webkit-backdrop-filter:none}
+#armory .pvwrap .btn.go.pvgo::before,#armory .pvwrap .btn.go.pvgo::after{display:none}
+#armory .pvwrap .btn.go.pvgo:active{background:rgba(255,255,255,.14)}
+#armory .pvwrap .btn.go.pvgo:disabled{opacity:.55}
 #pv{cursor:pointer}
 .btn.go{width:min(84%,340px); display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:14px 20px; font-size:20px; letter-spacing:.12em}
 .wlist{display:grid; gap:12px}
@@ -4696,10 +4700,10 @@ window.__rr={openPack:openPack,renderArmory:renderArmory,UI:UI,fuse:fuse,queueTe
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 88</div>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 89</div>
 <script>
 /* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
-(function(){ const BUILD=88; let busy=false, shown=false;
+(function(){ const BUILD=89; let busy=false, shown=false;
   const inRun=()=>{ try{ return typeof G!=='undefined'&&(G.state==='playing'||G.state==='cards'||G.state==='shop'||G.state==='paused'||G.state==='teach'||G.state==='ctl'); }catch(e){ return false; } };
   function wipeReload(){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
     if(n>=3) return;
