@@ -18,6 +18,7 @@ ${tables}
 ${shape}
 let P={seen:{},prog:{},st:newSt(),gems:0,frag:{pow:0,tmp:0,rch:0,cap:0,frt:0}};
 const G={wd:{id:'belt'},run:null};
+const fragAdd=(k,n)=>{ P.frag[k]=(P.frag[k]||0)+n; };
 const ico=()=>'';  const Music={up(){}};  const save=()=>{ globalThis.saves++; };
 ${mod}
 globalThis.api={starBitsFor,starHold,starsOfWorld,ECON,popc,P:()=>P,setP:v=>{P=v},G,MOB,CLS,WORLDS,stSpawn,stHit,stResolve,agg,achList,achCheck,get achQ(){return achQ},stOf,newSt};

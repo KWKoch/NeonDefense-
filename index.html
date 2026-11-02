@@ -517,6 +517,17 @@ canvas.tprev.dim{filter:saturate(.35) brightness(.7)}
 .pbtn{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 4px;border-radius:10px;background:#04101a;border:1px solid var(--g,#789);color:var(--g,#cde);font-weight:700;font-size:12px;cursor:pointer}
 .pbtn b{font-size:14px;color:#e6fbff;display:inline-flex;align-items:center;gap:4px}
 .pbtn:disabled{opacity:.4;cursor:default}
+#armory .ubody .gem{border-radius:14px; max-width:none; aspect-ratio:auto; min-height:74px; padding:6px 2px; gap:0; justify-content:center}
+#armory .ubody .gem.cur{box-shadow:0 0 0 2px var(--g),0 0 14px color-mix(in srgb,var(--g) 60%,transparent)}
+#armory .ubody .gem .ic{filter:drop-shadow(0 0 4px currentColor)}
+#armory .pbtn{padding:6px 2px 7px; gap:1px}
+.vsl{display:block; filter:drop-shadow(0 0 3px currentColor)} .vsl.full{filter:drop-shadow(0 0 7px currentColor); animation:vfull 1.6s ease-in-out infinite} @keyframes vfull{50%{filter:drop-shadow(0 0 12px currentColor)}}
+.pbtn .vsl{margin-bottom:1px}
+.forgefx{position:fixed; left:50%; top:40%; width:0; height:0; z-index:95; color:var(--c); pointer-events:none}
+.forgefx i{position:absolute; left:-12px; top:-12px; opacity:0; animation:fgIn .7s var(--d) ease-in forwards}
+@keyframes fgIn{0%{opacity:0; transform:translate(var(--x),var(--y)) rotate(0)} 25%{opacity:1} 100%{opacity:0; transform:translate(0,0) rotate(220deg) scale(.4)}}
+.forgefx b{position:absolute; left:-28px; top:-28px; opacity:0; filter:drop-shadow(0 0 16px var(--c)); animation:fgPop .6s .8s ease-out forwards}
+@keyframes fgPop{0%{opacity:0; transform:scale(.2)} 45%{opacity:1; transform:scale(1.3)} 100%{opacity:0; transform:scale(1) translateY(-34px)}}
 .pips{display:inline-flex; gap:3px; align-items:center; justify-content:center; height:8px} .pips u{display:block; width:5px; height:5px; background:currentColor; transform:rotate(45deg); box-shadow:0 0 5px currentColor}
 
 /* ================= MENU SKIN v2: glass panels, bevels, depth ================= */
@@ -629,8 +640,8 @@ body.menu{background:
 .ubuy{width:auto; min-width:104px; padding:5px 12px; min-height:0; font-size:12px; margin-top:0; white-space:nowrap}
 .ubuy small{font-size:10px; opacity:.85; margin-left:3px}
 .ufrg{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:4px}
-.ufrg .pbtn{padding:2px 0; border-radius:10px; gap:0; font-size:9px; height:34px; justify-content:center}
-.ufrg .pbtn b{font-size:12px; display:block; line-height:1.05}
+.ufrg .pbtn{padding:4px 0 5px; border-radius:12px; gap:1px; font-size:9px; height:auto; min-height:74px; justify-content:center}
+.ufrg .pbtn b{font-size:12px; display:flex; align-items:center; gap:2px; line-height:1.05}
 .wpns.six{grid-template-columns:repeat(6,minmax(0,1fr)); gap:4px}
 .wpns.six .wpn{flex-direction:column; gap:1px; padding:5px 0 4px; font-size:10px; letter-spacing:.02em}
 .wpns.six .wpn small{font-size:10px; opacity:.8; letter-spacing:0; text-transform:none}
@@ -1033,6 +1044,9 @@ const kW=k=>String(k).split('.')[0], kT=k=>String(k).split('.')[1];
 const kName=k=>(PWN[kW(k)]||'')+' '+((CT[kT(k)]||{}).name||'');
 const kOk=k=>PKEYS.indexOf(k)>=0;
 const newInv=()=>{ const o={}; PKEYS.forEach(k=>{ o[k]=[0,0,0,0]; }); return o; }, newFrag=()=>{ const o={}; PKEYS.forEach(k=>{ o[k]=0; }); return o; };
+/* Shards are a ledger: fe = every shard ever earned, fs = every shard ever spent, balance = fe - fs. Both only grow, so a merge with an older copy (max of each) can never hand spent shards back. */
+const fragAdd=(k,n)=>{ P.frag=P.frag||{}; P.fe=P.fe||{}; P.fe[k]=(P.fe[k]||0)+n; P.frag[k]=Math.max(0,(P.fe[k]||0)-((P.fs||{})[k]||0)); };
+const fragSpend=(k,n)=>{ P.fs=P.fs||{}; P.fs[k]=(P.fs[k]||0)+n; P.frag[k]=Math.max(0,((P.fe||{})[k]||0)-P.fs[k]); };
 function splitN(n,w){ const s=w.reduce((a,b)=>a+b,0)||1, q=w.map(x=>n*x/s), r=q.map(Math.floor); let rest=n-r.reduce((a,b)=>a+b,0); q.map((x,i)=>[x-r[i],i]).sort((a,b)=>b[0]-a[0]).forEach(z=>{ if(rest>0){ r[z[1]]++; rest--; } }); return r; }
 function loadPools(o){
   const inv=o.inv&&typeof o.inv==='object'?o.inv:{}, fr=o.frag&&typeof o.frag==='object'?o.frag:{};
@@ -1044,13 +1058,15 @@ function loadPools(o){
     if(a) for(let i=0;i<4;i++){ const n=Math.max(0,Math.floor(+a[i]||0)); if(n) splitN(n,w).forEach((v,j)=>{ P.inv[ks[j]][i]+=v; }); }
     if(f>0) splitN(f,w).forEach((v,j)=>{ P.frag[ks[j]]+=v; });
   });
+  const fe=o.fe&&typeof o.fe==='object'?o.fe:null, fs=o.fs&&typeof o.fs==='object'?o.fs:{};
+  PKEYS.forEach(k=>{ if(fe){ P.fe[k]=Math.max(0,Math.floor(+fe[k]||0)); P.fs[k]=Math.max(0,Math.floor(+fs[k]||0)); P.frag[k]=Math.max(0,P.fe[k]-P.fs[k]); } else { P.fe[k]=P.frag[k]; P.fs[k]=0; } });
 }
 const newPW=()=>({best:0,sel:1,perf:{},eclr:{},stars:{}});
 /* Combat record + achievements. enc/kill/leak are per mob type; w[weapon][mob]=[engaged,defeated,killingBlows,resistedEngaged,resistedDefeated,resistedKillingBlows]; world[id][mob]=1 once met there; ach[id]=unlock time. */
 const newSt=()=>({v:1,enc:{},kill:{},leak:{},rz:{},hold:{},w:{},world:{},ach:{},pw:{}});
 function pw(o){ return o.prog[o.world]||(o.prog[o.world]=newPW()); }
 const newP=()=>{
-  const o={inv:newInv(),lv:{},cm:{},gems:0,pass:0,starter:0,chestDay:'',passDay:'',adDay:'',adN:0,ledger:[],world:'belt',own:{belt:true},prog:{},seen:{},st:newSt(),frag:newFrag(),pk:{s:0,m:0,l:0,f:0},intro:0,en:EN_MAX,enV:2,enT:Date.now()};
+  const o={inv:newInv(),lv:{},cm:{},gems:0,pass:0,starter:0,chestDay:'',passDay:'',adDay:'',adN:0,ledger:[],world:'belt',own:{belt:true},prog:{},seen:{},st:newSt(),frag:newFrag(),fe:newFrag(),fs:newFrag(),pk:{s:0,m:0,l:0,f:0},intro:0,en:EN_MAX,enV:2,enT:Date.now()};
   Object.defineProperty(o,'best',{get(){ return pw(o).best; },set(v){ pw(o).best=v; },enumerable:false});
   Object.defineProperty(o,'sel',{get(){ return pw(o).sel; },set(v){ pw(o).sel=v; },enumerable:false});
   return o;
@@ -1756,7 +1772,7 @@ function starBitsFor(run,hold,feat){
 function starsOfWorld(wid){ const q=((P.prog||{})[wid]||{}).stars||{}; let n=0; for(const k in q) n+=popc(q[k]|0); return n; }
 function achReward(d){
   const g=ECON.achGems[d.tier]||0, f=ECON.achFrag[d.tier]||0; P.gems=(P.gems||0)+g;
-  if(f){ const t=typeof rollCard==='function'?rollCard('run'):'turret.pow'; P.frag=P.frag||{}; P.frag[t]=(P.frag[t]||0)+f; }
+  if(f){ const t=typeof rollCard==='function'?rollCard('run'):'turret.pow'; fragAdd(t,f); }
   d.rw={g:g,f:f};
 }
 function achList(){
@@ -3601,8 +3617,8 @@ const IC={
   frt:'<path d="M8 1.5l5.5 2v4.2c0 3.2-2.4 5.3-5.5 6.8-3.100-1.500-5.500-3.600-5.500-6.800V3.500z"/>',
   bolt:'<path d="M9.5 1.5 4 9h4l-1.2 5.5L12.5 7H8.6z"/>',
   wave:'<path d="M1.500 8c2-4.500 3.500-4.500 5 0s3 4.500 5 0 2-3.500 3-3.500"/>',
-  crystal:'<path d="M8 1 12 4v8l-4 3-4-3V4z"/><path d="M4 4l4 2.500L12 4M8 6.500V15"/>',
-  shard:'<path d="M8 1.500 13 11 3 13z"/><path d="M8 1.500 6.500 9.500"/>',
+  crystal:'<path fill="currentColor" fill-opacity=".22" d="M8 1 3.500 4.500v7L8 15z"/><path fill="currentColor" fill-opacity=".52" d="M8 1l4.500 3.500v7L8 15z"/><path d="M8 1 3.500 4.500v7L8 15l4.500-3.500v-7z"/><path d="M3.500 4.500 8 7l4.500-2.500M8 7v8"/>',
+  shard:'<path fill="currentColor" fill-opacity=".5" d="M3.500 14.500 4 5.500 8 1.500l1.300 3.700-2.300 2.600 3.600 1.500-2.100 2.900 2.900 2.300z"/><path d="M4 5.500 7 7.800M12.800 5.500l.7 1.800M11.800 2.800l1 1"/>',
   cards:'<rect x="5" y="2.500" width="8.500" height="11" rx="1.600"/><path d="M2.500 5v8"/>',
   lock:'<rect x="3.500" y="7" width="9" height="7" rx="1.500"/><path d="M5.500 7V5a2.500 2.500 0 0 1 5 0v2"/>',
   world:'<circle cx="8" cy="8" r="3.300"/><ellipse cx="8" cy="8" rx="7" ry="2.500" transform="rotate(-25 8 8)"/>',
@@ -3616,6 +3632,17 @@ const IC={
   spk:'<path d="M2 6h3l4-3.200v10.400L5 10H2z"/><path d="M11.500 5.500a3.500 3.500 0 0 1 0 5M13 3.500a6.500 6.500 0 0 1 0 9"/>',
   heart:'<path d="M8 14 2.500 8.500a3.200 3.200 0 0 1 5.500-3.200 3.200 3.200 0 0 1 5.500 3.200z"/>'
 };
+let _vid=0;
+/* A crystal that fills up with the shards you hold: dashed outline = missing pieces, solid = assembled */
+function vessel(frac,sz){ const id='vs'+(++_vid), f=Math.max(0,Math.min(1,frac)), y=(2+36*(1-f)).toFixed(1), full=f>=1;
+  return '<svg class="vsl'+(full?' full':'')+'" viewBox="0 0 32 40" width="'+Math.round(sz*0.8)+'" height="'+sz+'" aria-hidden="true"><defs><clipPath id="'+id+'"><rect x="0" y="'+y+'" width="32" height="40"/></clipPath></defs>'
+    +'<path d="M16 2 26 10v20L16 38 6 30V10z" fill="none" stroke="currentColor" stroke-opacity=".45" stroke-width="1.4" stroke-dasharray="'+(full?'0':'3 2.500')+'"/>'
+    +'<g clip-path="url(#'+id+')"><path fill="currentColor" fill-opacity=".28" d="M16 2 6 10v20l10 8z"/><path fill="currentColor" fill-opacity=".62" d="M16 2l10 8v20l-10 8z"/></g>'
+    +'<path d="M6 10l10 6 10-6M16 16v22" fill="none" stroke="currentColor" stroke-opacity="'+(full?'.9':'.4')+'" stroke-width="1.100"/>'
+    +(full?'<path d="M16 2 26 10v20L16 38 6 30V10z" fill="none" stroke="currentColor" stroke-width="1.600"/>':'')+'</svg>'; }
+function forgeFx(r){ const o=document.createElement('div'); o.className='forgefx'; o.style.setProperty('--c',RAR[r].color); const n=5; let h='';
+  for(let i=0;i<n;i++){ const a=i/n*6.283+0.4; h+='<i style="--x:'+Math.round(Math.cos(a)*96)+'px;--y:'+Math.round(Math.sin(a)*96)+'px;--d:'+(i*45)+'ms">'+ico('shard',24)+'</i>'; }
+  h+='<b>'+ico('crystal',56)+'</b>'; o.innerHTML=h; document.body.appendChild(o); setTimeout(()=>o.remove(),1500); }
 const rarPips=r=>'<i class="pips" aria-hidden="true">'+'<u></u>'.repeat(r+1)+'</i>';
 const ico=(n,sz)=>'<svg class="ic" viewBox="0 0 16 16" width="'+(sz||14)+'" height="'+(sz||14)+'" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+IC[n]+'</svg>';
 [['toolMine','mine'],['toolMortar','mortar'],['toolField','field'],['toolChain','chain'],['toolSaw','saw']].forEach(a=>$(a[0]).insertAdjacentHTML('afterbegin',ico(a[1])));
@@ -3860,7 +3887,7 @@ function starPay(nb,bits,had){
   for(let i=0;i<3;i++) if(nb&(1<<i)){ g+=ECON.starGems[i]; f+=ECON.starFrag[i]; }
   if(bits===7&&had!==7){ g+=ECON.fullGems; f+=ECON.fullFrag; }
   if(g) P.gems=(P.gems||0)+g;
-  if(f){ const ty=rollCard('run'); P.frag=P.frag||{}; P.frag[ty]=(P.frag[ty]||0)+f; t=ty; }
+  if(f){ const ty=rollCard('run'); fragAdd(ty,f); t=ty; }
   return {bits:bits,nb:nb,g:g,f:f,t:t,n:G.n,wd:G.wd};
 }
 function starsRow(i){
@@ -3894,7 +3921,7 @@ function adReroll(){ if(G.state!=='cards') return; rewardFlow('card_reroll',()=>
 function forge(t,r){
   if(!kOk(t)||!(r>=0&&r<4)) return; P.frag=P.frag||{};
   if((P.frag[t]||0)<FORGE[r]){ toast('Not enough '+kName(t)+' shards'); return; }
-  P.frag[t]-=FORGE[r]; P.inv[t][r]++; logEv('forge',t+':'+r); save(); Music.up(); toast('Forged: 1\u00d7 '+RAR[r].name+' '+kName(t)+' crystal'); renderArmory();
+  fragSpend(t,FORGE[r]); P.inv[t][r]++; logEv('forge',t+':'+r); save(); Music.up(); toast('Forged: 1\u00d7 '+RAR[r].name+' '+kName(t)+' crystal'); forgeFx(r); renderArmory();
 }
 
 /* ================= card packs ================= */
@@ -3923,7 +3950,7 @@ function openPack(id){
   const free=id==='s'&&!P.pk.f, cost=free?0:pk.cost;
   if((P.gems||0)<cost){ toast('Not enough gems. Play levels and claim daily rewards to earn more.'); return; }
   P.gems-=cost; if(free) P.pk.f=1;
-  const got=rollPack(pk,free); P.frag=P.frag||{}; got.forEach(c=>{ P.inv[c.t][c.r]++; });
+  const got=rollPack(pk,free); got.forEach(c=>{ P.inv[c.t][c.r]++; });
   logEv('pack',id+(free?':free':'')); save(); showPackReveal(pk,got); renderArmory();
 }
 let pkT=null;
@@ -4061,11 +4088,11 @@ function arsenalHtml(){
     if(open){
       h+='<div class="upanel"><div class="urow"><div class="uv">'+u.txt(lv)+(maxed?'':' <em>→</em> '+u.txt(lv+1))+'</div>'
         +'<button class="btn sm ubuy" data-buy="'+u.id+'" type="button" style="--c:'+ct.color+'" title="'+(maxed?'Max level':'Needs '+need+' '+RAR[b].name+' or better '+ct.name+' crystals; you have '+have)+'" '+(ok?'':'disabled')+'>'+(maxed?'Max':'Upgrade <small>'+need+'\u00d7 '+rarPips(b)+'+</small>')+'</button></div>'
-        +'<div class="ubody"><div class="ucol"><div class="ulab">'+ico('crystal',14)+' <b>'+avail(u.k,0)+'</b></div><div class="ugems">'
+        +'<div class="ubody"><div class="ucol"><div class="ulab">'+ico('crystal',24)+' <b>'+avail(u.k,0)+'</b></div><div class="ugems">'
         +RAR.map((r,i)=>{ const n=P.inv[u.k][i], fz=n>=FUSE_N&&i<3, cur=!maxed&&i===b;
-          return (fz?'<button type="button" class="gem fuse'+(i===3?' leg':'')+(cur?' cur':'')+'" data-fuse="'+u.k+':'+i+'" title="Fuse '+FUSE_N+' '+r.name+' crystals into 1 '+RAR[i+1].name+'"':'<span class="gem'+(n?'':' zero')+(i===3?' leg':'')+(cur?' cur':'')+'" title="'+r.name+'"')+' style="--g:'+r.color+'"><b>'+n+'</b><small>'+rarPips(i)+'</small>'+(fz?'</button>':'</span>'); }).join('')
-        +'</div></div><div class="ucol"><div class="ulab">'+ico('shard',14)+' <b>'+f+'</b></div><div class="ufrg">'
-        +FORGE.map((c,r)=>'<button class="pbtn" type="button" data-forge="'+u.k+':'+r+'" style="--g:'+RAR[r].color+'" title="Forge 1 '+RAR[r].name+' crystal" '+(f<c?'disabled':'')+'><span>'+rarPips(r)+'</span><b>'+c+ico('shard',12)+'</b></button>').join('')
+          return (fz?'<button type="button" class="gem fuse'+(i===3?' leg':'')+(cur?' cur':'')+'" data-fuse="'+u.k+':'+i+'" title="Fuse '+FUSE_N+' '+r.name+' crystals into 1 '+RAR[i+1].name+'"':'<span class="gem'+(n?'':' zero')+(i===3?' leg':'')+(cur?' cur':'')+'" title="'+r.name+'"')+' style="--g:'+r.color+'">'+ico('crystal',30)+'<b>'+n+'</b><small>'+rarPips(i)+'</small>'+(fz?'</button>':'</span>'); }).join('')
+        +'</div></div><div class="ucol"><div class="ulab">'+ico('shard',24)+' <b>'+f+'</b></div><div class="ufrg">'
+        +FORGE.map((c,r)=>'<button class="pbtn" type="button" data-forge="'+u.k+':'+r+'" style="--g:'+RAR[r].color+'" title="Forge 1 '+RAR[r].name+' crystal" '+(f<c?'disabled':'')+'>'+vessel(f/c,46)+'<b>'+c+ico('shard',12)+'</b></button>').join('')
         +'</div></div></div></div>';
     }
     h+='</div>';
@@ -4667,10 +4694,10 @@ window.__rr={openPack:openPack,renderArmory:renderArmory,UI:UI,fuse:fuse,queueTe
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 86</div>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 87</div>
 <script>
 /* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
-(function(){ const BUILD=86; let busy=false, shown=false;
+(function(){ const BUILD=87; let busy=false, shown=false;
   const inRun=()=>{ try{ return typeof G!=='undefined'&&(G.state==='playing'||G.state==='cards'||G.state==='shop'||G.state==='paused'||G.state==='teach'||G.state==='ctl'); }catch(e){ return false; } };
   function wipeReload(){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
     if(n>=3) return;
