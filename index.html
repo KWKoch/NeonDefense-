@@ -2001,9 +2001,13 @@ function pickTarget(){
     let sc=e.y+e.dmg*2+(e.type==='boss'?120:0)+(e.type==='orb'?40:0)+(e.type==='tender'||e.type==='egg'?110:0)+(e.type==='leech'&&e.latched?260:0)+(e.res.k-1)*50;   /* nearness + threat */
     const left=Math.max(0.01,e.hp-p)/Math.max(0.01,shot*e.res.k);                        /* shots still needed */
     sc+=160*(1-clamp(e.hp/(e.maxhp||e.hp),0,1));     /* finish damaged mobs */
-    if(left<=2.2) sc+=70;                             /* kill is probable */
+    /* kills first: the fewer shots a kill needs, the more it is worth, and more still the more damage that mob would do downstream */
+    sc+=(300+3*(Math.min(e.dmg,40)+6))*Math.min(1,1/left);
+    sc+=Math.max(0,e.y-GROUND*0.6)*0.9;               /* about to land: stopping it now saves the most */
+    if(left>6&&e.type!=='boss') sc-=Math.min(160,(left-6)*14);   /* don't sink shots into a tank while quick kills are on the table */
     const ax=aimFor(e);
-    sc-=Math.abs(ax-T.x)/slide*140;                   /* slew time costs DPS */
+    sc-=Math.abs(ax-T.x)/slide*220;                   /* slew time costs kills: take the easy shot */
+    if(hitsFrom(e)) sc+=60;                           /* already lined up: a free shot */
     if(e===T.target) sc+=45+(left<=3.2?90:0);        /* stay committed, esp. when a kill is close */
     if(sc>bs){bs=sc;best=e;}
   }
@@ -4690,15 +4694,15 @@ if(!P.intro){ const io=document.createElement('div'); io.id='introov'; io.innerH
 requestAnimationFrame(frame);
 
 /* test hook for headless checks */
-window.__rr={fire:fire,spawn:spawn,killEnemy:killEnemy,openPack:openPack,renderArmory:renderArmory,UI:UI,fuse:fuse,queueTeach:queueTeach,DEMO:DEMO,coach:coach,save:save,paintTurret:paintTurret,coachGrab:coachGrab,GR:GR,CTL:CTL,wReady:wReady,isManual:isManual,chainSnap:chainSnap,T:T,MOB:MOB,SKIN:SKIN,applySkin:applySkin,PKEYS:PKEYS,rollKey:rollKey,rollCard:rollCard,useCmd:useCmd,cmdBuy:cmdBuy,cmdNodeBuy:cmdNodeBuy,cmdP:cmdP,cmdLeft:cmdLeft,cmdEarned:cmdEarned,CMDS:CMDS,kName:kName,loadPools:loadPools,fireball:fireball,chip:chip,openTeach:openTeach,fireMortar:fireMortar,shape:shape,spawn:spawn,G:G,get P(){return P;},set P(v){P=v;},newP:newP,startLevel:startLevel,update:update,UPS:UPS,waveCount:waveCount,levelPool:levelPool,hpScale:hpScale,tune:(a,b,c,d,m,k,bk,wh,pm,lk,c0,cg)=>{if(lk!==undefined)LATEK=lk;if(pm!==undefined)PICKM=pm;if(wh!==undefined)WAVEHP=wh;if(k!==undefined)HPK=k;if(m!==undefined)MOBN=m;if(c0!==undefined)CDROP0=c0;if(cg!==undefined)CDROPG=cg;HPG=a;POOL0=b;POOLG=c;if(d!==undefined)HPA=d;},bst:bst,pickCard:pickCard,CARDS:CARDS,offerCards:offerCards,applyCard:applyCard,hasTool:hasTool,fireMortar:fireMortar,canMortar:canMortar,T:T,wcount:wcount,canBuy:canBuy,buyUp:buyUp,cardNeed:cardNeed,bandOf:bandOf,avail:avail,awardCards:awardCards,dropCount:dropCount,fuse:fuse,useEnergy:useEnergy,enTick:enTick,tryStart:tryStart,win:win,gameOver:gameOver,profileFor:profileFor,MOB:MOB,WORLDS:WORLDS,briefFor:briefFor};
+window.__rr={pickTarget:pickTarget,fire:fire,spawn:spawn,killEnemy:killEnemy,openPack:openPack,renderArmory:renderArmory,UI:UI,fuse:fuse,queueTeach:queueTeach,DEMO:DEMO,coach:coach,save:save,paintTurret:paintTurret,coachGrab:coachGrab,GR:GR,CTL:CTL,wReady:wReady,isManual:isManual,chainSnap:chainSnap,T:T,MOB:MOB,SKIN:SKIN,applySkin:applySkin,PKEYS:PKEYS,rollKey:rollKey,rollCard:rollCard,useCmd:useCmd,cmdBuy:cmdBuy,cmdNodeBuy:cmdNodeBuy,cmdP:cmdP,cmdLeft:cmdLeft,cmdEarned:cmdEarned,CMDS:CMDS,kName:kName,loadPools:loadPools,fireball:fireball,chip:chip,openTeach:openTeach,fireMortar:fireMortar,shape:shape,spawn:spawn,G:G,get P(){return P;},set P(v){P=v;},newP:newP,startLevel:startLevel,update:update,UPS:UPS,waveCount:waveCount,levelPool:levelPool,hpScale:hpScale,tune:(a,b,c,d,m,k,bk,wh,pm,lk,c0,cg)=>{if(lk!==undefined)LATEK=lk;if(pm!==undefined)PICKM=pm;if(wh!==undefined)WAVEHP=wh;if(k!==undefined)HPK=k;if(m!==undefined)MOBN=m;if(c0!==undefined)CDROP0=c0;if(cg!==undefined)CDROPG=cg;HPG=a;POOL0=b;POOLG=c;if(d!==undefined)HPA=d;},bst:bst,pickCard:pickCard,CARDS:CARDS,offerCards:offerCards,applyCard:applyCard,hasTool:hasTool,fireMortar:fireMortar,canMortar:canMortar,T:T,wcount:wcount,canBuy:canBuy,buyUp:buyUp,cardNeed:cardNeed,bandOf:bandOf,avail:avail,awardCards:awardCards,dropCount:dropCount,fuse:fuse,useEnergy:useEnergy,enTick:enTick,tryStart:tryStart,win:win,gameOver:gameOver,profileFor:profileFor,MOB:MOB,WORLDS:WORLDS,briefFor:briefFor};
 })();
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 95</div>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 96</div>
 <script>
 /* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
-(function(){ const BUILD=95; let busy=false, shown=false;
+(function(){ const BUILD=96; let busy=false, shown=false;
   const inRun=()=>{ try{ return typeof G!=='undefined'&&(G.state==='playing'||G.state==='cards'||G.state==='shop'||G.state==='paused'||G.state==='teach'||G.state==='ctl'); }catch(e){ return false; } };
   function wipeReload(){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
     if(n>=3) return;
