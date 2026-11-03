@@ -937,10 +937,10 @@ const n1=v=>v<10?v.toFixed(1):String(Math.round(v));
 const EN_MAX=50, EN_COST=5, EN_REGEN=96*1000, EN_AD=5;   /* 50 max, 5 per attempt (10 elite), ~8 min per attempt back, rewarded ad = +5 */
 const ST={
   rate:l=>0.36*Math.pow(0.9,l), dmg:l=>Math.pow(1.18,l), barrels:l=>1+l, pierce:l=>l, slide:l=>300+l*45, armor:l=>100, shield:l=>24+l*8, shreg:l=>0.2+0.03*l,
-  mdmg:l=>8*Math.pow(1.18,l), mrad:l=>48+l*8, mstock:l=>2+l, mrech:l=>5.6*Math.pow(0.88,l),
+  mdmg:l=>8*Math.pow(1.18,l), mrad:l=>2*(48+l*8), mstock:l=>2+l, mrech:l=>5.6*Math.pow(0.88,l),
   fslow:l=>Math.max(0.06,1-3*(1-Math.max(0.18,0.62-0.07*l))), fdur:l=>5+l, fwid:l=>100+l*25, fdps:l=>1.2*Math.pow(1.2,l), frech:l=>9.8*Math.pow(0.9,l),
   cdmg:l=>5*Math.pow(1.18,l), cj:l=>3+l, ccool:l=>2.8*Math.pow(0.93,l), cfk:l=>1+l,
-  sdmg:l=>3*Math.pow(1.18,l), slife:l=>8+l, ssz:l=>22.75*(1+0.07*l), scool:l=>0.18*Math.pow(0.9,l),
+  sdmg:l=>3*Math.pow(1.18,l), slife:l=>8+l, ssz:l=>2*22.75*(1+0.07*l), scool:l=>0.18*Math.pow(0.9,l),
   mortdmg:l=>14*Math.pow(1.18,l), mortrad:l=>64+l*8, mortrech:l=>7*Math.pow(0.9,l), mortmax:l=>2+l
 };
 const fslowLv=l=>Math.min(6,Math.floor(l/4));
@@ -2050,11 +2050,11 @@ function updateTurret(dt){
 }
 
 /* ---- tools ---- */
-function mineRech(){ return ST.mrech(L('mrech'))*Math.pow(0.85,bq('mrech')); }
-function mortRech(){ return ST.mortrech(L('mortrech'))*Math.pow(0.88,bq('mortspd')); }
+function mineRech(){ return ST.mrech(L('mrech'))*Math.pow(0.75,bq('mrech')); }
+function mortRech(){ return ST.mortrech(L('mortrech'))*Math.pow(0.6,bq('mortspd')); }
 function chainCd(){ return Math.max(0.3,ST.ccool(L('ccool'))*Math.pow(0.85,bq('crate'))); }
 function mineMax(){ return ST.mstock(L('mstock'))+2*bst('mcount'); }
-function mineR(){ return ST.mrad(L('mrad'))*(1+0.15*bq('marea')); }
+function mineR(){ return ST.mrad(L('mrad'))*Math.pow(1.35,bq('marea')); }
 function fieldHW(){ return ST.fwid(L('fwid'))*(1+0.2*bq('fwidb')); }
 function canMine(){ return hasTool('mine')&&G.stock>=1; }
 /* Support weapons (mines, chain lightning) go after mobs the turret is NOT already shooting: not its locked target, not anything in its firing lane. */
@@ -2564,10 +2564,10 @@ function detonate(m){
   G.rings.push({x:m.x,y:m.y,r:10,max:R,life:0.45,t:0,color:C.orange}); G.rings.push({x:m.x,y:m.y,r:6,max:R*0.6,life:0.3,t:0,color:C.amber});
   fireball(m.x,m.y,R*0.95,C.orange,2); G.shake=Math.min(1,G.shake+0.2); Music.boom(true);
   blast(m.x,m.y,R,dmg,0,'mine');
-  if(bst('mfreeze')) for(const e of G.enemies){ if(!e.dead&&Math.hypot(e.x-m.x,e.y-m.y)<R+e.r*0.5) freeze(e,1.6); }
-  if(bst('mcluster')) for(let i=0;i<4;i++){ const a=i*1.571+0.785, ox=Math.cos(a)*R*0.9, oy=Math.sin(a)*R*0.9;
-    G.delay.push({t:0.16+i*0.05,fn:()=>{ G.rings.push({x:m.x+ox,y:m.y+oy,r:4,max:R*0.55,life:0.3,t:0,color:C.amber}); burst(m.x+ox,m.y+oy,C.amber,8,160); blast(m.x+ox,m.y+oy,R*0.55,dmg*0.5,0,'mine'); }}); }
-  if(bst('mchain')) for(const mm of G.mines){ if(mm.dead||mm===m) continue; if(Math.hypot(mm.x-m.x,mm.y-m.y)<R*1.8) G.delay.push({t:0.12,fn:()=>{ if(!mm.dead) detonate(mm); }}); }
+  if(bst('mfreeze')) for(const e of G.enemies){ if(!e.dead&&Math.hypot(e.x-m.x,e.y-m.y)<R+e.r*0.5) freeze(e,1.6*bst('mfreeze')); }
+  if(bst('mcluster')){ const nc=2+2*bst('mcluster'); for(let i=0;i<nc;i++){ const a=i*6.2832/nc+0.785, ox=Math.cos(a)*R*0.9, oy=Math.sin(a)*R*0.9;
+    G.delay.push({t:0.16+i*0.05,fn:()=>{ G.rings.push({x:m.x+ox,y:m.y+oy,r:4,max:R*0.55,life:0.3,t:0,color:C.amber}); burst(m.x+ox,m.y+oy,C.amber,8,160); blast(m.x+ox,m.y+oy,R*0.55,dmg*0.5,0,'mine'); }}); } }
+  if(bst('mchain')) for(const mm of G.mines){ if(mm.dead||mm===m) continue; if(Math.hypot(mm.x-m.x,mm.y-m.y)<R*(1.8+0.9*(bst('mchain')-1))) G.delay.push({t:0.12,fn:()=>{ if(!mm.dead) detonate(mm); }}); }
 }
 function updateMines(dt){
   if(hasTool('mine')&&G.stock<mineMax()){ G.mineT+=dt; if(G.mineT>=mineRech()){ G.mineT=0; G.stock++; } }
@@ -2684,7 +2684,8 @@ function updateChain(dt){
     }
   }
 }
-/* ---- buzz saw (auto, kinetic, bounces off walls and mobs) ---- */
+/* ---- buzz saw (auto, kinetic, slices through mobs on a damage budget, bounces off walls) ---- */
+const SAW_POOL=8;   /* cuts' worth of damage a saw carries between wall bounces */
 function updateSaws(dt){
   if(!hasTool('saw')) return;
   G.sawCd-=dt;
@@ -2697,33 +2698,24 @@ function updateSaws(dt){
   const dmg=ST.sdmg(L('sdmg'))*Math.pow(1.4,bq('spow'))*(bst('sbig')?1.5:1);
   const steps=3, h=dt/steps;
   for(const sw of G.saws){
+    if(sw.pool===undefined) sw.pool=dmg*SAW_POOL;
     sw.life-=dt; sw.rot+=dt*16;
     for(let k=0;k<steps;k++){
       sw.vy+=260*h; sw.x+=sw.vx*h; sw.y+=sw.vy*h;
-      if(sw.x<sw.r){ sw.x=sw.r; sw.vx=Math.abs(sw.vx)*0.98; sw.pool=dmg*2; } else if(sw.x>W-sw.r){ sw.x=W-sw.r; sw.vx=-Math.abs(sw.vx)*0.98; sw.pool=dmg*2; }
-      if(sw.y<sw.r+6){ sw.y=sw.r+6; sw.vy=Math.abs(sw.vy)*0.98; sw.pool=dmg*2; }
-      const fl=GROUND-sw.r-22; if(sw.y>fl){ sw.y=fl; sw.vy=-Math.max(Math.abs(sw.vy)*0.95,420); sw.pool=dmg*2; }
+      if(sw.x<sw.r){ sw.x=sw.r; sw.vx=Math.abs(sw.vx)*0.98; sw.pool=dmg*SAW_POOL; } else if(sw.x>W-sw.r){ sw.x=W-sw.r; sw.vx=-Math.abs(sw.vx)*0.98; sw.pool=dmg*SAW_POOL; }
+      if(sw.y<sw.r+6){ sw.y=sw.r+6; sw.vy=Math.abs(sw.vy)*0.98; sw.pool=dmg*SAW_POOL; }
+      const fl=GROUND-sw.r-22; if(sw.y>fl){ sw.y=fl; sw.vy=-Math.max(Math.abs(sw.vy)*0.95,420); sw.pool=dmg*SAW_POOL; }
       for(const e of G.enemies){
         if(e.dead||e.y<-e.r) continue;
-        const dx=sw.x-e.x, dy=sw.y-e.y, rr=sw.r+e.r*0.85, d2=dx*dx+dy*dy;
-        if(d2<rr*rr){
-          const ready=G.time-(e.sh||0)>ST.scool(L('scool'));
-          const hitFx=()=>{
-            if(bst('sfire')){ blast(e.x,e.y,44,dmg*0.5,0,'saw'); e.burn=2.5; e.burnDps=dmg*0.8; G.rings.push({x:e.x,y:e.y,r:4,max:38,life:0.22,t:0,color:C.orange}); }
-            if(bst('sbleed')){ e.bleed=4; e.bleedDps=Math.min((e.bleedDps||0)+dmg*0.5,dmg*2.5); }
-            burst(sw.x,sw.y,C.lime,4,170);
-          };
-          const need=e.hp/Math.max(0.05,e.res.k);
-          if(sw.pool===undefined) sw.pool=dmg*2;
-          if(need<=dmg+sw.pool){
-            /* overpowered: the blade slices straight through and keeps its momentum for the next target */
-            if(ready){ e.sh=G.time; sw.pool=Math.max(0,sw.pool-Math.max(0,need-dmg)); hurt(e,Math.max(dmg,need*1.05),'k',false,0,'saw'); hitFx(); float(e.x,e.y-e.r-12,'SLICE',C.lime); }
-          } else {
-            const d=Math.sqrt(d2)||0.01, nx=dx/d, ny=dy/d;
-            sw.x=e.x+nx*rr; sw.y=e.y+ny*rr;
-            const vn=sw.vx*nx+sw.vy*ny; if(vn<0){ sw.vx-=1.9*vn*nx; sw.vy-=1.9*vn*ny; }
-            if(ready){ e.sh=G.time; hurt(e,dmg,'k',false,0,'saw'); hitFx(); }
-          }
+        const dx=sw.x-e.x, dy=sw.y-e.y, rr=sw.r+e.r*0.85;
+        if(dx*dx+dy*dy<rr*rr&&G.time-(e.sh||0)>ST.scool(L('scool'))&&sw.pool>0){
+          /* no impact: the blade cuts straight through and keeps its path, spending its damage budget on every cut until it is empty (a wall bounce refills it) */
+          e.sh=G.time; const amt=Math.min(dmg,sw.pool); sw.pool-=amt;
+          hurt(e,amt,'k',false,0,'saw');
+          if(bst('sfire')){ blast(e.x,e.y,44,dmg*0.5,0,'saw'); e.burn=2.5; e.burnDps=dmg*0.8; G.rings.push({x:e.x,y:e.y,r:4,max:38,life:0.22,t:0,color:C.orange}); }
+          if(bst('sbleed')){ e.bleed=4; e.bleedDps=Math.min((e.bleedDps||0)+dmg*0.5,dmg*2.5); }
+          burst(sw.x,sw.y,C.lime,4,170);
+          if(e.dead) float(e.x,e.y-e.r-12,'SLICE',C.lime);
         }
       }
     }
@@ -2774,14 +2766,14 @@ function updateMortar(dt){
     sh.x=sh.sx+(sh.tx-sh.sx)*k; sh.y=sh.sy+(sh.ty-sh.sy)*k-Math.sin(k*Math.PI)*200;
     if(!sh.done&&G.parts.length<420){ G.parts.push({x:sh.x,y:sh.y,vx:rnd(-14,14),vy:rnd(-14,14),life:0.55,max:0.9,color:Math.random()<0.4?'#ffffff':C.amber,size:rnd(1.5,3.2),tri:false}); }
     if(k>=1&&!sh.done){
-      sh.done=true; const R=mortR(), dmg=ST.mortdmg(L('mortdmg'))*Math.pow(1.4,bq('mortpow'))*(bst('mortbust')?2.4:1);
+      sh.done=true; const R=mortR(), dmg=ST.mortdmg(L('mortdmg'))*Math.pow(1.4,bq('mortpow'))*(bst('mortbust')?1+1.4*bst('mortbust'):1);
       G.rings.push({x:sh.tx,y:sh.ty,r:10,max:R,life:0.5,t:0,color:C.amber}); G.rings.push({x:sh.tx,y:sh.ty,r:6,max:R*0.6,life:0.32,t:0,color:C.orange});
       fireball(sh.tx,sh.ty,R*1.05,C.amber,3); burst(sh.tx,sh.ty,C.orange,24,260,2); G.shake=Math.min(1,G.shake+0.8); G.flashA=0.7; Music.boom(true);
       G.rings.push({x:sh.tx,y:sh.ty,r:4,max:R*1.35,life:0.7,t:0,color:'#ffffff'}); G.rings.push({x:sh.tx,y:sh.ty,r:4,max:R*0.45,life:0.2,t:0,color:'#ffffff'});
       blast(sh.tx,sh.ty,R,dmg,bst('mortbust')?1:0,'mortar');
-      if(bst('mortclu')) for(let i=0;i<4;i++){ const a=i*1.571+0.4, ox=Math.cos(a)*R*0.95, oy=Math.sin(a)*R*0.95;
-        G.delay.push({t:0.18+i*0.06,fn:()=>{ G.rings.push({x:sh.tx+ox,y:sh.ty+oy,r:4,max:R*0.6,life:0.3,t:0,color:C.amber}); burst(sh.tx+ox,sh.ty+oy,C.amber,10,180); blast(sh.tx+ox,sh.ty+oy,R*0.6,dmg*0.6,0,'mortar'); }}); }
-      if(bst('mortnap')) G.fires.push({x:sh.tx,y:sh.ty,r:R*0.85,t:0,dur:5,dps:dmg*0.3});
+      if(bst('mortclu')){ const nb=2+2*bst('mortclu'); for(let i=0;i<nb;i++){ const a=i*6.2832/nb+0.4, ox=Math.cos(a)*R*0.95, oy=Math.sin(a)*R*0.95;
+        G.delay.push({t:0.18+i*0.06,fn:()=>{ G.rings.push({x:sh.tx+ox,y:sh.ty+oy,r:4,max:R*0.6,life:0.3,t:0,color:C.amber}); burst(sh.tx+ox,sh.ty+oy,C.amber,10,180); blast(sh.tx+ox,sh.ty+oy,R*0.6,dmg*0.6,0,'mortar'); }}); } }
+      if(bst('mortnap')) G.fires.push({x:sh.tx,y:sh.ty,r:R*0.85,t:0,dur:5,dps:dmg*0.3*bst('mortnap')});
     }
   }
   G.shells=G.shells.filter(sh=>!sh.done);
@@ -4116,7 +4108,7 @@ function arsenalHtml(){
     h+='<details class="mast"><summary>In-run card mastery <small>'+mc.length+'</small></summary><div class="note" style="margin:6px 0">'+(tab!=='turret'&&tab!=='base'?'Weapon mastery '+mastery(tab)+': evolutions unlock in-run at '+EVO_MST+', ultimates at '+ULT_MST+'. ':'')+'Cards you pick during a level start basic. Mastering one here makes every pick stronger and shows it more often in your level-ups.</div><div class="cards">';
     mc.forEach(c=>{
       const r=cmRank(c.id), ty=CIC[c.id], ct=CT[ty], pk=c.w+'.'+ty, maxed=r>=3, need=NEEDB[Math.min(r,3)], have=avail(pk,Math.min(r,2)), ok=!maxed&&have>=need;
-      const fmt=k=>COUNTC.has(c.id)?(()=>{const n=Math.min(c.max,1+k);return 'up to '+n+(n>1?' picks':' pick')+' per run'})():CONT.has(c.id)?c.txt(CMW[k]).replace(/\d+\.\d+/g,m=>Math.round(+m))+' per pick':c.txt(1);
+      const fmt=k=>COUNTC.has(c.id)?(()=>{const n=Math.min(c.max,1+k);return 'up to '+n+(n>1?' picks':' pick')+' per run'})():CONT.has(c.id)?c.txt(CMW[k]).replace(/\d+\.\d+(?!\d*s)/g,m=>Math.round(+m))+' per pick':c.txt(1);
       let pips=''; for(let i=0;i<3;i++) pips+='<i'+(i<r?' class="on"':'')+'></i>';
       h+='<div class="card" style="--c:'+ct.color+'"><div class="ct"><span class="cn">'+c.name+'</span><span class="chip" style="--c:'+ct.color+'">Card · '+ct.name+'</span></div>'
         +'<div class="cv">'+fmt(r)+(maxed?'':' <em>→</em> '+fmt(r+1))+'</div><div class="pips">'+pips+'</div>'
@@ -4399,9 +4391,6 @@ const CARDS=[
  {id:'barrel',w:'turret',t:1,max:5,name:'Extra Barrel',txt:l=>'+'+l+(l>1?' barrels':' barrel')},
  {id:'pierce',w:'turret',t:1,max:2,name:'Piercing Rounds',txt:l=>'+'+l+' pierce'},
  {id:'slide',w:'turret',t:1,max:4,name:'Servo Motors',txt:l=>'+'+Math.round((Math.pow(2.5,l)-1)*100)+'% turret speed'},
- {id:'fort',w:'base',t:1,max:3,name:'Ozone Shield',txt:l=>'+'+Math.round(l*25)+'% shield capacity and recharge',cond:()=>!!G.shOk,wt:5},
- {id:'mend',w:'base',t:1,max:3,name:'Repair Crews',txt:l=>'repairs '+Math.round(l*8)+' base HP a minute',cond:()=>G.hp<G.maxHp*0.97},
- {id:'repair',w:'base',t:1,max:99,name:'Emergency Repair',txt:l=>'restore 30% base health',cond:()=>G.hp<G.maxHp*0.85,wt:6},
  {id:'arc',w:'turret',t:2,max:3,name:'Arc Rounds',txt:l=>'shots add +'+(l*35)+'% energy damage and fork 3 mini lightning bolts at '+(l*15)+'% damage',lv:EVO_LV,ovl:1},
  {id:'frag',w:'turret',t:2,max:3,name:'Explosive Rounds',txt:l=>'shots splash +'+(l*30)+' % blast damage'.replace(' %','%'),lv:EVO_LV,ovl:1},
  {id:'deep',w:'turret',t:2,max:1,name:'Deep Pierce',txt:l=>'+2 more pierce',lv:EVO_LV},
@@ -4409,12 +4398,12 @@ const CARDS=[
  {id:'tmine',w:'mine',t:1,max:1,unlock:true,name:'Mine Layer',desc:'NEW WEAPON. Drops proximity mines that blast everything nearby. The AI places them for you, or tap the Mine button and drag to place them yourself. Blast damage.'},
  {id:'tfield',w:'field',t:1,max:1,unlock:true,name:'Slow Field',desc:'NEW WEAPON. Lays an energy bar that slows mobs and burns them while they pass through. The AI places it, or tap Field and drag to place it yourself. Energy damage.'},
  {id:'mine',w:'mine',t:1,max:5,name:'Mine Power',txt:l=>'+'+Math.round((Math.pow(1.4,l)-1)*100)+'% blast damage'},
- {id:'marea',w:'mine',t:1,max:4,name:'Blast Area',txt:l=>'+'+(l*15)+'% blast radius'},
- {id:'mcount',w:'mine',t:1,max:3,name:'Mines per Drop',txt:l=>(1+l)+' mines per drop'},
- {id:'mrech',w:'mine',t:1,max:4,name:'Mine Reload',txt:l=>'-'+Math.round((1-Math.pow(0.85,l))*100)+'% recharge time'},
- {id:'mcluster',w:'mine',t:2,max:1,name:'Cluster Mines',txt:l=>'EVOLVE: each blast spawns 4 smaller blasts (crowd control)',evo:1,lv:EVO_LV,mst:EVO_MST,ex:['mfreeze']},
- {id:'mfreeze',w:'mine',t:2,max:1,name:'Cryo Mines',txt:l=>'EVOLVE: blasts freeze mobs for 1.6s (setup for single targets)',evo:1,lv:EVO_LV,mst:EVO_MST,ex:['mcluster']},
- {id:'mchain',w:'mine',t:3,max:1,name:'Chain Reaction',txt:l=>'ULTIMATE: blasts set off nearby mines',ult:1,lv:ULT_LV,mst:ULT_MST,any:['mcluster','mfreeze']},
+ {id:'marea',w:'mine',t:1,max:4,name:'Blast Area',txt:l=>'+'+Math.round((Math.pow(1.35,l)-1)*100)+'% blast radius'},
+ {id:'mcount',w:'mine',t:1,max:5,name:'Mines per Drop',txt:l=>(1+l)+' mines per drop'},
+ {id:'mrech',w:'mine',t:1,max:4,name:'Mine Reload',txt:l=>'-'+Math.round((1-Math.pow(0.75,l))*100)+'% recharge time'},
+ {id:'mcluster',w:'mine',t:2,max:2,name:'Cluster Mines',txt:l=>'EVOLVE: each blast spawns '+(2+2*l)+' smaller blasts (crowd control)',evo:1,lv:EVO_LV,mst:EVO_MST,ex:['mfreeze']},
+ {id:'mfreeze',w:'mine',t:2,max:2,name:'Cryo Mines',txt:l=>'EVOLVE: blasts freeze mobs for '+(l>1?'3.2':'1.6')+'s (setup for single targets)',evo:1,lv:EVO_LV,mst:EVO_MST,ex:['mcluster']},
+ {id:'mchain',w:'mine',t:3,max:2,name:'Chain Reaction',txt:l=>'ULTIMATE: blasts set off nearby mines'+(l>1?', +50% reach':''),ult:1,lv:ULT_LV,mst:ULT_MST,any:['mcluster','mfreeze']},
  {id:'field',w:'field',t:1,max:5,name:'Field Power',txt:l=>'+'+Math.round((Math.pow(1.4,l)-1)*100)+'% energy damage'},
  {id:'fwidb',w:'field',t:1,max:4,name:'Field Width',txt:l=>'+'+(l*20)+'% bar width'},
  {id:'fcount',w:'field',t:1,max:2,name:'Extra Field',txt:l=>(1+l)+' fields at once'},
@@ -4429,7 +4418,7 @@ const CARDS=[
  {id:'cfork',w:'chain',t:2,max:1,name:'Forked Lightning',txt:l=>'EVOLVE: each jump splits in two (crowds)',evo:1,lv:EVO_LV,mst:EVO_MST,ex:['cshock']},
  {id:'cshock',w:'chain',t:2,max:1,name:'Overload',txt:l=>'EVOLVE: bolts stun what they hit for 0.7s; first target takes +60%',evo:1,lv:EVO_LV,mst:EVO_MST,ex:['cfork']},
  {id:'cstorm',w:'chain',t:3,max:1,name:'Thunderstorm',txt:l=>'ULTIMATE: every 15s strike every mob on screen',ult:1,lv:ULT_LV,mst:ULT_MST,any:['cfork','cshock']},
- {id:'tsaw',w:'saw',t:1,max:1,unlock:true,name:'Buzz Saw',desc:'NEW WEAPON. A saw blade launches itself and bounces off walls and mobs, cutting everything it touches. Kinetic damage.'},
+ {id:'tsaw',w:'saw',t:1,max:1,unlock:true,name:'Buzz Saw',desc:'NEW WEAPON. A big saw blade launches itself and bounces off the walls, slicing through every mob it touches until its damage runs out. Kinetic damage.'},
  {id:'spow',w:'saw',t:1,max:5,name:'Saw Power',txt:l=>'+'+Math.round((Math.pow(1.4,l)-1)*100)+'% saw damage'},
  {id:'scount',w:'saw',t:1,max:3,name:'Extra Saw',txt:l=>(1+l)+' saws at once'},
  {id:'sspeed',w:'saw',t:1,max:3,name:'Long Life',txt:l=>'+'+(l*2)+'s saw lifetime'},
@@ -4437,13 +4426,13 @@ const CARDS=[
  {id:'sbleed',w:'saw',t:2,max:1,name:'Serrated Edge',txt:l=>'EVOLVE: hits cause a 4s bleed that stacks the damage',evo:1,lv:EVO_LV,mst:EVO_MST,ex:['sfire']},
  {id:'sbig',w:'saw',t:3,max:1,name:'Mega Saw',txt:l=>'ULTIMATE: saw is 60% bigger and hits 50% harder',ult:1,lv:ULT_LV,mst:ULT_MST,any:['sfire','sbleed']},
  {id:'tmortar',w:'mortar',t:1,max:1,unlock:true,name:'Mortar',desc:'NEW WEAPON. AI-controlled mortar: it picks clusters and big targets and leads its shots. Two shells, slow reload. Blast damage.'},
- {id:'mortpow',w:'mortar',t:1,max:5,name:'Shell Power',txt:l=>'+'+Math.round((Math.pow(1.4,l)-1)*100)+'% shell damage'},
- {id:'mortarea',w:'mortar',t:1,max:4,name:'Wide Burst',txt:l=>'+'+(l*15)+'% blast radius'},
- {id:'mortcap',w:'mortar',t:1,max:3,name:'Ammo Rack',txt:l=>(2+l)+' shells loaded'},
- {id:'mortspd',w:'mortar',t:1,max:4,name:'Autoloader',txt:l=>'-'+Math.round((1-Math.pow(0.88,l))*100)+'% reload time'},
- {id:'mortclu',w:'mortar',t:2,max:1,name:'Cluster Shell',txt:l=>'EVOLVE: shell lands with 4 bomblets (crowds)',evo:1,lv:EVO_LV,mst:EVO_MST,ex:['mortbust']},
- {id:'mortbust',w:'mortar',t:2,max:1,name:'Bunker Buster',txt:l=>'EVOLVE: shell hits 2.4x harder, tighter blast, ignores resistance (armor)',evo:1,lv:EVO_LV,mst:EVO_MST,ex:['mortclu']},
- {id:'mortnap',w:'mortar',t:3,max:1,name:'Napalm Shell',txt:l=>'ULTIMATE: leaves a burning zone for 5s',ult:1,lv:ULT_LV,mst:ULT_MST,any:['mortclu','mortbust']}
+ {id:'mortpow',w:'mortar',t:1,max:3,name:'Shell Power',txt:l=>'+'+Math.round((Math.pow(1.4,l)-1)*100)+'% shell damage'},
+ {id:'mortarea',w:'mortar',t:1,max:3,name:'Wide Burst',txt:l=>'+'+(l*15)+'% blast radius'},
+ {id:'mortcap',w:'mortar',t:1,max:2,name:'Ammo Rack',txt:l=>(2+l)+' shells loaded'},
+ {id:'mortspd',w:'mortar',t:1,max:4,name:'Autoloader',txt:l=>'-'+Math.round((1-Math.pow(0.6,l))*100)+'% reload time'},
+ {id:'mortclu',w:'mortar',t:2,max:4,name:'Cluster Shell',txt:l=>'EVOLVE: shell lands with '+(2+2*l)+' bomblets (crowds)',evo:1,lv:EVO_LV,mst:EVO_MST,ex:['mortbust']},
+ {id:'mortbust',w:'mortar',t:2,max:4,name:'Bunker Buster',txt:l=>'EVOLVE: shell hits +'+(l*140)+'% harder, tighter blast, ignores resistance (armor)',evo:1,lv:EVO_LV,mst:EVO_MST,ex:['mortclu']},
+ {id:'mortnap',w:'mortar',t:3,max:4,name:'Napalm Shell',txt:l=>'ULTIMATE: leaves a burning zone for 5s'+(l>1?', burning '+l+'x as hard':''),ult:1,lv:ULT_LV,mst:ULT_MST,any:['mortclu','mortbust']}
 ];
 const CARDBY={}; CARDS.forEach(c=>CARDBY[c.id]=c);
 const reqOk=c=>!c.req||Object.keys(c.req).every(k=>bst(k)>=c.req[k]);
@@ -4492,7 +4481,7 @@ function applyCard(c){
   if(c.id==='repair') G.hp=Math.min(G.maxHp,G.hp+G.maxHp*0.3);
   toolKey=''; hudKey='';
 }
-const CIC={rate:'tmp',dmg:'pow',barrel:'cap',pierce:'rch',slide:'tmp',fort:'frt',mend:'frt',repair:'heart',arc:'bolt',frag:'pow',deep:'rch',super:'bolt',
+const CIC={rate:'tmp',dmg:'pow',barrel:'cap',pierce:'rch',slide:'tmp',arc:'bolt',frag:'pow',deep:'rch',super:'bolt',
   mine:'pow',marea:'rch',mcount:'cap',mrech:'tmp',mcluster:'bolt',mchain:'bolt',mfreeze:'bolt',fpull:'bolt',cshock:'bolt',sbleed:'bolt',mortbust:'bolt',field:'pow',fwidb:'rch',fcount:'cap',fdurc:'cap',fchill:'bolt',fstorm:'bolt',
   cpow:'pow',cjump:'rch',crate:'tmp',cfork:'bolt',cstorm:'bolt',spow:'pow',scount:'cap',sspeed:'cap',sfire:'bolt',sbig:'bolt',
   mortpow:'pow',mortarea:'rch',mortcap:'cap',mortspd:'tmp',mortclu:'bolt',mortnap:'bolt'};
@@ -4502,7 +4491,7 @@ function renderCards(){
     +'<div class="note" style="margin-bottom:12px">Wave '+G.wave+'/'+G.NW+(G.pickQ>0?' \u00b7 +'+G.pickQ:'')+'</div><div class="pickgrid">';
   G.offer.forEach((c,i)=>{
     const wc=WEAPN[c.w], l=bst(c.id), tcol=RAR[c.t-1].color;
-    const ef=k=>CONT.has(c.id)?k*cmw(c.id):k, rd=t=>t.replace(/\d+\.\d+/g,m=>Math.round(+m)), body=rd(c.unlock?c.desc.replace(/^NEW WEAPON\.\s*/,''):(l?c.txt(ef(l))+' \u2192 ':'')+c.txt(ef(l+1))).replace(/^(EVOLVE|ULTIMATE): /,'')+(c.ex?' Excludes '+CARDBY[c.ex[0]].name+'.':'');
+    const ef=k=>CONT.has(c.id)?k*cmw(c.id):k, rd=t=>t.replace(/\d+\.\d+(?!\d*s)/g,m=>Math.round(+m)), body=rd(c.unlock?c.desc.replace(/^NEW WEAPON\.\s*/,''):(l?c.txt(ef(l))+' \u2192 ':'')+c.txt(ef(l+1))).replace(/^(EVOLVE|ULTIMATE): /,'')+(c.ex?' Excludes '+CARDBY[c.ex[0]].name+'.':'');
     let d=''; for(let k=1;k<=3;k++) d+='<i'+(k>c.t?' class="o"':'')+'></i>';
     const ic2=c.unlock?'':'<span class="ci2" style="--tc:'+tcol+'">'+ico(CIC[c.id]||'pow',12)+'</span>';
     h+='<button type="button" class="pk t'+c.t+'" data-pick="'+i+'" style="--c:'+wc.color+';--g:'+tcol+'" title="'+c.name+': '+body.replace(/"/g,'')+'" aria-label="'+c.name+', '+wc.name+': '+body.replace(/"/g,'')+'">'
@@ -4570,7 +4559,7 @@ function renderShop(){
     if(w!=='turret'&&w!=='base'&&!hasTool(w)) return;
     const own=CARDS.filter(c=>c.w===w&&!c.unlock&&bst(c.id)>0);
     h+='<div class="card" style="--c:'+WEAPN[w].color+';margin-bottom:10px"><div class="ct"><span class="cn">'+WEAPN[w].name+'</span></div>'
-      +(own.length?own.map(c=>'<div class="perk"><span>'+c.name+(c.max>1?' '+bst(c.id):'')+'</span><span>'+c.txt(CONT.has(c.id)?bst(c.id)*cmw(c.id):bst(c.id)).replace(/\d+\.\d+/g,m=>Math.round(+m))+'</span></div>').join(''):'<div class="note">No cards yet.</div>')+'</div>';
+      +(own.length?own.map(c=>'<div class="perk"><span>'+c.name+(c.max>1?' '+bst(c.id):'')+'</span><span>'+c.txt(CONT.has(c.id)?bst(c.id)*cmw(c.id):bst(c.id)).replace(/\d+\.\d+(?!\d*s)/g,m=>Math.round(+m))+'</span></div>').join(''):'<div class="note">No cards yet.</div>')+'</div>';
   });
   h+='<div class="sticky"><button class="btn big" data-sact="close" type="button">Back to battle</button></div></div>';
   shopEl.innerHTML=h;
@@ -4706,10 +4695,10 @@ window.__rr={fire:fire,spawn:spawn,killEnemy:killEnemy,openPack:openPack,renderA
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 93</div>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 94</div>
 <script>
 /* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
-(function(){ const BUILD=93; let busy=false, shown=false;
+(function(){ const BUILD=94; let busy=false, shown=false;
   const inRun=()=>{ try{ return typeof G!=='undefined'&&(G.state==='playing'||G.state==='cards'||G.state==='shop'||G.state==='paused'||G.state==='teach'||G.state==='ctl'); }catch(e){ return false; } };
   function wipeReload(){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
     if(n>=3) return;
