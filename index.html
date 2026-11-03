@@ -1959,12 +1959,12 @@ function leak(e){
 }
 function fire(target){
   const sup=G.superOn>0, n=1+L('barrels')+bst('barrel'), pierce=L('pierce')+bst('pierce')+2*bst('deep')+(G.cm?G.cm.M.pierce+(G.cm.pierceT>0?G.cm.pierceN:0):0);
-  const base=ST.dmg(L('dmg'))*Math.pow(1.5,bq('dmg'))*(sup?1.5:1)*cmDmg(), cc=(G.cm?G.cm.M.crit:0);
+  const base=ST.dmg(L('dmg'))*Math.pow(1.5,bst('dmg'))*(sup?1.5:1)*cmDmg(), cc=(G.cm?G.cm.M.crit:0);
   for(let i=0;i<n;i++){
     const a=(i-(n-1)/2)*BARREL_SPREAD, dmg=Math.random()<cc?base*2.5:base;
     G.bullets.push({x:T.x+Math.sin(a)*24,y:TURRET_Y-24,vx:Math.sin(a)*BS,vy:-Math.cos(a)*BS,dmg:dmg,pierce:pierce,hits:[],target:target});
   }
-  T.cool=ST.rate(L('rate'))*Math.pow(1/1.35,bq('rate'))*(sup?0.5:1)/cmRate(); T.recoil=1; Music.shot();
+  T.cool=ST.rate(L('rate'))*Math.pow(1/1.35,bst('rate'))*(sup?0.5:1)/cmRate(); T.recoil=1; Music.shot();
   if(!G.blobs) G.blobs=[]; if(G.blobs.length<40) G.blobs.push({x:T.x,y:TURRET_Y-34,r:3,max:9+2.5*n+1.2*L('dmg')+2*bq('dmg'),t:0,life:0.12,color:'#00f0ff'});
 }
 /* Would a shot fired from the turret's current x hit e? Checks every barrel's straight line against e's predicted position. */
@@ -1992,7 +1992,7 @@ function hitsFrom(e,loose){
 function pickTarget(){
   const pend=new Map();
   for(const b of G.bullets) if(b.target&&!b.target.dead) pend.set(b.target,(pend.get(b.target)||0)+b.dmg*b.target.res.k);
-  const sup=G.superOn>0, shot=ST.dmg(L('dmg'))*Math.pow(1.5,bq('dmg'))*(sup?1.5:1), slide=ST.slide(L('rate'))*Math.pow(2.5,bq('slide'));
+  const sup=G.superOn>0, shot=ST.dmg(L('dmg'))*Math.pow(1.5,bst('dmg'))*(sup?1.5:1), slide=ST.slide(L('rate'))*Math.pow(2.5,bst('slide'));
   let best=null,bs=-1e9;
   for(const e of G.enemies){
     if(e.dead||e.y<-e.r*0.3||!inRange(e)) continue;
@@ -2023,7 +2023,7 @@ function inLine(tg,pend){
   return hit;
 }
 function updateTurret(dt){
-  const slide=ST.slide(L('rate'))*Math.pow(2.5,bq('slide'));
+  const slide=ST.slide(L('rate'))*Math.pow(2.5,bst('slide'));
   T.cool-=dt; T.recoil=Math.max(0,T.recoil-dt*6);
   if(bst('super')>0){ if(G.superOn>0) G.superOn-=dt; else { G.superCd-=dt; if(G.superCd<=0){ G.superOn=4; G.superCd=22-3*bst('super'); float(T.x,TURRET_Y-60,'SUPERCHARGE',C.yellow); G.rings.push({x:T.x,y:TURRET_Y-14,r:10,max:90,life:0.5,t:0,color:C.yellow}); } } }
   if(input.active){
@@ -4362,7 +4362,7 @@ armoryEl.addEventListener('click',e=>{
 const shopEl=$('shop');
 const bst=id=>(G.boost&&G.boost[id])||0;
 /* Card mastery (menu): each stat card has a rank 0-3. Rank 0 is deliberately basic; ranks scale its in-run strength (continuous cards) or the number of picks allowed (count cards). */
-const CMW=[0.5,0.7,0.9,1.15], CONT=new Set(['rate','dmg','slide','fort','mend','mine','marea','mrech','field','fwidb','fdurc','cpow','crate','spow','sspeed','mortpow','mortarea','mortspd']), COUNTC=new Set(['barrel','pierce','mcount','fcount','cjump','scount','mortcap']);
+const CMW=[0.5,0.7,0.9,1.15], CONT=new Set(['mine','marea','mrech','field','fwidb','fdurc','cpow','crate','spow','sspeed','mortpow','mortarea','mortspd']), COUNTC=new Set(['barrel','pierce','mcount','fcount','cjump','scount','mortcap']);
 const cmRank=id=>(P.cm&&P.cm[id])||0, cmw=id=>CMW[cmRank(id)], bq=id=>bst(id)*cmw(id);
 const wlv=w=>CARDS.reduce((a,c)=>a+(c.w===w&&c.t===1&&!c.unlock?bst(c.id):0),0);
 const mastery=w=>UPS.reduce((a,u)=>a+(u.tab===w?L(u.id):0),0);
@@ -4695,10 +4695,10 @@ window.__rr={fire:fire,spawn:spawn,killEnemy:killEnemy,openPack:openPack,renderA
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 94</div>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 95</div>
 <script>
 /* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
-(function(){ const BUILD=94; let busy=false, shown=false;
+(function(){ const BUILD=95; let busy=false, shown=false;
   const inRun=()=>{ try{ return typeof G!=='undefined'&&(G.state==='playing'||G.state==='cards'||G.state==='shop'||G.state==='paused'||G.state==='teach'||G.state==='ctl'); }catch(e){ return false; } };
   function wipeReload(){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
     if(n>=3) return;

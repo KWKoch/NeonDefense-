@@ -14,8 +14,8 @@ async def main():
           out.max=['rate','dmg','barrel','slide','arc','frag'].map(k=>k+':'+C[k].max).join(' '); out.crit=!!C.crit;
           out.txt=[C.rate.txt(1),C.dmg.txt(1),C.slide.txt(1),C.slide.txt(2),C.arc.txt(1)].join(' | ');
           G.cm=null; G.boost={}; G.bullets.length=0; T.cool=0; R.fire(null); const d0=G.bullets[0].dmg, c0=T.cool;
-          G.boost={rate:2,dmg:2}; G.bullets.length=0; R.fire(null); const d1=G.bullets[0].dmg, c1=T.cool;
-          out.dmgRatio=+(d1/d0).toFixed(3); out.coolRatio=+(c0/c1).toFixed(3);
+          G.boost={rate:1,dmg:1}; G.bullets.length=0; R.fire(null); const d1=G.bullets[0].dmg, c1=T.cool;
+          out.dmgRatio=+(d1/d0).toFixed(3); out.coolRatio=+(c0/c1).toFixed(3); R.P.cm={rate:0,dmg:0};
           G.boost={}; G.enemies.length=0; G.spawnQ=[]; G.warps=[]; G.ev=[];
           const mk=(x,y)=>{ const e=R.spawn('small',x,y,{}); e.hp=e.maxHp=1000; e.vy=0; e.vx=0; return e; };
           const a=mk(300,300), n1=mk(330,300), n2=mk(270,300), n3=mk(300,340), far=mk(300,600);
