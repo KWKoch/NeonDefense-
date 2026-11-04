@@ -2468,7 +2468,7 @@ const COACH={
     {sel:'#gearBtn',t:'Take the wheel',x:'Set any weapon to Manual and the AI never touches it. Same switch in battle: Aim.'},
     {sel:'nav.nav [data-nav="arsenal"]',t:'Arsenal',x:'Spend crystals on the turret and each weapon. Commanders unlock at level '+CMD_LVL+'.'},
     {sel:'nav.nav [data-nav="codex"]',t:'Codex',x:'Every mob you have met, what it fears, and your achievements.'},
-    {sel:'nav.nav [data-nav="shop"]',t:'Shop',x:'Daily chest, free gems, crystal packs.'},
+    {sel:'nav.nav [data-nav="shop"]',t:'Shop',x:'Daily reward and crystal packs.'},
     {sel:'nav.nav [data-nav="worlds"]',t:'Worlds',x:'Stars open new worlds. Each one sends a different faction.'}
   ],
   command:[
@@ -3887,6 +3887,7 @@ function toast(t){ if(!toastEl){ toastEl=document.createElement('div'); toastEl.
 const PRICES={starter:'$2.99',pass:'$4.99',g100:'$0.99',g550:'$4.99',g1200:'$9.99'};   /* kept for the store release; not shown while PAID_SOON is on */
 const COST={pass:600};   /* gem price of the pass (30 days); only the pass can be bought with gems */
 const ADS_LIVE=false;   /* flip to true once a rewarded-ad provider is approved; until then Free gems is one plain claim a day */
+const DAILY_GEMS=5;   /* one free daily reward: gems plus 3 crystals (this replaces the old separate chest and free-gems claims) */
 const AD_GEMS=3, AD_GEMS_DAY=ADS_LIVE?3:1;   /* free gems per watched ad, and how many ads per day pay out */
 const PAID_SOON=true;   /* real-money items show "Coming soon" with no price until store billing is connected */
 const adLeft=()=>Math.max(0,AD_GEMS_DAY-(P.adDay===today()?(P.adN||0):0));
@@ -4028,8 +4029,8 @@ function packCardHtml(pk){
     +'<button class="btn big" type="button" data-pack="'+pk.id+'" style="--c:'+pk.color+';width:100%;margin-top:8px" '+(g<cost?'disabled':'')+'>'+(free?'Open free welcome pack':ico('gem',15)+' '+cost+(g<cost?' <small>(need '+(cost-g)+' more)</small>':''))+'</button></div>';
 }
 function claim(k){
-  if(k==='chest'){ if(P.chestDay===today()) return; rewardFlow('daily_chest',()=>{ if(P.chestDay===today()) return; P.chestDay=today(); logEv('chest',''); const m=passActive()?2:1, g=8*m; P.gems+=g; let txt='';
-      for(let i=0;i<3*m;i++){ const t=rollCard(), r=Math.random()<0.7?0:1; P.inv[t][r]++; } save(); Music.up(); toast('Daily chest: +'+g+' gems and '+3*m+' crystals'); renderArmory(); }); }
+  if(k==='chest'){ if(P.chestDay===today()) return; rewardFlow('daily_chest',()=>{ if(P.chestDay===today()) return; P.chestDay=today(); logEv('chest',''); const m=passActive()?2:1, g=DAILY_GEMS*m; P.gems+=g; let txt='';
+      for(let i=0;i<3*m;i++){ const t=rollCard(), r=Math.random()<0.7?0:1; P.inv[t][r]++; } save(); Music.up(); toast('Daily: +'+g+' gems and '+3*m+' crystals'); renderArmory(); }); }
   else if(k.indexOf('fp:')===0) fpClaim(+k.slice(3));
   else if(k==='fpremind') fpRemind();
   else if(k==='pass'){ if(!passActive()||P.passDay===today()) return; P.passDay=today(); P.gems+=15; logEv('passday',''); save(); Music.up(); toast('Pass bonus: +15 gems'); renderArmory(); }
@@ -4075,9 +4076,8 @@ function shopHtml(){
   let h='<div class="wrap shop"><div class="ahead"><h1>Shop</h1><div class="cr"><span class="lbl">Gems</span><b style="color:#7df9ff">'+gemHtml(g,16)+'</b></div></div>'
     +'<div class="note" style="margin:0 0 8px">'+['Common','Rare','Exquisite'].map((n,i)=>'<span class="gt" style="color:'+GEMC[i]+'">'+ico('gem',12)+n+' '+GEMV[i]+'</span>').join(' · ')+'</div>';
   if(PLAY) h+=founderHtml();
-  h+='<div class="card" style="--c:#ffc400"><div class="ct"><span class="cn">Daily</span><span class="chip" style="--c:#ffc400">Free</span></div><div class="dly">'
-    +'<button class="btn" data-claim="chest" type="button" style="--c:#ffc400" '+(can?'':'disabled')+' title="'+(pa?'16':'8')+' gems and '+(pa?6:3)+' crystals">'+(can?'Chest '+ico('gem',13)+(pa?16:8)+' '+ico('crystal',13)+(pa?6:3)+((pa||!Ads.enabled)?'':' <small>(ad)</small>'):'Chest done')+'</button>'
-    +'<button class="btn" data-adgems="1" type="button" style="--c:#7df9ff" '+(adLeft()?'':'disabled')+'>'+(adLeft()?ico('gem',13)+'+'+AD_GEMS+' <small>'+adLeft()+' left'+(passActive()||!ADS_LIVE?'':' · ad')+'</small>':'Gems done')+'</button></div></div>';
+  h+='<div class="card" style="--c:#ffc400"><div class="ct"><span class="cn">Daily</span><span class="chip" style="--c:#ffc400">Free</span></div>'
+    +'<button class="btn big" data-claim="chest" type="button" style="--c:#ffc400;width:100%" '+(can?'':'disabled')+'>'+(can?ico('gem',14)+DAILY_GEMS*(pa?2:1)+' '+ico('crystal',14)+3*(pa?2:1)+((pa||!Ads.enabled)?'':' <small>(ad)</small>'):'Come back tomorrow')+'</button></div>';
   h+=marketHtml();
   h+='<div class="note" style="margin:10px 0 4px"><b>Crystal packs</b></div>'+PACKS.map(packCardHtml).join('');
   if(!PLAY){ h+='<div class="card" style="--c:#9d4dff"><div class="ct"><span class="cn">Neon Pass</span><span class="chip" style="--c:#9d4dff">'+(pa?days+' days left':'30 days')+'</span></div>'
