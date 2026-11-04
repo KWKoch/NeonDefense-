@@ -35,6 +35,7 @@ Calendar days since first launch, install day = day 1. Nothing costs money or ne
 | 3 | Day 3 Cache: full energy, 15 gems, 6 rare crystals | A full session on demand |
 | 7 | Day 7 Vault: full energy, 30 gems, 8 rare crystals | Skips a stretch of grinding |
 | 12 | Founder Seal: full energy, 50 gems, 6 epic crystals, energy refills 25% faster permanently | A reason to stay past the test, and a reward that outlives it |
+| 14 | Day 14 Finish: full energy, 40 gems, 5 epic crystals | A reason to open the game on the last day of the test |
 
 A claimable reward shows as a dot on the Shop button and a toast on launch. On the phone app, an optional "Remind me" button
 schedules a local notification at 6 pm on each reward day (asks Android for permission only when tapped).

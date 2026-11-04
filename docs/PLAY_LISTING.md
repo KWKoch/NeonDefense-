@@ -17,7 +17,7 @@ Halcyon was the last light on the Belt. Then the Reavers came for its power. You
 - 50 levels in the Meteor Belt, with bosses and a mega boss finale. Elite levels for a real challenge.
 - Pick a new upgrade card every wave and build a different turret every run.
 - Collect crystals, fuse them up, and recruit commanders with their own abilities.
-- Early players get the Founder's Path: bonus rewards on days 3, 7 and 12, and faster energy for the first 14 days.
+- Early players get the Founder's Path: bonus rewards on days 3, 7, 12 and 14, and faster energy for the first 14 days.
 - No account needed. Plays offline.
 
 **Category:** Game > Strategy (or Arcade). **Tags:** tower defense, strategy, neon.
@@ -37,7 +37,7 @@ App icon `play-icon-512.png`, feature graphic `feature-graphic-1024x500.png`, ph
 
 ## Tester plan (12 opted in for 14 days in a row; aim for 20)
 Invitation message to send:
-> Hi! I'm launching my first game, Neon Defense, on Google Play and I need testers. To count, you must (1) tap this link on your Android phone, (2) accept the test invite, (3) install the game from Google Play, and (4) stay opted in for 14 days. Play a few minutes when you can. There is a free early-player rewards track inside (Shop tab), with prizes on days 3, 7 and 12, so open it on those days. Reply to this email with anything that felt confusing. Please do not leave the test early, it restarts the clock for me. Thank you!
+> Hi! I'm launching my first game, Neon Defense, on Google Play and I need testers. To count, you must (1) tap this link on your Android phone, (2) accept the test invite, (3) install the game from Google Play, and (4) stay opted in for 14 days. Play a few minutes when you can. There is a free early-player rewards track inside (Shop tab), with prizes on days 3, 7, 12 and 14, so open it on those days. Reply to this email with anything that felt confusing. Please do not leave the test early, it restarts the clock for me. Thank you!
 
 | When | Do this |
 |---|---|
@@ -45,7 +45,8 @@ Invitation message to send:
 | Day 3 | Message: "Your Day 3 Cache is waiting in the Shop tab" |
 | Day 7 | Same for the Day 7 Vault. Ask one question: where did you get stuck? |
 | Day 12 | Same for the Founder Seal. Ask for a Play Store rating once production is live |
-| Day 14+ | Check Production access in Play Console, apply, and answer the questions about what testers said and what you changed |
+| Day 14 | Message: "Your Day 14 Finish reward is waiting". Tell testers they can stay opted in until you move to production |
+| After day 14 | Check Production access in Play Console, apply, and answer the questions about what testers said and what you changed |
 
 Keep a short list of who joined, who is active and the feedback received. Google asks about it in the production application.
 Updates during the test go through Play review, so batch fixes into one upload instead of many.

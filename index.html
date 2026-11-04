@@ -950,7 +950,8 @@ const FOUNDER={boostDays:14, regen:0.5, gems:1.5, perm:0.8,
   steps:[
     {d:3, name:'Day 3 Cache', gems:15, crystals:6, minR:1, energy:true, txt:'Full energy, 15 gems, 6 rare crystals'},
     {d:7, name:'Day 7 Vault', gems:30, crystals:8, minR:1, energy:true, txt:'Full energy, 30 gems, 8 rare crystals'},
-    {d:12, name:'Founder Seal', gems:50, crystals:6, minR:2, energy:true, perm:true, txt:'50 gems, 6 epic crystals, and energy refills 25% faster for good'}
+    {d:12, name:'Founder Seal', gems:50, crystals:6, minR:2, energy:true, perm:true, txt:'50 gems, 6 epic crystals, and energy refills 25% faster for good'},
+    {d:14, name:'Day 14 Finish', gems:40, crystals:5, minR:2, energy:true, txt:'Full energy, 40 gems, 5 epic crystals. Thanks for testing'}
   ]};
 const dayStart=k=>{ const a=String(k).split('-'); return new Date(+a[0],(+a[1])-1,+a[2]).getTime(); };
 function founderDay(){ const f=P.fp; if(!PLAY||!f||!f.d0) return 0; return Math.max(1,Math.round((dayStart(today())-dayStart(f.d0))/864e5)+1); }
