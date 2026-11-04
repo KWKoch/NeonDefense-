@@ -34,6 +34,10 @@ async def main():
         check('Neon Pass hidden in play', 'Neon Pass' not in shop)
         check('Gem bundles / Coming soon hidden in play', 'Gem bundles' not in shop and 'Coming soon' not in shop)
         check('no "watch ad" wording anywhere on Shop', 'watch ad' not in shop.lower(), shop)
+        # rewards need active play: locked until a level is played today
+        check('daily reward is locked before playing today', await page.evaluate("()=>document.querySelector('button[data-claim=chest]').disabled"))
+        await page.evaluate("()=>{ const d=new Date(); __rr.P.actDay=d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); __rr.renderArmory(); }")
+        check('daily reward unlocks after playing', await page.evaluate("()=>!document.querySelector('button[data-claim=chest]').disabled"))
         # rewards work with no ads: daily chest
         g0=await page.evaluate("__rr.P.gems")
         await page.evaluate("()=>{ document.querySelector('button[data-claim=chest]').click(); }")

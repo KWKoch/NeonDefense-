@@ -955,10 +955,12 @@ const FOUNDER={boostDays:14, regen:0.5, gems:1.5, perm:0.8,
   ]};
 const dayStart=k=>{ const a=String(k).split('-'); return new Date(+a[0],(+a[1])-1,+a[2]).getTime(); };
 function founderDay(){ const f=P.fp; if(!PLAY||!f||!f.d0) return 0; return Math.max(1,Math.round((dayStart(today())-dayStart(f.d0))/864e5)+1); }
+/* Rewards need active play: the daily reward and Founder milestones unlock only after you clear a level (or play 5+ waves) today. */
+const activeToday=()=>P.actDay===today();
 function founderBoost(){ const d=founderDay(); return d>0&&d<=FOUNDER.boostDays; }
 function founderGems(g){ return founderBoost()?Math.ceil(g*FOUNDER.gems):g; }
 function enRegen(){ let m=1; if(PLAY&&P.fp){ if(founderBoost()) m*=FOUNDER.regen; if(P.fp.c&&P.fp.c.perm) m*=FOUNDER.perm; } return EN_REGEN*m; }
-function fpReady(){ return !!(PLAY&&P.fp&&P.fp.c&&FOUNDER.steps.some(x=>!P.fp.c[x.d]&&founderDay()>=x.d)); }
+function fpReady(){ return !!(PLAY&&P.fp&&P.fp.c&&FOUNDER.steps.some(x=>!P.fp.c[x.d]&&founderDay()>=x.d)&&activeToday()); }
 const ST={
   rate:l=>0.36*Math.pow(0.9,l), dmg:l=>Math.pow(1.18,l), barrels:l=>1+l, pierce:l=>l, slide:l=>300+l*45, armor:l=>100, shield:l=>24+l*8, shreg:l=>0.2+0.03*l,
   mdmg:l=>8*Math.pow(1.18,l), mrad:l=>2*(48+l*8), mstock:l=>2+l, mrech:l=>5.6*Math.pow(0.88,l),
@@ -3785,7 +3787,7 @@ function dropsHtml(got){
 }
 function enLine(){ enTick(); return '<div class="stat1" title="Energy"><span style="color:var(--yellow)">'+ico('bolt',16)+P.en+'/'+EN_MAX+'</span></div>'; }
 function win(){
-  Ads.gameplayStop(); G.state='won'; G.armed=null; achCheck(true); Music.win();
+  Ads.gameplayStop(); G.state='won'; G.armed=null; P.actDay=today(); achCheck(true); Music.win();
   const pr=pw(P), el=G.elite, replay=el?!!pr.eclr[G.n]:G.n<=pr.best, frac=G.hp/G.maxHp, perfect=frac>=0.999, hadPerf=!!pr.perf[G.n];
   const got=awardCards(dropCount(G.n,frac,replay,el),G.n,(isBoss(G.n)?(replay?1:2):0)+(el&&!replay?1:0),el);
   const gem=founderGems(replay?1:Math.max(2,Math.ceil((2+Math.floor(G.n/6)+(perfect?1:0))*(el?2:1)))); P.gems=(P.gems||0)+gem; G.lastGot=got; G.lastGems=gem; G.doubled=false;
@@ -3809,7 +3811,7 @@ function gameOver(){
   Ads.gameplayStop(); G.state='over'; G.armed=null; achCheck(true); Music.lose();
   const pr=pw(P), done=Math.max(0,G.wave-1), rep=G.elite?!!pr.eclr[G.n]:G.n<=pr.best, full=dropCount(G.n,1,rep,G.elite);
   const cnt=Math.max(done>=3?1:0,Math.round(full*0.5*done/G.NW));
-  const got=awardCards(cnt,G.n,0,G.elite); const gem=done>=5?1:0; P.gems=(P.gems||0)+gem; G.lastGot=got; G.lastGems=gem; G.doubled=false; save();
+  const got=awardCards(cnt,G.n,0,G.elite); const gem=done>=5?1:0; if(done>=5) P.actDay=today(); P.gems=(P.gems||0)+gem; G.lastGot=got; G.lastGems=gem; G.doubled=false; save();
   overlay.innerHTML='<div class="ovb"><h1>Base lost</h1><p class="sub">'+(G.elite?'Elite ':'Level ')+G.n+' \u00b7 wave '+G.wave+'/'+G.NW+'</p>'
     +dropsHtml(got)+(gem?gemLine(gem):'')
     +enLine()
@@ -4030,7 +4032,7 @@ function packCardHtml(pk){
     +'<button class="btn big" type="button" data-pack="'+pk.id+'" style="--c:'+pk.color+';width:100%;margin-top:8px" '+(g<cost?'disabled':'')+'>'+(free?'Open free welcome pack':ico('gem',15)+' '+cost+(g<cost?' <small>(need '+(cost-g)+' more)</small>':''))+'</button></div>';
 }
 function claim(k){
-  if(k==='chest'){ if(P.chestDay===today()) return; rewardFlow('daily_chest',()=>{ if(P.chestDay===today()) return; P.chestDay=today(); logEv('chest',''); const m=passActive()?2:1, g=DAILY_GEMS*m; P.gems+=g; let txt='';
+  if(k==='chest'){ if(P.chestDay===today()) return; if(!activeToday()){ toast('Clear a level to unlock your daily reward'); return; } rewardFlow('daily_chest',()=>{ if(P.chestDay===today()) return; P.chestDay=today(); logEv('chest',''); const m=passActive()?2:1, g=DAILY_GEMS*m; P.gems+=g; let txt='';
       for(let i=0;i<3*m;i++){ const t=rollCard(), r=Math.random()<0.7?0:1; P.inv[t][r]++; } save(); Music.up(); toast('Daily: +'+g+' gems and '+3*m+' crystals'); renderArmory(); }); }
   else if(k.indexOf('fp:')===0) fpClaim(+k.slice(3));
   else if(k==='fpremind') fpRemind();
@@ -4043,12 +4045,12 @@ function founderHtml(){
   h+='<div class="cv">'+(boost?'Boost on: '+left+' day'+(left===1?'':'s')+' left. 2x energy, +50% gems.':'Thank you for playing early.')+'</div><div class="fpl">';
   h+=FOUNDER.steps.map(x=>{ const got=!!f.c[x.d], ok=day>=x.d, wait=x.d-day;
     return '<div class="fprow'+(got?' done':'')+'"><div><b>'+x.name+'</b><small>'+x.txt+'</small></div>'
-      +(got?'<span class="fpok">Claimed</span>':ok?'<button class="btn sm" type="button" data-claim="fp:'+x.d+'" style="--c:#ff2bd6">Claim</button>':'<span class="fpwait">Day '+x.d+' · '+wait+' day'+(wait===1?'':'s')+'</span>')+'</div>'; }).join('')+'</div>';
+      +(got?'<span class="fpok">Claimed</span>':ok?'<button class="btn sm" type="button" data-claim="fp:'+x.d+'" style="--c:#ff2bd6" '+(activeToday()?'':'disabled')+'>'+(activeToday()?'Claim':ico('aim',13)+' Play')+'</button>':'<span class="fpwait">Day '+x.d+' · '+wait+' day'+(wait===1?'':'s')+'</span>')+'</div>'; }).join('')+'</div>';
   if(window.NDPlay&&NDPlay.native) h+='<button class="btn sm" type="button" data-claim="fpremind" style="--c:#7df9ff;margin-top:8px">'+(f.rm?'Reminders on (tap to turn off)':'Remind me when a reward is ready')+'</button>';
   return h+'</div>';
 }
 function fpClaim(d){
-  const x=FOUNDER.steps.find(q=>q.d===d), f=P.fp; if(!x||!f||f.c[d]||founderDay()<d) return;
+  const x=FOUNDER.steps.find(q=>q.d===d), f=P.fp; if(!x||!f||f.c[d]||founderDay()<d) return; if(!activeToday()){ toast('Clear a level to unlock this reward'); return; }
   f.c[d]=Date.now(); P.gems=(P.gems||0)+x.gems;
   for(let i=0;i<x.crystals;i++){ const t=rollCard(), r=Math.min(3,x.minR+(Math.random()<0.15?1:0)); P.inv[t][r]++; }
   if(x.energy){ P.en=EN_MAX; P.enT=Date.now(); }
@@ -4078,7 +4080,7 @@ function shopHtml(){
     +'<div class="note" style="margin:0 0 8px">'+['Common','Rare','Exquisite'].map((n,i)=>'<span class="gt" style="color:'+GEMC[i]+'">'+ico('gem',12)+n+' '+GEMV[i]+'</span>').join(' · ')+'</div>';
   if(PLAY) h+=founderHtml();
   h+='<div class="card" style="--c:#ffc400"><div class="ct"><span class="cn">Daily</span><span class="chip" style="--c:#ffc400">Free</span></div>'
-    +'<button class="btn big" data-claim="chest" type="button" style="--c:#ffc400;width:100%" '+(can?'':'disabled')+'>'+(can?ico('gem',14)+DAILY_GEMS*(pa?2:1)+' '+ico('crystal',14)+3*(pa?2:1)+((pa||!Ads.enabled)?'':' <small>(ad)</small>'):'Come back tomorrow')+'</button></div>';
+    +'<button class="btn big" data-claim="chest" type="button" style="--c:#ffc400;width:100%" '+(can&&activeToday()?'':'disabled')+'>'+(can&&!activeToday()?ico('aim',14)+' Clear a level to unlock':can?ico('gem',14)+DAILY_GEMS*(pa?2:1)+' '+ico('crystal',14)+3*(pa?2:1)+((pa||!Ads.enabled)?'':' <small>(ad)</small>'):'Come back tomorrow')+'</button></div>';
   h+=marketHtml();
   h+='<div class="note" style="margin:10px 0 4px"><b>Crystal packs</b></div>'+PACKS.map(packCardHtml).join('');
   if(!PLAY){ h+='<div class="card" style="--c:#9d4dff"><div class="ct"><span class="cn">Neon Pass</span><span class="chip" style="--c:#9d4dff">'+(pa?days+' days left':'30 days')+'</span></div>'
