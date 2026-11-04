@@ -353,6 +353,8 @@ canvas.tprev.dim{filter:saturate(.35) brightness(.7)}
 .wchip .dot{flex:none; width:24px; height:24px; border-radius:50%; border:1.5px solid var(--wc); display:flex; align-items:center; justify-content:center; color:var(--wc)}
 .wchip .nm{overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
 .sp{flex:1}
+.dly{display:flex; gap:8px}
+.dly .btn{flex:1}
 .gt{display:inline-flex; align-items:center; gap:2px; margin-right:5px}
 .pill{display:inline-flex; align-items:center; gap:6px; padding:6px 12px; border-radius:999px; background:#04101a; border:1px solid rgba(0,240,255,.35); font-weight:700; font-size:14px; font-variant-numeric:tabular-nums; box-shadow:inset 0 0 12px rgba(0,240,255,.10); color:var(--fg)}
 .pill small{font-size:10px; color:var(--dim); font-weight:600}
@@ -4019,9 +4021,9 @@ function showPackReveal(pk,got){
 function packCardHtml(pk){
   const g=P.gems||0, free=pk.id==='s'&&!(P.pk||{}).f, cost=free?0:pk.cost, left=packLeft(pk), nm=['Common','Rare','Epic','Legendary'];
   const odds='<div class="pkodds">'+pk.odds.map((p,r)=>'<span style="color:'+RAR[r].color+'"><b>'+p+'%</b> '+nm[r]+'</span>').join('')+'</div>';
-  const pity=pk.pity?'<div class="note" style="margin-top:4px">'+(left<=1?'Next pack is guaranteed to include '+(pk.pity.min===3?'a Legendary':'an Epic or better')+'.':(pk.pity.min===3?'Legendary':'Epic')+' guaranteed in '+left+' packs.')+'</div>':'';
+  const pity=pk.pity?'<div class="note" style="margin-top:4px">'+(left<=1?'Next pack: ':(pk.pity.min===3?'Legendary':'Epic')+' within '+left+' packs')+(left<=1?(pk.pity.min===3?'Legendary guaranteed':'Epic+ guaranteed'):'')+'</div>':'';
   const art='<svg class="pkart" viewBox="0 0 48 48" aria-hidden="true" fill="none" stroke="'+pk.color+'" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" style="filter:drop-shadow(0 0 6px '+pk.color+')"><rect x="11" y="5" width="26" height="38" rx="5"/><path d="M24 15l3 6 6.500.900-4.700 4.500 1.200 6.500L24 29.800 18 33l1.200-6.500-4.700-4.500L21 21z"/>'+(pk.id!=='s'?'<path d="M4 14v20M44 14v20"/>':'')+(pk.id==='l'?'<path d="M-1 20v8M49 20v8"/>':'')+'</svg>';
-  return '<div class="card pkcard" style="--c:'+pk.color+'"><div class="pkrow">'+art+'<div style="flex:1;min-width:0"><div class="ct"><span class="cn">'+pk.name+'</span><span class="chip" style="--c:'+pk.color+'">'+pk.n+' pulls</span></div><div class="cv">'+pk.blurb+'</div></div></div>'
+  return '<div class="card pkcard" style="--c:'+pk.color+'"><div class="pkrow">'+art+'<div style="flex:1;min-width:0"><div class="ct"><span class="cn">'+pk.name+'</span><span class="chip" style="--c:'+pk.color+'">'+pk.n+' pulls</span></div></div></div>'
     +odds+pity
     +'<button class="btn big" type="button" data-pack="'+pk.id+'" style="--c:'+pk.color+';width:100%;margin-top:8px" '+(g<cost?'disabled':'')+'>'+(free?'Open free welcome pack':ico('gem',15)+' '+cost+(g<cost?' <small>(need '+(cost-g)+' more)</small>':''))+'</button></div>';
 }
@@ -4036,7 +4038,7 @@ function founderHtml(){
   const day=founderDay(), f=P.fp; if(!day||!f) return '';
   const boost=founderBoost(), left=Math.max(0,FOUNDER.boostDays-day+1);
   let h='<div class="card" style="--c:#ff2bd6"><div class="ct"><span class="cn">Founder’s Path</span><span class="chip" style="--c:#ff2bd6">Day '+day+'</span></div>';
-  h+='<div class="cv">'+(boost?'Founder Boost is on for '+left+' more day'+(left===1?'':'s')+': energy refills twice as fast and every win pays 50% more gems.':'Thank you for playing early.')+'</div><div class="fpl">';
+  h+='<div class="cv">'+(boost?'Boost on: '+left+' day'+(left===1?'':'s')+' left. 2x energy, +50% gems.':'Thank you for playing early.')+'</div><div class="fpl">';
   h+=FOUNDER.steps.map(x=>{ const got=!!f.c[x.d], ok=day>=x.d, wait=x.d-day;
     return '<div class="fprow'+(got?' done':'')+'"><div><b>'+x.name+'</b><small>'+x.txt+'</small></div>'
       +(got?'<span class="fpok">Claimed</span>':ok?'<button class="btn sm" type="button" data-claim="fp:'+x.d+'" style="--c:#ff2bd6">Claim</button>':'<span class="fpwait">Day '+x.d+' · '+wait+' day'+(wait===1?'':'s')+'</span>')+'</div>'; }).join('')+'</div>';
@@ -4071,14 +4073,13 @@ function fpBoot(){
 function shopHtml(){
   const g=P.gems||0, can=P.chestDay!==today(), pa=passActive(), days=Math.ceil(((P.pass||0)-Date.now())/864e5);
   let h='<div class="wrap shop"><div class="ahead"><h1>Shop</h1><div class="cr"><span class="lbl">Gems</span><b style="color:#7df9ff">'+gemHtml(g,16)+'</b></div></div>'
-    +'<div class="note" style="margin:0 0 8px">'+['Common','Rare','Exquisite'].map((n,i)=>'<span class="gt" style="color:'+GEMC[i]+'">'+ico('gem',12)+n+' '+GEMV[i]+'</span>').join(' · ')+' &nbsp;Prices are in Common value. Gems combine up on their own: 4 Common make a Rare, 8 Rare make an Exquisite.</div>';
+    +'<div class="note" style="margin:0 0 8px">'+['Common','Rare','Exquisite'].map((n,i)=>'<span class="gt" style="color:'+GEMC[i]+'">'+ico('gem',12)+n+' '+GEMV[i]+'</span>').join(' · ')+'</div>';
   if(PLAY) h+=founderHtml();
-  h+='<div class="card" style="--c:#ffc400"><div class="ct"><span class="cn">Daily chest</span><span class="chip" style="--c:#ffc400">Free</span></div><div class="cv">8 gems and 3 crystals'+(pa?' (doubled by your pass)':'')+'</div>'
-    +'<button class="btn" data-claim="chest" type="button" style="--c:#ffc400" '+(can?'':'disabled')+'>'+(can?'Open chest'+((pa||!Ads.enabled)?'':' <small>(watch ad)</small>'):'Come back tomorrow')+'</button></div>';
-  h+='<div class="card" style="--c:#7df9ff"><div class="ct"><span class="cn">Free gems</span><span class="chip" style="--c:#7df9ff">'+adLeft()+' left today</span></div><div class="cv">'+(ADS_LIVE?'Watch an ad for '+AD_GEMS+' gems.':'Claim '+AD_GEMS+' free gems every day.')+'</div>'
-    +'<button class="btn" data-adgems="1" type="button" style="--c:#7df9ff" '+(adLeft()?'':'disabled')+'>'+(adLeft()?'+'+AD_GEMS+' gems <small>'+(passActive()||!ADS_LIVE?'':'(watch ad)')+'</small>':'Come back tomorrow')+'</button></div>';
+  h+='<div class="card" style="--c:#ffc400"><div class="ct"><span class="cn">Daily</span><span class="chip" style="--c:#ffc400">Free</span></div><div class="dly">'
+    +'<button class="btn" data-claim="chest" type="button" style="--c:#ffc400" '+(can?'':'disabled')+' title="'+(pa?'16':'8')+' gems and '+(pa?6:3)+' crystals">'+(can?'Chest '+ico('gem',13)+(pa?16:8)+' '+ico('crystal',13)+(pa?6:3)+((pa||!Ads.enabled)?'':' <small>(ad)</small>'):'Chest done')+'</button>'
+    +'<button class="btn" data-adgems="1" type="button" style="--c:#7df9ff" '+(adLeft()?'':'disabled')+'>'+(adLeft()?ico('gem',13)+'+'+AD_GEMS+' <small>'+adLeft()+' left'+(passActive()||!ADS_LIVE?'':' · ad')+'</small>':'Gems done')+'</button></div></div>';
   h+=marketHtml();
-  h+='<div class="note" style="margin:10px 0 4px"><b>Crystal packs.</b> Every pull is one crystal for one weapon and one specialty (Turret Power, Chain Cooldown, Base Fortify and so on), only for weapons you have met. Shards come from achievements and level stars. Forge them into crystals on the Arsenal screen, under each upgrade (cost on the button). Four crystals of one kind and rarity fuse into one of the next rarity. Nothing converts down. Bigger packs hold more pulls and better odds, and every pack lists its drop rates.</div>'+PACKS.map(packCardHtml).join('');
+  h+='<div class="note" style="margin:10px 0 4px"><b>Crystal packs</b></div>'+PACKS.map(packCardHtml).join('');
   if(!PLAY){ h+='<div class="card" style="--c:#9d4dff"><div class="ct"><span class="cn">Neon Pass</span><span class="chip" style="--c:#9d4dff">'+(pa?days+' days left':'30 days')+'</span></div>'
     +'<div class="cv">The only way to remove ads. Every reward ad is granted instantly with no waiting, 15 gems every day, and double daily chests.</div>'
     +(pa?'<button class="btn" data-claim="pass" type="button" style="--c:#9d4dff" '+(P.passDay===today()?'disabled':'')+'>'+(P.passDay===today()?'Daily 15 gems claimed':'Claim 15 gems')+'</button>':'')
