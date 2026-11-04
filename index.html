@@ -353,6 +353,7 @@ canvas.tprev.dim{filter:saturate(.35) brightness(.7)}
 .wchip .dot{flex:none; width:24px; height:24px; border-radius:50%; border:1.5px solid var(--wc); display:flex; align-items:center; justify-content:center; color:var(--wc)}
 .wchip .nm{overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
 .sp{flex:1}
+.gt{display:inline-flex; align-items:center; gap:2px; margin-right:5px}
 .pill{display:inline-flex; align-items:center; gap:6px; padding:6px 12px; border-radius:999px; background:#04101a; border:1px solid rgba(0,240,255,.35); font-weight:700; font-size:14px; font-variant-numeric:tabular-nums; box-shadow:inset 0 0 12px rgba(0,240,255,.10); color:var(--fg)}
 .pill small{font-size:10px; color:var(--dim); font-weight:600}
 #enBox{color:var(--yellow); border-color:rgba(255,242,0,.45)}
@@ -3673,6 +3674,10 @@ function forgeFx(r){ const o=document.createElement('div'); o.className='forgefx
   for(let i=0;i<n;i++){ const a=i/n*6.283+0.4; h+='<i style="--x:'+Math.round(Math.cos(a)*96)+'px;--y:'+Math.round(Math.sin(a)*96)+'px;--d:'+(i*45)+'ms">'+ico('shard',24)+'</i>'; }
   h+='<b>'+ico('crystal',56)+'</b>'; o.innerHTML=h; document.body.appendChild(o); setTimeout(()=>o.remove(),1500); }
 const rarPips=r=>'<i class="pips" aria-hidden="true">'+'<u></u>'.repeat(r+1)+'</i>';
+/* Gems come in three tiers. The wallet P.gems stays one number counted in Common-gem value; it is shown as the fewest gems that make it up (Rare = 4 Common, Exquisite = 8 Rare = 32 Common), so saves and prices are unchanged. */
+const GEMV=[1,4,32], GEMC=['#b8c4cc','#3d8bff','#ff9d00'], GEMN=['Common','Rare','Exquisite'];
+const gemSplit=n=>{ n=Math.max(0,Math.floor(+n||0)); const e=Math.floor(n/32); n-=e*32; const r=Math.floor(n/4); return [n-r*4,r,e]; };
+const gemHtml=(n,z)=>{ const s=gemSplit(n); let h=''; for(let i=2;i>=0;i--) if(s[i]||(i===0&&!h)) h+='<span class="gt" title="'+s[i]+' '+GEMN[i]+' gem'+(s[i]===1?'':'s')+'" style="color:'+GEMC[i]+'">'+ico('gem',z||14)+s[i]+'</span>'; return h; };
 const ico=(n,sz)=>'<svg class="ic" viewBox="0 0 16 16" width="'+(sz||14)+'" height="'+(sz||14)+'" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+IC[n]+'</svg>';
 [['toolMine','mine'],['toolMortar','mortar'],['toolField','field'],['toolChain','chain'],['toolSaw','saw']].forEach(a=>$(a[0]).insertAdjacentHTML('afterbegin',ico(a[1])));
 const toolMine=$('toolMine'), toolField=$('toolField'), toolMortar=$('toolMortar'), toolChain=$('toolChain'), toolSaw=$('toolSaw');
@@ -3873,7 +3878,7 @@ const dropCount=(n,frac,rep,el)=>Math.max(1,Math.round((CDROP0+CDROPG*n)*(rep?0.
 function logEv(k,d){ try{ (P.ledger=P.ledger||[]).push({t:Date.now(),k:k,d:String(d||'')}); if(P.ledger.length>100) P.ledger.splice(0,P.ledger.length-100); }catch(e){} }
 const today=()=>{ const d=new Date(); return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); };
 const passActive=()=>(P.pass||0)>Date.now();
-const gemLine=g=>'<div class="stat1" style="color:#7df9ff" title="Gems">'+ico('gem',16)+' +'+g+' gems</div>';
+const gemLine=g=>'<div class="stat1" style="color:#7df9ff" title="Gems worth '+g+' Common">+ '+gemHtml(g,16)+'</div>';
 let toastEl=null, toastT=0;
 function toast(t){ if(!toastEl){ toastEl=document.createElement('div'); toastEl.className='toast'; toastEl.setAttribute('role','status'); document.body.appendChild(toastEl); } toastEl.textContent=t; toastEl.classList.add('on'); clearTimeout(toastT); toastT=setTimeout(()=>toastEl.classList.remove('on'),2600); }
 /* Real-money purchases need the store's billing (Google Play / App Store). On the web build nothing is charged; the Android/iOS builds replace Billing.buy and call grantSku on success. */
@@ -4065,7 +4070,8 @@ function fpBoot(){
 }
 function shopHtml(){
   const g=P.gems||0, can=P.chestDay!==today(), pa=passActive(), days=Math.ceil(((P.pass||0)-Date.now())/864e5);
-  let h='<div class="wrap shop"><div class="ahead"><h1>Shop</h1><div class="cr"><span class="lbl">Gems</span><b style="color:#7df9ff">'+g+'</b></div></div>';
+  let h='<div class="wrap shop"><div class="ahead"><h1>Shop</h1><div class="cr"><span class="lbl">Gems</span><b style="color:#7df9ff">'+gemHtml(g,16)+'</b></div></div>'
+    +'<div class="note" style="margin:0 0 8px">'+['Common','Rare','Exquisite'].map((n,i)=>'<span class="gt" style="color:'+GEMC[i]+'">'+ico('gem',12)+n+' '+GEMV[i]+'</span>').join(' · ')+' &nbsp;Prices are in Common value. Gems combine up on their own: 4 Common make a Rare, 8 Rare make an Exquisite.</div>';
   if(PLAY) h+=founderHtml();
   h+='<div class="card" style="--c:#ffc400"><div class="ct"><span class="cn">Daily chest</span><span class="chip" style="--c:#ffc400">Free</span></div><div class="cv">8 gems and 3 crystals'+(pa?' (doubled by your pass)':'')+'</div>'
     +'<button class="btn" data-claim="chest" type="button" style="--c:#ffc400" '+(can?'':'disabled')+'>'+(can?'Open chest'+((pa||!Ads.enabled)?'':' <small>(watch ad)</small>'):'Come back tomorrow')+'</button></div>';
@@ -4281,7 +4287,7 @@ function renderArmory(){
   P.sel=clamp(P.sel,1,Math.min(P.best+1,LEVELS));
   let body=UI.nav==='arsenal'?arsenalHtml():UI.nav==='codex'?codexHtml():UI.nav==='worlds'?worldsHtml():UI.nav==='shop'?shopHtml():battleHtml();
   const h='<div class="topbar"><button class="wchip" type="button" data-nav="worlds" style="--wc:'+wd.color+'" aria-label="Worlds"><span class="dot">'+ico('world',14)+'</span><span class="nm">'+wd.name+'</span></button><span class="sp"></span>'
-    +'<span class="pill" title="Gems" style="color:#7df9ff">'+ico('gem',16)+(P.gems||0)+'</span><span class="pill" title="Crystals">'+ico('crystal',16)+totalCards()+'</span><span class="pill" id="enBox" title="Energy"></span><button class="gear" id="gearBtn" type="button" data-orb="1" aria-label="Settings" aria-haspopup="dialog" aria-expanded="'+(orbOpen?'true':'false')+'">'+ico('cog',18)+'</button></div>'
+    +'<span class="pill" title="Gems: worth '+(P.gems||0)+' Common" style="color:#7df9ff">'+gemHtml(P.gems,16)+'</span><span class="pill" title="Crystals">'+ico('crystal',16)+totalCards()+'</span><span class="pill" id="enBox" title="Energy"></span><button class="gear" id="gearBtn" type="button" data-orb="1" aria-label="Settings" aria-haspopup="dialog" aria-expanded="'+(orbOpen?'true':'false')+'">'+ico('cog',18)+'</button></div>'
     +'<div class="content" id="content">'+body+'</div>'
     +'<nav class="nav" aria-label="Menu">'+NAVS.map(a=>'<button type="button" '+'data-nav="'+a[0]+'" '+(UI.nav===a[0]?'aria-current="page"':'')+'>'+ico(a[2],22)+'<span class="nl">'+a[1]+'</span>'+(a[0]==='shop'&&fpReady()?'<i class="ndot"></i>':'')+'</button>').join('')+'</nav>';
   armoryEl.innerHTML=h;
