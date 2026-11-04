@@ -1,0 +1,16 @@
+{
+  "appId": "games.squatchsquad.neondefense",
+  "appName": "Neon Defense",
+  "webDir": "../dist/play",
+  "backgroundColor": "#000000",
+  "android": {
+    "allowMixedContent": false,
+    "webContentsDebuggingEnabled": false
+  },
+  "plugins": {
+    "LocalNotifications": {
+      "smallIcon": "ic_stat_icon",
+      "iconColor": "#00F0FF"
+    }
+  }
+}

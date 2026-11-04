@@ -1,0 +1,13 @@
+{
+  "name": "neon-defense-play",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Google Play wrapper for Neon Defense (play 01). The web game is built by ../build.mjs play into ../dist/play.",
+  "dependencies": {
+    "@capacitor/android": "latest",
+    "@capacitor/app": "latest",
+    "@capacitor/cli": "latest",
+    "@capacitor/core": "latest",
+    "@capacitor/local-notifications": "latest"
+  }
+}

@@ -3,7 +3,9 @@
 // portals    = no Firebase, no sign-in, no service worker/manifest, no AdSense, no external links; fonts bundled
 import fs from 'node:fs'; import path from 'node:path'; import zlib from 'node:zlib';
 const ROOT=path.dirname(new URL(import.meta.url).pathname);
-const PORTALS=['crazygames','y8','gamepix','kongregate','none'];
+const PORTALS=['crazygames','y8','gamepix','kongregate','none','play'];
+const PLAY_VERSION='01';   /* Google Play edition: 01 play */
+const PLAY_PRIVACY='https://kwkoch.github.io/privacy.html';
 const SITE_FILES=['index.html','ads.txt','ads.js','cloud.js','firebase-config.js','sw.js','manifest.webmanifest','icon-180.png','icon-192.png','icon-512.png'];
 const rd=f=>fs.readFileSync(path.join(ROOT,f),'utf8');
 function must(s,a,b){ if(typeof a==='string'?!s.includes(a):!a.test(s)) throw new Error('build: pattern not found: '+a); return s.replace(a,b); }
@@ -21,11 +23,19 @@ function portalHtml(target){
   const a=s.indexOf('function accountHtml(){'), b=s.indexOf('\n}\n',a);
   if(a<0||b<0) throw new Error('build: accountHtml not found');
   s=s.slice(0,a)+"function accountHtml(){ return ''; }"+s.slice(b+2);
-  const ads=(rd('portal/ads-core.js')+'\n'+rd('portal/'+target+'.js')).replace(/\/\*[\s\S]*?\*\//g,'');
+  const prov=target==='play'?'none':target;   /* the Play edition ships ad-free; AdMob comes after production access */
+  const ads=(rd('portal/ads-core.js')+'\n'+rd('portal/'+prov+'.js')).replace(/\/\*[\s\S]*?\*\//g,'');
   s=must(s,'<script src="ads.js"></script>\n<script>\n','<script>\n'+ads+'\n</script>\n<script>\nAds.boot(function(){\n');
   s=must(s,/<\/script>\n\s*<script type="module" src="cloud.js"><\/script>\n/,'\n});\n</script>\n');
-  s=must(s,/<script>if\('serviceWorker' in navigator\)[^\n]*<\/script>\n?/,'');
-  const ext=[...s.matchAll(/https?:\/\/[^\s'"<>)]+/g)].map(m=>m[0]).filter(u=>!/^https:\/\/(sdk\.crazygames\.com|integration\.gamepix\.com|cdn\.y8\.com|cdn1\.kongregate\.com)\//.test(u)&&!/^https?:\/\/www\.w3\.org\//.test(u));
+  s=must(s,/<script>\n\/\* Freshness check[\s\S]*?<\/script>\n?/,'');   /* update-reload + service worker registration: site only */
+  if(target==='play'){
+    s=must(s,'const PLAY=false;','const PLAY=true;');
+    s=must(s,'%%PRIVACY%%',PLAY_PRIVACY);
+    s=must(s,/build (\d+)<\/div>/,'play '+PLAY_VERSION+' \u00b7 build $1</div>');
+    const bridge=rd('portal/play.js').replace(/\/\*[\s\S]*?\*\//g,'');
+    s=must(s,/<\/body>/,'<script>\n'+bridge+'\n</script>\n</body>');
+  }
+  const ext=[...s.matchAll(/https?:\/\/[^\s'"<>)]+/g)].map(m=>m[0]).filter(u=>!/^https:\/\/(sdk\.crazygames\.com|integration\.gamepix\.com|cdn\.y8\.com|cdn1\.kongregate\.com)\//.test(u)&&!/^https?:\/\/www\.w3\.org\//.test(u)&&!(target==='play'&&u.startsWith(PLAY_PRIVACY)));
   if(ext.length) throw new Error('build: external URLs left in '+target+': '+ext.join(', '));
   if(/firebase|googlesyndication|adsbygoogle|serviceWorker/i.test(s)) throw new Error('build: site-only code left in '+target);
   return s;

@@ -427,6 +427,9 @@ canvas.tprev.dim{filter:saturate(.35) brightness(.7)}
 #coach p{margin:0; font-size:14px; line-height:1.45}
 #coach .cb{display:flex; justify-content:flex-end; gap:8px; margin-top:4px}
 #coach .btn.ghost{background:transparent; border-color:var(--dim); color:var(--dim)}
+.nav button{position:relative} .ndot{position:absolute; top:5px; left:calc(50% + 9px); width:9px; height:9px; border-radius:50%; background:#ff2bd6; box-shadow:0 0 8px #ff2bd6}
+.fprow{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:8px 0; border-top:1px solid rgba(255,255,255,.08)} .fprow small{display:block; color:var(--dim); font-size:11px; margin-top:2px} .fprow.done{opacity:.55} .fpok{color:#7dff9d; font-size:12px; font-weight:700} .fpwait{color:var(--dim); font-size:12px; white-space:nowrap}
+.olink{display:block; text-align:center; text-decoration:none; margin-top:8px; padding:9px; border:1px solid var(--dim); color:var(--fg); font:inherit}
 .oreplay{margin-top:8px; width:100%; font:inherit; padding:9px; background:transparent; color:var(--fg); border:1px solid var(--dim); cursor:pointer}
 .wpn.lk{opacity:.55}
 .nav button{min-width:0; overflow:hidden; letter-spacing:.06em; font-size:clamp(8px,2.5vw,10px)}
@@ -935,6 +938,23 @@ const INTRO={};
 let WAVEHP=0.1, CRK=1, HPK=6.0, MOBN=18, MOBF=3.2, HPG=1.07, HPA=0, POOL0=55, POOLG=1.145, COSTK=1;
 const n1=v=>v<10?v.toFixed(1):String(Math.round(v));
 const EN_MAX=50, EN_COST=5, EN_REGEN=96*1000, EN_AD=5;   /* 50 max, 5 per attempt (10 elite), ~8 min per attempt back, rewarded ad = +5 */
+const PLAY=false;   /* build.mjs sets this true for the Google Play edition (play 01) */
+const PLAY_PRIVACY='%%PRIVACY%%', PLAY_MAIL='info.squatch.squad.studio@gmail.com';
+/* Founder's Path: early-adopter rewards in the Play edition. Calendar days since first launch (install day = day 1). Reaching a milestone day
+   unlocks a one-time reward, claimable any time after. Founder Boost (first 14 days): energy refills twice as fast and wins pay 50% more gems.
+   Nothing here costs money or needs an ad. Edit FOUNDER.steps to move or add milestone days. */
+const FOUNDER={boostDays:14, regen:0.5, gems:1.5, perm:0.8,
+  steps:[
+    {d:3, name:'Day 3 Cache', gems:15, crystals:6, minR:1, energy:true, txt:'Full energy, 15 gems, 6 rare crystals'},
+    {d:7, name:'Day 7 Vault', gems:30, crystals:8, minR:1, energy:true, txt:'Full energy, 30 gems, 8 rare crystals'},
+    {d:12, name:'Founder Seal', gems:50, crystals:6, minR:2, energy:true, perm:true, txt:'50 gems, 6 epic crystals, and energy refills 25% faster for good'}
+  ]};
+const dayStart=k=>{ const a=String(k).split('-'); return new Date(+a[0],(+a[1])-1,+a[2]).getTime(); };
+function founderDay(){ const f=P.fp; if(!PLAY||!f||!f.d0) return 0; return Math.max(1,Math.round((dayStart(today())-dayStart(f.d0))/864e5)+1); }
+function founderBoost(){ const d=founderDay(); return d>0&&d<=FOUNDER.boostDays; }
+function founderGems(g){ return founderBoost()?Math.ceil(g*FOUNDER.gems):g; }
+function enRegen(){ let m=1; if(PLAY&&P.fp){ if(founderBoost()) m*=FOUNDER.regen; if(P.fp.c&&P.fp.c.perm) m*=FOUNDER.perm; } return EN_REGEN*m; }
+function fpReady(){ return !!(PLAY&&P.fp&&P.fp.c&&FOUNDER.steps.some(x=>!P.fp.c[x.d]&&founderDay()>=x.d)); }
 const ST={
   rate:l=>0.36*Math.pow(0.9,l), dmg:l=>Math.pow(1.18,l), barrels:l=>1+l, pierce:l=>l, slide:l=>300+l*45, armor:l=>100, shield:l=>24+l*8, shreg:l=>0.2+0.03*l,
   mdmg:l=>8*Math.pow(1.18,l), mrad:l=>2*(48+l*8), mstock:l=>2+l, mrech:l=>5.6*Math.pow(0.88,l),
@@ -1476,7 +1496,7 @@ function openOrb(){
   orbOpen=true; g.setAttribute('aria-expanded','true');
   const sc=document.createElement('div'); sc.id='orbScrim'; sc.addEventListener('pointerdown',closeOrb); document.body.appendChild(sc);
   const o=document.createElement('div'); o.id='orb'; o.setAttribute('role','dialog'); o.setAttribute('aria-label','Sound settings');
-  o.innerHTML='<h2>Sound</h2>'+orbRow('m','Music','note','#ff2bd6')+orbRow('s','Sound FX','spk','#00f0ff')+'<div id="ctlwrap">'+ctlHtml()+'</div><button type="button" class="oreplay">Replay tutorials</button><button type="button" class="odone">Done</button>';
+  o.innerHTML='<h2>Sound</h2>'+orbRow('m','Music','note','#ff2bd6')+orbRow('s','Sound FX','spk','#00f0ff')+'<div id="ctlwrap">'+ctlHtml()+'</div><button type="button" class="oreplay">Replay tutorials</button>'+(PLAY?'<a class="olink" href="mailto:'+PLAY_MAIL+'?subject='+encodeURIComponent('Neon Defense feedback (play 01)')+'">Send feedback</a><a class="olink" href="'+PLAY_PRIVACY+'" target="_blank" rel="noopener">Privacy policy</a>':'')+'<button type="button" class="odone">Done</button>';
   document.body.appendChild(o);
   const r=g.getBoundingClientRect(), w=o.offsetWidth, left=Math.max(10,Math.min(innerWidth-w-10,r.right-w));
   o.style.left=left+'px'; o.style.top=(r.bottom+10)+'px'; o.style.setProperty('--ox',(r.left+r.width/2-left)+'px');
@@ -3734,7 +3754,7 @@ function startWave(w){
 function startLevel(n,world,elite){
   G.wd=WORLDS.find(w=>w.id===(world||P.world))||WORLDS[0]; applySkin(G.wd.id); G.elite=!!elite; UI.elite=G.elite;
   G.n=n; G.hpS=hpScale(n)*(G.elite?1.6:1)*(G.wd.hp||1); G.spS=1+n*0.01; G.NW=waveCount(n); G.wave=0;
-  G.run={rz:{},hold:{},kw:{}}; G.ozFlash=0; G.maxHp=ST.armor(0); G.hp=G.maxHp; G.shMax=ST.shield(L('armor')); G.sh=G.shMax; G.shRg=ST.shreg(L('armor')); G.shT=0; G.shFlash=0; G.shBreak=0; G.shOk=Math.random()<SH_CARD_P; G.mend=0; G.peeps=[]; G.scorch=[]; G.pplT=1; G.earned=0; G.kills=0; G.pot=0; G.credits=0; G.boost={}; G.pity={}; G.sinceW=0; G.revived=false; G.shieldUntil=0; G.tools={}; G.pickQ=0; G.rerolls=1; G.offer=[]; G.superOn=0; G.superCd=10; G.chainT=2; G.blobs=[]; G.chips=[]; G.teachQ=[]; { const to=document.getElementById('teachov'); if(to) to.remove(); } G.cpend=null; G.flashA=0; G.sawCd=0; G.stormT=12; G.mort=2; G.mortT=0; G.saws=[]; G.bolts=[]; G.shells=[]; G.fires=[]; G.delay=[]; lastCred=0;
+  G.run={rz:{},hold:{},kw:{}}; G.xr=0; G.ozFlash=0; G.maxHp=ST.armor(0); G.hp=G.maxHp; G.shMax=ST.shield(L('armor')); G.sh=G.shMax; G.shRg=ST.shreg(L('armor')); G.shT=0; G.shFlash=0; G.shBreak=0; G.shOk=Math.random()<SH_CARD_P; G.mend=0; G.peeps=[]; G.scorch=[]; G.pplT=1; G.earned=0; G.kills=0; G.pot=0; G.credits=0; G.boost={}; G.pity={}; G.sinceW=0; G.revived=false; G.shieldUntil=0; G.tools={}; G.pickQ=0; G.rerolls=1; G.offer=[]; G.superOn=0; G.superCd=10; G.chainT=2; G.blobs=[]; G.chips=[]; G.teachQ=[]; { const to=document.getElementById('teachov'); if(to) to.remove(); } G.cpend=null; G.flashA=0; G.sawCd=0; G.stormT=12; G.mort=2; G.mortT=0; G.saws=[]; G.bolts=[]; G.shells=[]; G.fires=[]; G.delay=[]; lastCred=0;
   cmdStart();
   G.enemies=[]; G.bullets=[]; G.parts=[]; G.rings=[]; G.floats=[]; G.mines=[]; G.fields=[]; G.boss=null; G.tag=null; G.warps=[];
   { const pf=profileFor(G.wd,n,G.elite); G.prof=pf; G.mutHp=pf.mut==='armored'?1.3:pf.mut==='dense'?0.8:pf.mut==='swift'?0.85:1; G.mutSp=pf.mut==='swift'?1.25:1; if(pf.mut||n>1) setTimeout(()=>{ if(G.state==='playing'&&G.n===n&&G.wave<=1) say(pf.name,pf.mut?MUTS[pf.mut].note:(BRIEF[pf.feat]||'')); },1400); }
@@ -3760,7 +3780,7 @@ function win(){
   Ads.gameplayStop(); G.state='won'; G.armed=null; achCheck(true); Music.win();
   const pr=pw(P), el=G.elite, replay=el?!!pr.eclr[G.n]:G.n<=pr.best, frac=G.hp/G.maxHp, perfect=frac>=0.999, hadPerf=!!pr.perf[G.n];
   const got=awardCards(dropCount(G.n,frac,replay,el),G.n,(isBoss(G.n)?(replay?1:2):0)+(el&&!replay?1:0),el);
-  const gem=replay?1:Math.max(2,Math.ceil((2+Math.floor(G.n/6)+(perfect?1:0))*(el?2:1))); P.gems=(P.gems||0)+gem; G.lastGot=got; G.lastGems=gem; G.doubled=false;
+  const gem=founderGems(replay?1:Math.max(2,Math.ceil((2+Math.floor(G.n/6)+(perfect?1:0))*(el?2:1)))); P.gems=(P.gems||0)+gem; G.lastGot=got; G.lastGems=gem; G.doubled=false;
   let sInfo=null; if(!el){ const q=pr.stars||(pr.stars={}), had=q[G.n]|0, sb=starBitsFor(G.run||{rz:{},hold:{}},starHold(G.n),(G.prof||{}).feat); q[G.n]=had|sb; sInfo=starPay(sb&~had,had|sb,had); }
   logEv(el?'elite':'clear',G.n+(perfect?' perfect':'')+' '+G.wd.id);
   if(el) pr.eclr[G.n]=true;
@@ -3773,7 +3793,7 @@ function win(){
     +'<div class="stat1"><span style="color:var(--red)" title="Base health left">'+ico('heart',16)+Math.round(frac*100)+'%</span>'
     +(!el&&perfect?'<span style="color:var(--yellow)" title="Perfect">'+ico('pow',16)+(hadPerf?'':' Elite unlocked')+'</span>':'')+'</div>'
     +enLine()
-    +'</div><div class="ovf">'+'<div id="dblrow"><button class="btn dbl" data-o="double" type="button">'+ico('cards',16)+' Double rewards '+(passActive()?'':'<small>(watch ad)</small>')+'</button></div>'+'<div class="obtns"><button class="btn" data-o="armory" type="button">Home</button>'+(canNext?'<button class="btn big" data-o="next" type="button" aria-label="Next level">Level '+nx+' '+ico('bolt',14)+(el?EN_COST*2:EN_COST)+'</button>':'')+'</div></div>';
+    +'</div><div class="ovf">'+'<div id="dblrow"><button class="btn dbl" data-o="double" type="button">'+ico('cards',16)+' Double rewards '+adTag()+'</button></div>'+'<div class="obtns"><button class="btn" data-o="armory" type="button">Home</button>'+(canNext?'<button class="btn big" data-o="next" type="button" aria-label="Next level">Level '+nx+' '+ico('bolt',14)+(el?EN_COST*2:EN_COST)+'</button>':'')+'</div></div>';
   overlay.innerHTML=h; overlay.hidden=false; focusFirst();
 }
 function gameOver(){
@@ -3785,7 +3805,7 @@ function gameOver(){
   overlay.innerHTML='<div class="ovb"><h1>Base lost</h1><p class="sub">'+(G.elite?'Elite ':'Level ')+G.n+' \u00b7 wave '+G.wave+'/'+G.NW+'</p>'
     +dropsHtml(got)+(gem?gemLine(gem):'')
     +enLine()
-    +'</div><div class="ovf">'+(G.revived?'':'<div id="dblrow"><button class="btn dbl" data-o="revive" type="button">'+ico('heart',16)+' Revive \u00b7 keep fighting '+(passActive()?'':'<small>(watch ad)</small>')+'</button></div>')+'<div class="obtns"><button class="btn big" data-o="armory" type="button">Home</button><button class="btn" data-o="retry" type="button" aria-label="Retry">Retry '+ico('bolt',14)+(G.elite?EN_COST*2:EN_COST)+'</button></div></div>';
+    +'</div><div class="ovf">'+(G.revived?'':'<div id="dblrow"><button class="btn dbl" data-o="revive" type="button">'+ico('heart',16)+' Revive \u00b7 keep fighting '+adTag()+'</button></div>')+'<div class="obtns"><button class="btn big" data-o="armory" type="button">Home</button><button class="btn" data-o="retry" type="button" aria-label="Retry">Retry '+ico('bolt',14)+(G.elite?EN_COST*2:EN_COST)+'</button></div></div>';
   overlay.hidden=false; focusFirst();
 }
 function focusFirst(){ const b=overlay.querySelector('button.big')||overlay.querySelector('button'); if(b) b.focus({preventScroll:true}); }
@@ -3824,10 +3844,10 @@ function enTick(){
   const now=Date.now();
   if(P.en>=EN_MAX){ P.en=EN_MAX; P.enT=now; return; }
   if(now<P.enT){ P.enT=now; return; }
-  const k=Math.floor((now-P.enT)/EN_REGEN);
-  if(k>0){ P.en=Math.min(EN_MAX,P.en+k); P.enT=P.en>=EN_MAX?now:P.enT+k*EN_REGEN; }
+  const k=Math.floor((now-P.enT)/enRegen());
+  if(k>0){ P.en=Math.min(EN_MAX,P.en+k); P.enT=P.en>=EN_MAX?now:P.enT+k*enRegen(); }
 }
-const enNext=()=>P.en>=EN_MAX?0:Math.max(0,EN_REGEN-(Date.now()-P.enT));
+const enNext=()=>P.en>=EN_MAX?0:Math.max(0,enRegen()-(Date.now()-P.enT));
 function useEnergy(c){ c=c||EN_COST; enTick(); if(P.en<c) return false; if(P.en>=EN_MAX) P.enT=Date.now(); P.en-=c; save(); return true; }
 function tryStart(n,el){ if(el===undefined) el=UI.elite; if(!useEnergy(el?EN_COST*2:EN_COST)){ toArmory(); return false; } startLevel(n,P.world,el); return true; }
 let CDROP0=7, CDROPG=0.5;
@@ -3867,7 +3887,7 @@ const adLeft=()=>Math.max(0,AD_GEMS_DAY-(P.adDay===today()?(P.adN||0):0));
 const payBtns=(sku,done)=>'<div class="paytwo"><button class="btn big" type="button" data-gem="'+sku+'" '+(done?'disabled':'')+'>'+ico('gem',15)+' '+COST[sku]+'</button><button class="btn" type="button" disabled aria-label="Pay with money: coming soon">'+ico('lock',14)+' Money</button></div>';
 function buyGems(sku){
   if(!COST[sku]) return;
-  if((P.gems||0)<COST[sku]){ toast('Not enough gems. Watch ads or play levels to earn more.'); return; }
+  if((P.gems||0)<COST[sku]){ toast('Not enough gems. '+(Ads.enabled?'Watch ads or p':'P')+'lay levels to earn more.'); return; }
   P.gems-=COST[sku]; grantSku(sku); Music.up(); toast('Neon Pass active: +30 days'); }
 function adGems(){
   if(adLeft()<=0) return;
@@ -3882,9 +3902,10 @@ function grantSku(sku){
   logEv('sku',sku); save(); renderArmory();
 }
 let rwBusy=false;
+function adTag(){ return (passActive()||!Ads.enabled)?'':'<small>(watch ad)</small>'; }
 function rewardFlow(name,grant){
   if(rwBusy) return;
-  if(passActive()){ grant(); return; }
+  if(passActive()||!Ads.enabled){ grant(); return; }   /* no ad provider: the reward is simply granted */
   if(Ads.rewardAvailable()){ Ads.showReward(grant); return; }
   rwBusy=true; toast('Loading ad\u2026'); Ads.prepareReward(name); let n=0;
   const iv=setInterval(()=>{ n++; if(Ads.rewardAvailable()){ clearInterval(iv); rwBusy=false; Ads.showReward(grant); } else if(n>28){ clearInterval(iv); rwBusy=false; toast('No ad is ready right now. Try again in a moment.'); } },300);
@@ -3926,7 +3947,7 @@ function reviveRun(){
     say('Base revived','Hold the line');
   });
 }
-function adReroll(){ if(G.state!=='cards') return; rewardFlow('card_reroll',()=>{ if(G.state==='cards'){ G.offer=offerCards(); renderCards(); } }); }
+function adReroll(){ if(G.state!=='cards') return; if(!Ads.enabled&&!passActive()){ if((G.xr|0)>=2){ toast('No more extra rerolls this run'); return; } G.xr=(G.xr|0)+1; } rewardFlow('card_reroll',()=>{ if(G.state==='cards'){ G.offer=offerCards(); renderCards(); } }); }
 function forge(t,r){
   if(!kOk(t)||!(r>=0&&r<4)) return; P.frag=P.frag||{};
   if((P.frag[t]||0)<FORGE[r]){ toast('Not enough '+kName(t)+' shards'); return; }
@@ -4002,23 +4023,62 @@ function packCardHtml(pk){
 function claim(k){
   if(k==='chest'){ if(P.chestDay===today()) return; rewardFlow('daily_chest',()=>{ if(P.chestDay===today()) return; P.chestDay=today(); logEv('chest',''); const m=passActive()?2:1, g=8*m; P.gems+=g; let txt='';
       for(let i=0;i<3*m;i++){ const t=rollCard(), r=Math.random()<0.7?0:1; P.inv[t][r]++; } save(); Music.up(); toast('Daily chest: +'+g+' gems and '+3*m+' crystals'); renderArmory(); }); }
+  else if(k.indexOf('fp:')===0) fpClaim(+k.slice(3));
+  else if(k==='fpremind') fpRemind();
   else if(k==='pass'){ if(!passActive()||P.passDay===today()) return; P.passDay=today(); P.gems+=15; logEv('passday',''); save(); Music.up(); toast('Pass bonus: +15 gems'); renderArmory(); }
+}
+function founderHtml(){
+  const day=founderDay(), f=P.fp; if(!day||!f) return '';
+  const boost=founderBoost(), left=Math.max(0,FOUNDER.boostDays-day+1);
+  let h='<div class="card" style="--c:#ff2bd6"><div class="ct"><span class="cn">Founder’s Path</span><span class="chip" style="--c:#ff2bd6">Day '+day+'</span></div>';
+  h+='<div class="cv">'+(boost?'Founder Boost is on for '+left+' more day'+(left===1?'':'s')+': energy refills twice as fast and every win pays 50% more gems.':'Thank you for playing early.')+'</div><div class="fpl">';
+  h+=FOUNDER.steps.map(x=>{ const got=!!f.c[x.d], ok=day>=x.d, wait=x.d-day;
+    return '<div class="fprow'+(got?' done':'')+'"><div><b>'+x.name+'</b><small>'+x.txt+'</small></div>'
+      +(got?'<span class="fpok">Claimed</span>':ok?'<button class="btn sm" type="button" data-claim="fp:'+x.d+'" style="--c:#ff2bd6">Claim</button>':'<span class="fpwait">Day '+x.d+' · '+wait+' day'+(wait===1?'':'s')+'</span>')+'</div>'; }).join('')+'</div>';
+  if(window.NDPlay&&NDPlay.native) h+='<button class="btn sm" type="button" data-claim="fpremind" style="--c:#7df9ff;margin-top:8px">'+(f.rm?'Reminders on (tap to turn off)':'Remind me when a reward is ready')+'</button>';
+  return h+'</div>';
+}
+function fpClaim(d){
+  const x=FOUNDER.steps.find(q=>q.d===d), f=P.fp; if(!x||!f||f.c[d]||founderDay()<d) return;
+  f.c[d]=Date.now(); P.gems=(P.gems||0)+x.gems;
+  for(let i=0;i<x.crystals;i++){ const t=rollCard(), r=Math.min(3,x.minR+(Math.random()<0.15?1:0)); P.inv[t][r]++; }
+  if(x.energy){ P.en=EN_MAX; P.enT=Date.now(); }
+  if(x.perm) f.c.perm=1;
+  logEv('founder',d); save(); Music.up();
+  toast(x.name+': +'+x.gems+' gems and '+x.crystals+' crystals'+(x.perm?'. Energy now refills 25% faster for good':'')); renderArmory();
+}
+async function fpRemind(){
+  const f=P.fp; if(!f||!window.NDPlay) return;
+  const ids=FOUNDER.steps.map((x,i)=>9001+i);
+  if(f.rm){ f.rm=0; save(); NDPlay.unremind(ids); toast('Reminders off'); renderArmory(); return; }
+  const base=dayStart(f.d0), list=[];
+  FOUNDER.steps.forEach((x,i)=>{ if(!f.c[x.d]) list.push({id:9001+i,at:base+(x.d-1)*864e5+18*36e5,title:'Neon Defense',body:x.name+' is ready to claim. Keep the base standing.'}); });
+  const r=await NDPlay.remind(list);
+  if(r==='ok'){ f.rm=1; save(); toast('Reminders on'); } else toast(r==='denied'?'Notifications are off for this app in Android settings':'Reminders are not available here');
+  renderArmory();
+}
+function fpBoot(){
+  if(!PLAY) return;
+  if(!P.fp||!P.fp.d0){ P.fp={d0:today(),c:{},t:''}; save(); }
+  if(!P.fp.c) P.fp.c={};
+  if(P.fp.t!==today()){ P.fp.t=today(); save(); setTimeout(()=>toast(fpReady()?'Founder reward ready. Open Shop.':(founderBoost()?'Founder Boost is on: faster energy and bonus gems':'Welcome back')),1500); }
 }
 function shopHtml(){
   const g=P.gems||0, can=P.chestDay!==today(), pa=passActive(), days=Math.ceil(((P.pass||0)-Date.now())/864e5);
   let h='<div class="wrap shop"><div class="ahead"><h1>Shop</h1><div class="cr"><span class="lbl">Gems</span><b style="color:#7df9ff">'+g+'</b></div></div>';
+  if(PLAY) h+=founderHtml();
   h+='<div class="card" style="--c:#ffc400"><div class="ct"><span class="cn">Daily chest</span><span class="chip" style="--c:#ffc400">Free</span></div><div class="cv">8 gems and 3 crystals'+(pa?' (doubled by your pass)':'')+'</div>'
-    +'<button class="btn" data-claim="chest" type="button" style="--c:#ffc400" '+(can?'':'disabled')+'>'+(can?'Open chest'+(pa?'':' <small>(watch ad)</small>'):'Come back tomorrow')+'</button></div>';
+    +'<button class="btn" data-claim="chest" type="button" style="--c:#ffc400" '+(can?'':'disabled')+'>'+(can?'Open chest'+((pa||!Ads.enabled)?'':' <small>(watch ad)</small>'):'Come back tomorrow')+'</button></div>';
   h+='<div class="card" style="--c:#7df9ff"><div class="ct"><span class="cn">Free gems</span><span class="chip" style="--c:#7df9ff">'+adLeft()+' left today</span></div><div class="cv">'+(ADS_LIVE?'Watch an ad for '+AD_GEMS+' gems.':'Claim '+AD_GEMS+' free gems every day.')+'</div>'
     +'<button class="btn" data-adgems="1" type="button" style="--c:#7df9ff" '+(adLeft()?'':'disabled')+'>'+(adLeft()?'+'+AD_GEMS+' gems <small>'+(passActive()||!ADS_LIVE?'':'(watch ad)')+'</small>':'Come back tomorrow')+'</button></div>';
   h+=marketHtml();
   h+='<div class="note" style="margin:10px 0 4px"><b>Crystal packs.</b> Every pull is one crystal for one weapon and one specialty (Turret Power, Chain Cooldown, Base Fortify and so on), only for weapons you have met. Shards come from achievements and level stars. Forge them into crystals on the Arsenal screen, under each upgrade (cost on the button). Four crystals of one kind and rarity fuse into one of the next rarity. Nothing converts down. Bigger packs hold more pulls and better odds, and every pack lists its drop rates.</div>'+PACKS.map(packCardHtml).join('');
-  h+='<div class="card" style="--c:#9d4dff"><div class="ct"><span class="cn">Neon Pass</span><span class="chip" style="--c:#9d4dff">'+(pa?days+' days left':'30 days')+'</span></div>'
+  if(!PLAY){ h+='<div class="card" style="--c:#9d4dff"><div class="ct"><span class="cn">Neon Pass</span><span class="chip" style="--c:#9d4dff">'+(pa?days+' days left':'30 days')+'</span></div>'
     +'<div class="cv">The only way to remove ads. Every reward ad is granted instantly with no waiting, 15 gems every day, and double daily chests.</div>'
     +(pa?'<button class="btn" data-claim="pass" type="button" style="--c:#9d4dff" '+(P.passDay===today()?'disabled':'')+'>'+(P.passDay===today()?'Daily 15 gems claimed':'Claim 15 gems')+'</button>':'')
     +payBtns('pass',false)+'</div>';
   h+='<div class="note" style="margin:10px 0 4px"><b>Gem bundles.</b>'+(PAID_SOON?' Coming soon.':'')+'</div><div class="card'+(PAID_SOON?' soon':'')+'"><div class="pbs">'
-    +[['g100',100],['g550',550],['g1200',1200]].map(b=>PAID_SOON?'<button class="pbtn" type="button" disabled style="--g:#7df9ff"><span>'+b[1]+' gems</span><b>Soon</b></button>':'<button class="pbtn" type="button" data-sku="'+b[0]+'" style="--g:#7df9ff"><span>'+b[1]+' gems</span><b>'+PRICES[b[0]]+'</b></button>').join('')+'</div></div>';
+    +[['g100',100],['g550',550],['g1200',1200]].map(b=>PAID_SOON?'<button class="pbtn" type="button" disabled style="--g:#7df9ff"><span>'+b[1]+' gems</span><b>Soon</b></button>':'<button class="pbtn" type="button" data-sku="'+b[0]+'" style="--g:#7df9ff"><span>'+b[1]+' gems</span><b>'+PRICES[b[0]]+'</b></button>').join('')+'</div></div>'; }
   return h+'</div>';
 }
 function awardCards(count,n,bonus,el){
@@ -4044,7 +4104,7 @@ function fuse(t,r){ if(r>=3||P.inv[t][r]<FUSE_N) return false; P.inv[t][r]-=FUSE
 /* ================= home (armory) ================= */
 const UI={cm:'',cmm:'',cmw:'cmd',cmv:'info',cmf:'all',nav:'battle',elite:false,cx:'mobs',ac:'wpn',uc:'',a0:'',ag:{wpn:'turret',disc:'survey',odds:'rate'}};
 let tab='turret', confirmReset=false;
-const worldOpen=i=>{ if(i===0) return true; if((((P.prog[WORLDS[i].id])||{}).best||0)>0) return true; /* already played: stays open */ return (((P.prog[WORLDS[i-1].id]||{}).best||0)>=LEVELS)&&starsOfWorld(WORLDS[i-1].id)>=ECON.gate; };
+const worldOpen=i=>{ if(i===0) return true; if(PLAY) return false;   /* Play 01 ships World 1; the rest arrive in updates */ if((((P.prog[WORLDS[i].id])||{}).best||0)>0) return true; /* already played: stays open */ return (((P.prog[WORLDS[i-1].id]||{}).best||0)>=LEVELS)&&starsOfWorld(WORLDS[i-1].id)>=ECON.gate; };
 const curWorld=()=>WORLDS.find(w=>w.id===P.world)||WORLDS[0];
 const uwFor=wd=>(wd&&wd.uw)||UW;
 function levelMobs(n){ return profileFor(curWorld(),n,UI.elite).roster; }
@@ -4073,7 +4133,7 @@ function battleHtml(){
     +'<div class="brief">'+briefFor(wd,n,el)+'</div>'
     +(el?'':'<div class="goals">'+goalsFor(wd,n).map((t,k)=>'<span class="gl'+(((pr.stars||{})[n]|0)>>k&1?' on':'')+'">'+ico('pow',13)+t+'</span>').join('')+'</div>')
     +'<div class="facts"><span title="Waves">'+ico('wave',18)+waveCount(n)+'</span><span title="Crystals per clear">'+ico('crystal',18)+'~'+cnt+'</span>'+(el?'<span style="color:var(--red)" title="Elite costs double energy">'+ico('bolt',18)+'x2</span>':'')+'</div>'
-    +(P.en<(el?EN_COST*2:EN_COST)?'<button class="mini" data-act="ad" type="button">Watch ad: +'+EN_AD+' energy</button>':'')+'</div>';
+    +(Ads.enabled&&P.en<(el?EN_COST*2:EN_COST)?'<button class="mini" data-act="ad" type="button">Watch ad: +'+EN_AD+' energy</button>':'')+'</div>';
   return h;
 }
 function accountHtml(){
@@ -4211,7 +4271,7 @@ function worldsHtml(){
     h+='<div class="wcard'+(active?' on':'')+'" style="--wc:'+wd.color+'"><div class="wh"><span class="wi">'+ico('world',22)+'</span><div class="wt"><b>'+wd.name+'</b><span>'+wd.sub+'</span></div>'+(own?'':'<span class="wlock">'+ico('lock',20)+'</span>')+'</div>'
       +'<div class="wm">'+sig.map(k=>'<canvas width="120" height="120" data-t="'+k+'" data-w="'+wd.id+'" aria-label="'+skinName(wd.id,k)+'"></canvas>').join('')
       +'<span class="pr" title="Levels cleared">'+pr.best+'/'+LEVELS+'</span><span class="pr" title="Stars">'+ico('pow',12)+starsOfWorld(wd.id)+'/'+LEVELS*3+'</span></div>'
-      +'<div class="wa">'+(active?'<span class="act">'+ico('aim',16)+'Active</span>':own?'<button class="btn sm" data-world="'+wd.id+'" type="button" style="--c:'+wd.color+'">Enter</button>':'<span class="act" style="color:var(--dim)">'+ico('lock',14)+'Clear level '+LEVELS+' and earn '+ECON.gate+' stars in '+WORLDS[wi-1].name+' ('+starsOfWorld(WORLDS[wi-1].id)+'/'+ECON.gate+')</span>')+'</div></div>';
+      +'<div class="wa">'+(active?'<span class="act">'+ico('aim',16)+'Active</span>':own?'<button class="btn sm" data-world="'+wd.id+'" type="button" style="--c:'+wd.color+'">Enter</button>':'<span class="act" style="color:var(--dim)">'+ico('lock',14)+(PLAY?'Coming in an update':'Clear level '+LEVELS+' and earn '+ECON.gate+' stars in '+WORLDS[wi-1].name+' ('+starsOfWorld(WORLDS[wi-1].id)+'/'+ECON.gate+')')+'</span>')+'</div></div>';
   });
   return h+'</div>';
 }
@@ -4223,7 +4283,7 @@ function renderArmory(){
   const h='<div class="topbar"><button class="wchip" type="button" data-nav="worlds" style="--wc:'+wd.color+'" aria-label="Worlds"><span class="dot">'+ico('world',14)+'</span><span class="nm">'+wd.name+'</span></button><span class="sp"></span>'
     +'<span class="pill" title="Gems" style="color:#7df9ff">'+ico('gem',16)+(P.gems||0)+'</span><span class="pill" title="Crystals">'+ico('crystal',16)+totalCards()+'</span><span class="pill" id="enBox" title="Energy"></span><button class="gear" id="gearBtn" type="button" data-orb="1" aria-label="Settings" aria-haspopup="dialog" aria-expanded="'+(orbOpen?'true':'false')+'">'+ico('cog',18)+'</button></div>'
     +'<div class="content" id="content">'+body+'</div>'
-    +'<nav class="nav" aria-label="Menu">'+NAVS.map(a=>'<button type="button" '+'data-nav="'+a[0]+'" '+(UI.nav===a[0]?'aria-current="page"':'')+'>'+ico(a[2],22)+'<span class="nl">'+a[1]+'</span></button>').join('')+'</nav>';
+    +'<nav class="nav" aria-label="Menu">'+NAVS.map(a=>'<button type="button" '+'data-nav="'+a[0]+'" '+(UI.nav===a[0]?'aria-current="page"':'')+'>'+ico(a[2],22)+'<span class="nl">'+a[1]+'</span>'+(a[0]==='shop'&&fpReady()?'<i class="ndot"></i>':'')+'</button>').join('')+'</nav>';
   armoryEl.innerHTML=h;
   const c=$('content'); if(c) c.scrollTop=keep;
   fillEnergy();
@@ -4503,7 +4563,7 @@ function renderCards(){
       +'<span class="tx"><span class="pn">'+c.name+'</span><span class="pd">'+body+'</span></span>'
       +'<span class="side">'+(c.unlock?'<span class="nw">NEW</span>':c.evo?'<span class="nw">EVOLVE</span>':c.ult?'<span class="nw">ULTIMATE</span>':'<span class="dots">'+d+'</span>')+'<span class="key">'+(i+1)+'</span></span></button>';
   });
-  h+='</div><div class="sticky">'+(G.rerolls>0?'<button class="btn" data-pick="re" type="button" aria-label="Reroll, '+G.rerolls+' left">Reroll '+G.rerolls+'</button>':'<button class="btn" data-pick="ad" type="button">Reroll '+(passActive()?'':'<small>(watch ad)</small>')+'</button>')+'</div></div>';
+  h+='</div><div class="sticky">'+(G.rerolls>0?'<button class="btn" data-pick="re" type="button" aria-label="Reroll, '+G.rerolls+' left">Reroll '+G.rerolls+'</button>':'<button class="btn" data-pick="ad" type="button">Reroll '+adTag()+'</button>')+'</div></div>';
   shopEl.innerHTML=h;
 }
 /* ---- teaching pauses: a first-time mob or weapon stops the game until the player acknowledges it ---- */
@@ -4660,7 +4720,8 @@ document.addEventListener('visibilitychange',()=>{ if(document.hidden&&G.state==
   window.addEventListener('pagehide',()=>Music.setAway(true)); window.addEventListener('pageshow',sync); }
 document.addEventListener('pointerdown',()=>Music.start(),{once:true});
 $('pauseBtn').addEventListener('click',togglePause);
-$('spdBtn').addEventListener('click',()=>{ G.speed=G.speed%3+1; $('spdBtn').textContent=G.speed+'x'; });
+$('spdBtn').addEventListener('click',()=>{ G.speed=G.speed%3+1; $('spdBtn').textContent=G.speed+'x'; P.spd=G.speed; save(); });
+if(P.spd===2||P.spd===3){ G.speed=P.spd; $('spdBtn').textContent=P.spd+'x'; }
 const syncMute=()=>{ const c=Music.get(); $('muteBtn').textContent=(c.mOn||c.sOn)?'Sound':'Muted'; syncOrb(); };
 Music.onChange(syncMute); syncMute();
 $('muteBtn').addEventListener('click',()=>{ const c=Music.get(), all=!(c.mOn||c.sOn); Music.setMusic(all); Music.setSfx(all); });
@@ -4689,6 +4750,7 @@ function frame(now){
 }
 P.sel=clamp(P.sel,1,Math.min(P.best+1,LEVELS));
 setMode('auto');
+fpBoot();
 renderArmory(); showView('armory'); wantReward(); Ads.loadingDone();
 if(!P.intro){ const io=document.createElement('div'); io.id='introov'; io.innerHTML='<h1>Neon Defense</h1>'+STORY.intro.map(t=>'<p class="sub">'+t+'</p>').join('')+'<div class="obtns"><button class="btn big" type="button">Begin</button></div>'; io.addEventListener('click',e=>{ if(e.target.closest('button')){ P.intro=1; save(); io.remove(); coachArmory(); } }); document.body.appendChild(io); }
 requestAnimationFrame(frame);
