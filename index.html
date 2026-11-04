@@ -2464,15 +2464,16 @@ function demoRun(root){
 const cmdUnlocked=()=>Object.keys(P.prog||{}).some(k=>((P.prog[k]||{}).best||0)>=CMD_LVL);
 const COACH={
   tour:[
-    {t:'Rampart online',x:'Quick tour. Skip whenever. Settings replays it.'},
-    {sel:'.topbar .pill[title="Gems"]',t:'Gems',x:'Gems buy packs and commanders. Crystals level your weapons.'},
-    {sel:'#enBox',t:'Energy',x:'One run, one charge. It refills on its own.'},
-    {sel:'nav.nav [data-nav="battle"]',t:'Battle',x:'Pick a level and deploy. The AI fires every weapon until you step in.'},
-    {sel:'#gearBtn',t:'Take the wheel',x:'Set any weapon to Manual and the AI never touches it. Same switch in battle: Aim.'},
-    {sel:'nav.nav [data-nav="arsenal"]',t:'Arsenal',x:'Spend crystals on the turret and each weapon. Commanders unlock at level '+CMD_LVL+'.'},
-    {sel:'nav.nav [data-nav="codex"]',t:'Codex',x:'Every mob you have met, what it fears, and your achievements.'},
-    {sel:'nav.nav [data-nav="shop"]',t:'Shop',x:'Daily reward and crystal packs.'},
-    {sel:'nav.nav [data-nav="worlds"]',t:'Worlds',x:'Stars open new worlds. Each one sends a different faction.'}
+    {t:'Defend the city',x:'Stop mobs before they cross the ozone line. This tour covers each screen. Skip any time; Settings replays it.'},
+    {sel:'.topbar .pill[title^="Gems"]',t:'Gems',x:'Earned from level clears, stars, achievements and the daily reward. Spend them on crystal packs and commanders.'},
+    {sel:'.topbar .pill[title="Crystals"]',t:'Crystals',x:'They upgrade your weapons. Four of the same kind and rarity fuse into one of the next rarity.'},
+    {sel:'#enBox',t:'Energy',x:'A level costs '+EN_COST+' energy ('+EN_COST*2+' for Elite). You gain one every '+Math.round(EN_REGEN/6000)/10+' minutes, up to '+EN_MAX+'.'},
+    {sel:'nav.nav [data-nav="battle"]',t:'Battle',x:'Pick a level and deploy. Weapons fire on their own. After every wave you choose one upgrade card for that run.'},
+    {sel:'#gearBtn',t:'Manual control',x:'Set any weapon to Manual and it fires only when you do. The Aim button does the same in battle.'},
+    {sel:'nav.nav [data-nav="arsenal"]',t:'Arsenal',x:'Spend crystals on permanent upgrades for the turret and each weapon. Commanders unlock at level '+CMD_LVL+'.'},
+    {sel:'nav.nav [data-nav="codex"]',t:'Codex',x:'Every mob you have met, what it is weak to, and your achievements.'},
+    {sel:'nav.nav [data-nav="shop"]',t:'Shop',x:'A free daily reward, unlocked by playing a level that day, and crystal packs with their drop rates listed.'},
+    {sel:'nav.nav [data-nav="worlds"]',t:'Worlds',x:'Stars earned on levels open the next world. Each world sends a different faction.'}
   ],
   command:[
     {nav:'arsenal',tab:'command',sel:'.wpn[data-tab="command"]',t:'Commanders',x:'Bring one into battle. Each gives you a buff, a weakness and two abilities to tap.'},
@@ -2485,9 +2486,9 @@ const COACH={
     {demo:'steer',t:'Hold to aim',x:'Press anywhere on the field and the turret follows your finger. Let go and the AI takes over.'}
   ],
   grab:[
-    {sel:'#row0 .tool[data-w]:not([hidden])',t:'Weapons run themselves',x:'Each one fires when its timer fills. You pick the moment.'},
-    {sel:'#row0 .tool[data-w]:not([hidden])',demo:'drag',t:'Hold, drag, release',x:'Press a weapon icon, drag onto the field, let go to fire there. Drag back down to cancel.'},
-    {sel:'#ctlBtn',t:'Manual',x:'Aim sets any weapon to Manual, or all of them. Nothing fires unless you do.'}
+    {sel:'#row0 .tool[data-w]:not([hidden])',t:'Weapons fire on their own',x:'Each weapon fires when its timer fills. You can choose the target instead.'},
+    {sel:'#row0 .tool[data-w]:not([hidden])',demo:'drag',t:'Aim a weapon',x:'Press a weapon icon, drag onto the field and release to fire there. Drag back down to cancel.'},
+    {sel:'#ctlBtn',t:'Manual mode',x:'Aim sets any weapon, or all of them, to Manual. A Manual weapon fires only when you tell it to.'}
   ],
   cmdrun:[
     {sel:'#cmdA1',demo:'ability',t:'Commander abilities',x:'Tap a button when it glows. Cooldowns run long, so save them for bad moments. Keys: Q and E.'}
