@@ -90,10 +90,12 @@ else (async()=>{
   /* Every write first reads the cloud copy and merges it in, so a stale device can never overwrite what another device earned. Anything new from the cloud is handed to the live game; failures retry until they land. */
   const canon=v=>Array.isArray(v)?v.map(canon):(v&&typeof v==='object')?Object.keys(v).sort().reduce((r,k)=>(r[k]=canon(v[k]),r),{}):v;
   const same=(x,y)=>{ try{ return JSON.stringify(canon(JSON.parse(x)))===JSON.stringify(canon(JSON.parse(y))); }catch(e){ return x===y; } };
-  let busy=false, again=false, retry=null;
-  const flushNow=async()=>{ const u=auth.currentUser; if(!u) return true; if(busy){ again=true; return false; } busy=true; let ok=false;
+  let busy=false, again=false, retry=null, synced=false;
+  const flushNow=async()=>{ const u=auth.currentUser; if(!u) return true; if(!synced) return false; if(busy){ again=true; return false; } busy=true; let ok=false;
     try{
       let local=localStorage.getItem(SKEY); const snap=await F.getDoc(mine(u));
+      /* the cloud save was deleted on the server while this tab was open: drop this device's copy instead of re-uploading it */
+      if(!snap.exists()){ wipeLocal(); try{ sessionStorage.removeItem('nd-synced'); }catch(e){} location.reload(); return false; }
       if(snap.exists()&&snap.data().data&&local){ const m=merge(local,snap.data().data); if(!same(m,local)){ localStorage.setItem(SKEY,m); local=m; if(window.NDAdopt) window.NDAdopt(m); } }
       await put(u,rec(local)); R.status='saved'; ok=true; clearTimeout(retry);
     }catch(e){ R.status='offline'; clearTimeout(retry); retry=setTimeout(flushNow,15000); }
@@ -101,21 +103,26 @@ else (async()=>{
   R.flush=()=>{ clearTimeout(timer); return flushNow(); };
   R.push=()=>{ if(!auth.currentUser) return; clearTimeout(timer); timer=setTimeout(flushNow,1500); };
   addEventListener('online',()=>{ if(auth.currentUser) flushNow(); });
-  // merge: keep whichever save (cloud vs this device) has the higher progress score.
-  // This also migrates an existing pre-sign-in local save into the first account that signs in.
+  /* The server copy is the account's source of truth. This device only keeps a cache of it so the game can boot instantly and play offline.
+     On every sign-in/load the cloud save replaces the device copy outright. If the account has no cloud save (new account, or the save was
+     wiped on the server), the device copy is cleared too, so an old local save can never be uploaded into the account. */
+  const LOCAL_KEYS=[SKEY,'nd-backup-v1','nd-seen-v1','rave-rampart-v4'];
+  const wipeLocal=()=>{ for(const k of LOCAL_KEYS){ try{ localStorage.removeItem(k); }catch(e){} } };
   async function sync(u){
     try{
       const snap=await F.getDoc(mine(u)), local=localStorage.getItem(SKEY);
-      /* Reload loop guard: the merged save can re-serialize differently from the local save on every load, which used to reload forever. Reload at most once per tab session per account. */
+      /* Reload loop guard: the save can re-serialize differently on every load, which used to reload forever. Reload at most once per tab session per account. */
       let did=false; try{ did=sessionStorage.getItem('nd-synced')===u.uid; }catch(e){}
       const mark=()=>{ try{ sessionStorage.setItem('nd-synced',u.uid); }catch(e){} };
       if(snap.exists()&&snap.data().data){
         const cloud=snap.data().data;
-        if(local){ const m=merge(local,cloud); if(!same(m,local)){ localStorage.setItem(SKEY,m); await put(u,rec(m)); if(!did){ mark(); location.reload(); return; } if(window.NDAdopt) window.NDAdopt(m); } }
-        else { localStorage.setItem(SKEY,cloud); if(!did){ mark(); location.reload(); return; } if(window.NDAdopt) window.NDAdopt(cloud); }
+        if(!local||!same(cloud,local)){ localStorage.setItem(SKEY,cloud); localStorage.setItem('nd-backup-v1',cloud); if(!did){ mark(); location.reload(); return; } if(window.NDAdopt) window.NDAdopt(cloud); }
+        mark(); synced=true; R.status='saved';
+      } else {
+        if(!did&&LOCAL_KEYS.some(k=>localStorage.getItem(k)!==null)){ wipeLocal(); mark(); location.reload(); return; }
+        mark();
+        await put(u,rec(localStorage.getItem(SKEY))); synced=true; R.status='saved';
       }
-      mark();
-      await put(u,rec(localStorage.getItem(SKEY))); R.status='saved';
     }catch(e){ R.status='offline'; }
     ping();
   }
