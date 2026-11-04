@@ -3887,7 +3887,7 @@ function toast(t){ if(!toastEl){ toastEl=document.createElement('div'); toastEl.
 const PRICES={starter:'$2.99',pass:'$4.99',g100:'$0.99',g550:'$4.99',g1200:'$9.99'};   /* kept for the store release; not shown while PAID_SOON is on */
 const COST={pass:600};   /* gem price of the pass (30 days); only the pass can be bought with gems */
 const ADS_LIVE=false;   /* flip to true once a rewarded-ad provider is approved; until then Free gems is one plain claim a day */
-const DAILY_GEMS=5;   /* one free daily reward: gems plus 3 crystals (this replaces the old separate chest and free-gems claims) */
+const DAILY_GEMS=11;   /* one free daily reward: gems plus 3 crystals (this replaces the old separate chest and free-gems claims) */
 const AD_GEMS=3, AD_GEMS_DAY=ADS_LIVE?3:1;   /* free gems per watched ad, and how many ads per day pay out */
 const PAID_SOON=true;   /* real-money items show "Coming soon" with no price until store billing is connected */
 const adLeft=()=>Math.max(0,AD_GEMS_DAY-(P.adDay===today()?(P.adN||0):0));
