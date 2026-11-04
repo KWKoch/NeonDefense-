@@ -44,11 +44,11 @@ Milestone days are data (`FOUNDER.steps` in index.html), so moving or adding a d
 
 ## Open items that need a decision or real players
 
-1. **Level length.** 5.5 minutes for level 1 is long for a first session. Easiest lever: make levels 1 to 5 ten waves instead of twenty. Not changed, because it changes the balance.
+1. **Level length.** Done: levels 1 to 5 are now 15 waves (about 4 minutes). Needs tester feedback on whether the steeper ramp is fair.
 2. **Early difficulty.** The idle bot with no upgrades won level 3 (base 99/100) but lost by wave 4 on levels 6, 10 and 15. Real players will have upgrades, so this is a prompt to have 3 to 5 people play levels 4 to 8 and watch where they quit.
 3. **Card pick every wave** (19 pauses in level 1). It is the heart of the game, but fatiguing early. Option: pick every second wave in levels 1 to 5.
-4. **Speed button is easy to miss.** Consider a one-time tip after level 2 pointing at it.
-5. **UI abbreviations.** The commander ability dial says "RDY". You asked for icons instead of short text, so this one should change.
+4. **Speed button is easy to miss.** Done: a one-time tip points at it after level 2.
+5. **UI abbreviations.** Done: the commander ability dial shows a bolt icon instead of "RDY".
 6. **Saves live on the phone.** Uninstalling loses them. Android auto-backup may restore them on a new phone (not tested). Real cloud saves (Play Games Services) come after production access.
 7. **No analytics.** You cannot see which level players quit on. For the test, rely on feedback email and Play Console's own numbers.
 8. **Real-device performance** is unmeasured. Play's pre-launch report (runs automatically after the first upload) and Android vitals will show crashes and slow frames.

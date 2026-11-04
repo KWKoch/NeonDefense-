@@ -1620,7 +1620,7 @@ const keys={left:false,right:false};
 const stars=[]; for(let i=0;i<90;i++) stars.push({x:Math.random()*W,y:Math.random()*H,r:rnd(0.5,1.5),ph:Math.random()*6.28});
 
 /* ================= level and wave generation ================= */
-const waveCount=n=>n%50===0?40:n%10===0?30:20;
+const waveCount=n=>n%50===0?40:n%10===0?30:n<=5?15:20;   /* levels 1-5 are short so a first session ends on a win */
 const earlyDamp=n=>n<=5?0.5+0.1*(n-1):1;
 const EHP=[0.55,0.65,0.9,1.05,1.1];
 const earlyHp=n=>n<=5?EHP[n-1]:n<=14?2.0+0.17*(n-6):n<=24?3.36-0.236*(n-14):1;
@@ -2316,7 +2316,7 @@ function renderCmd(){
   const q=G.cm; if(!q) return; const b=[$('cmdA1'),$('cmdA2')]; if(!b[0]) return;
   [[q.t1,q.c.ab[0].cd*q.M.cd1,0],[q.t2,q.c.ab[1].cd*q.M.cd2,1]].forEach(x=>{
     const el=b[x[2]]; if(el.hidden) return; const rdy=x[0]<=0, tt=el.querySelector('.tt');
-    const t=rdy?(x[2]===0&&q.over>0?fmtS(q.over):'RDY'):fmtS(x[0]); if(tt.textContent!==t) tt.textContent=t;
+    const t=rdy?(x[2]===0&&q.over>0?fmtS(q.over):''):fmtS(x[0]); if(tt.dataset.k!==t){ tt.dataset.k=t; if(t) tt.textContent=t; else tt.innerHTML=ico('bolt',12); }
     el.style.setProperty('--p',(rdy?360:Math.round((1-x[0]/x[1])*360))+'deg'); el.classList.toggle('rdy',rdy); el.disabled=!rdy;
   });
 }
@@ -2490,6 +2490,9 @@ const COACH={
     {sel:'#row0 .tool[data-w]:not([hidden])',demo:'drag',t:'Aim a weapon',x:'Press a weapon icon, drag onto the field and release to fire there. Drag back down to cancel.'},
     {sel:'#ctlBtn',t:'Manual mode',x:'Aim sets any weapon, or all of them, to Manual. A Manual weapon fires only when you tell it to.'}
   ],
+  speed:[
+    {sel:'#spdBtn',t:'Game speed',x:'Tap to run battles at 2x or 3x. Your choice is remembered next time.'}
+  ],
   cmdrun:[
     {sel:'#cmdA1',demo:'ability',t:'Commander abilities',x:'Tap a button when it glows. Cooldowns run long, so save them for bad moments. Keys: Q and E.'}
   ]
@@ -2546,6 +2549,7 @@ function coachRun(){
   if(!coachOn()) return;
   if(!coachSeen('run')){ if(Object.keys(P.prog||{}).some(k=>((P.prog[k]||{}).best||0)>0)) coachMark('run'); else coachWhenPlaying('run',1200); }
   if(G.cm&&!coachSeen('cmdrun')) coachWhenPlaying('cmdrun',1800);
+  if(!coachSeen('speed')&&Object.keys(P.prog||{}).some(k=>((P.prog[k]||{}).best||0)>=2)) coachWhenPlaying('speed',3200);
   coachGrab();
 }
 function coachGrab(){

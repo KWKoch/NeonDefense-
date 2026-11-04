@@ -1,6 +1,9 @@
-import {initializeTestEnvironment,assertSucceeds,assertFails} from '@firebase/rules-unit-testing';
-import {doc,setDoc,getDoc,updateDoc} from 'firebase/firestore';
 import fs from 'fs';
+/* Needs the Firestore emulator and two npm packages. Locally without them this test reports SKIP and passes; CI (.github/workflows/rules.yml) installs them and runs it for real:
+   npm i --no-save @firebase/rules-unit-testing firebase && npx firebase-tools emulators:exec --only firestore --project demo-nd "node tests/firestore.rules.test.mjs" */
+let initializeTestEnvironment,assertSucceeds,assertFails,doc,setDoc,getDoc,updateDoc;
+try{ ({initializeTestEnvironment,assertSucceeds,assertFails}=await import('@firebase/rules-unit-testing')); ({doc,setDoc,getDoc,updateDoc}=await import('firebase/firestore')); }
+catch(e){ console.log('SKIP firestore rules: test packages not installed ('+e.code+'). Run it in CI or after the npm i line above.'); process.exit(0); }
 const env=await initializeTestEnvironment({projectId:'demo-nd',firestore:{rules:fs.readFileSync(new URL('../firestore.rules',import.meta.url),'utf8'),host:'127.0.0.1',port:8080}});
 const a=env.authenticatedContext('alice').firestore(), b=env.authenticatedContext('bob').firestore(), anon=env.unauthenticatedContext().firestore();
 const ok={data:'{"prog":{}}',score:12,updated:Date.now()};
@@ -17,7 +20,8 @@ const T=[
 ['purchase write denied',assertFails(setDoc(doc(a,'purchases/p1'),{uid:'alice'}))],
 ['random coll denied',assertFails(setDoc(doc(a,'x/y'),{a:1}))],
 ];
-for(const [n,p] of T){ try{await p;console.log('PASS',n)}catch(e){console.log('FAIL',n,e.message)} }
+let bad=0;
+for(const [n,p] of T){ try{await p;console.log('PASS',n)}catch(e){ bad++; console.log('FAIL',n,e.message)} }
 const lb=doc(a,'leaderboards/w1/scores/alice');
 const L=[['lb create',()=>assertSucceeds(setDoc(lb,{name:'A',score:100,wave:3,ts:1}))],
 ['lb increase',()=>assertSucceeds(setDoc(lb,{name:'A',score:200,wave:4,ts:2}))],
@@ -25,5 +29,5 @@ const L=[['lb create',()=>assertSucceeds(setDoc(lb,{name:'A',score:100,wave:3,ts
 ['lb over cap denied',()=>assertFails(setDoc(lb,{name:'A',score:10000000,wave:4,ts:3}))],
 ['lb other uid denied',()=>assertFails(setDoc(doc(b,'leaderboards/w1/scores/alice'),{name:'B',score:999,wave:1,ts:1}))],
 ['lb public read',()=>assertSucceeds(getDoc(doc(anon,'leaderboards/w1/scores/alice')))]];
-for(const [n,f] of L){ try{await f();console.log('PASS',n)}catch(e){console.log('FAIL',n,e.message)} }
-await env.cleanup(); process.exit(0);
+for(const [n,f] of L){ try{await f();console.log('PASS',n)}catch(e){ bad++; console.log('FAIL',n,e.message)} }
+await env.cleanup(); process.exit(bad?1:0);
