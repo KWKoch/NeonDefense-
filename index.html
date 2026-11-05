@@ -4027,7 +4027,7 @@ const rarW=(n,e)=>{ const w=[100,n<3?0:20+1.5*n,n<10?0:8+1.6*(n-10),n<20?0:3+1.0
 function rollRar(n,e){ const w=rarW(n,e); let x=Math.random()*(w[0]+w[1]+w[2]+w[3]); for(let i=0;i<4;i++){ x-=w[i]; if(x<=0&&w[i]>0) return i; } return 0; }
 function rollType(){ let x=Math.random()*100; for(const t of CTYPES){ x-=CW[t]; if(x<=0) return t; } return 'pow'; }
 /* does anything still want this pool? (an upgrade below max, or an in-run card not yet mastered) */
-function keyNeed(k){ if(UPS.some(u=>u.k===k&&L(u.id)<u.max)) return true; const w=kW(k), t=kT(k); return CARDS.some(c=>c.t===1&&!c.unlock&&c.id!=='repair'&&c.w===w&&CIC[c.id]===t&&cmRank(c.id)<3); }
+function keyNeed(k){ if(UPS.some(u=>u.k===k&&L(u.id)<u.max)) return true; return false; }
 /* The specialty is rolled first (so each specialty's overall supply is unchanged), then the weapon: only weapons the player has met or levelled,
    favouring the weapons used in the run that paid out, and ignoring pools whose upgrades are all finished. */
 function rollKey(t,ctx){
@@ -4295,7 +4295,6 @@ function buyUp(id){
   if(!canBuy(id)) return false;
   const u=UPS.find(x=>x.id===id), lv=L(id); spendCards(u.k,bandOf(lv,u.max),cardNeed(u,lv)); P.lv[id]=lv+1; save(); return true;
 }
-function cmBuy(id){ const c=CARDBY[id]; if(!c) return false; const r=cmRank(id), pk=c.w+'.'+CIC[id]; if(r>=3||!kOk(pk)) return false; if(avail(pk,r)<NEEDB[r]) return false; spendCards(pk,r,NEEDB[r]); P.cm=P.cm||{}; P.cm[id]=r+1; save(); return true; }
 function fuse(t,r){ if(r>=3||P.inv[t][r]<FUSE_N) return false; P.inv[t][r]-=FUSE_N; P.inv[t][r+1]++; save(); return true; }
 
 /* ================= home (armory) ================= */
@@ -4364,20 +4363,6 @@ function arsenalHtml(){
     h+='</div>';
   });
   h+='</div>';
-  const mc=CARDS.filter(c=>c.t===1&&!c.unlock&&c.id!=='repair'&&c.w===tab);
-  if(mc.length){
-    h+='<details class="mast"><summary>In-run card mastery <small>'+mc.length+'</small></summary><div class="note" style="margin:6px 0">'+(tab!=='turret'&&tab!=='base'?'Weapon mastery '+mastery(tab)+': evolutions unlock in-run at '+EVO_MST+', ultimates at '+ULT_MST+'. ':'')+'Cards you pick during a level start basic. Mastering one here makes every pick stronger and shows it more often in your level-ups.</div><div class="cards">';
-    mc.forEach(c=>{
-      const r=cmRank(c.id), ty=CIC[c.id], ct=CT[ty], pk=c.w+'.'+ty, maxed=r>=3, need=NEEDB[Math.min(r,3)], have=avail(pk,Math.min(r,2)), ok=!maxed&&have>=need;
-      const fmt=k=>COUNTC.has(c.id)?(()=>{const n=Math.min(c.max,1+k);return 'up to '+n+(n>1?' picks':' pick')+' per run'})():CONT.has(c.id)?c.txt(CMW[k]).replace(/\d+\.\d+(?!\d*s)/g,m=>Math.round(+m))+' per pick':c.txt(1);
-      let pips=''; for(let i=0;i<3;i++) pips+='<i'+(i<r?' class="on"':'')+'></i>';
-      h+='<div class="card" style="--c:'+ct.color+'"><div class="ct"><span class="cn">'+c.name+'</span><span class="chip" style="--c:'+ct.color+'">Card · '+ct.name+'</span></div>'
-        +'<div class="cv">'+fmt(r)+(maxed?'':' <em>→</em> '+fmt(r+1))+'</div><div class="pips">'+pips+'</div>'
-        +(maxed?'':'<div class="need'+(ok?'':' short')+'"><span>Needs '+need+'</span><span class="rtag" style="--g:'+RAR[r].color+'">'+RAR[r].name+'</span><span>'+ct.name+' · have '+have+'</span></div>')
-        +'<button class="btn sm" data-cm="'+c.id+'" type="button" style="--c:'+ct.color+'" '+(ok?'':'disabled')+'>'+(maxed?'Mastered':'Master')+'</button></div>';
-    });
-    h+='</div></details>';
-  }
   h+='<div class="foot">'+(confirmReset?'<span class="note">Erase all upgrades, crystals and progress?</span><button class="btn sm" data-act="reset2" type="button" style="--c:var(--red)">Erase</button><button class="btn sm" data-act="cancel" type="button">Cancel</button>':'<button class="mini" data-act="reset" type="button">Reset progress</button><button class="mini" data-act="ad" type="button" title="Placeholder for a rewarded ad">Demo: ad +5 energy</button>')+'</div>'+accountHtml();
   return h;
 }
@@ -4589,7 +4574,7 @@ armoryEl.addEventListener('contextmenu',e=>{ if(e.target.id==='pv'||e.target.clo
 armoryEl.addEventListener('click',e=>{
   if(e.target.closest('[data-orb]')){ if(orbOpen) closeOrb(); else openOrb(); return; }
   const ac=e.target.closest('[data-acct]'); if(ac&&window.RRcloud){ const a=ac.dataset.acct; if(a==='del'&&!confirm('Delete your account and cloud save? This cannot be undone.')) return; RRcloud.action(a); return; }
-  const t=e.target.closest('[data-act],[data-cmd],[data-buy],[data-cm],[data-pack],[data-sku],[data-claim],[data-tab],[data-uc],[data-a0],[data-ag],[data-fuse],[data-nav],[data-mode],[data-world],[data-cx],[data-ac],[data-forge],[data-gem],[data-adgems],[data-pack],[data-welcome],[data-tier]'); if(!t) return;
+  const t=e.target.closest('[data-act],[data-cmd],[data-buy],[data-pack],[data-sku],[data-claim],[data-tab],[data-uc],[data-a0],[data-ag],[data-fuse],[data-nav],[data-mode],[data-world],[data-cx],[data-ac],[data-forge],[data-gem],[data-adgems],[data-pack],[data-welcome],[data-tier]'); if(!t) return;
   if(t.dataset.cmd){ cmdAct(t.dataset.cmd); return; }
   if(t.dataset.cx){ UI.cx=t.dataset.cx; renderArmory(); const c0=$('content'); if(c0) c0.scrollTop=0; return; }
   if(t.dataset.ac){ UI.ac=t.dataset.ac; renderArmory(); const c1=$('content'); if(c1) c1.scrollTop=0; return; }
@@ -4609,7 +4594,6 @@ armoryEl.addEventListener('click',e=>{
   if(t.dataset.claim){ claim(t.dataset.claim); return; }
   if(t.dataset.welcome){ claimWelcome(); return; }
   if(t.dataset.tier){ const q=t.dataset.tier.split(':'); spClaim(+q[0],q[1]==='p'); return; }
-  if(t.dataset.cm){ if(cmBuy(t.dataset.cm)){ Music.up(); renderArmory(); } return; }
   if(t.dataset.buy){ if(buyUp(t.dataset.buy)){ Music.up(); renderArmory(); } return; }
   if(t.dataset.fuse){ const p=t.dataset.fuse.split(':'); if(fuse(p[0],+p[1])){ Music.up(); renderArmory(); } return; }
   const a=t.dataset.act;
@@ -4626,8 +4610,8 @@ armoryEl.addEventListener('click',e=>{
 const shopEl=$('shop');
 const bst=id=>(G.boost&&G.boost[id])||0;
 /* Card mastery (menu): each stat card has a rank 0-3. Rank 0 is deliberately basic; ranks scale its in-run strength (continuous cards) or the number of picks allowed (count cards). */
-const CMW=[0.5,0.7,0.9,1.15], CONT=new Set(['mine','marea','mrech','field','fwidb','fdurc','cpow','crate','spow','sspeed','mortpow','mortarea','mortspd']), COUNTC=new Set(['barrel','pierce','mcount','fcount','cjump','scount','mortcap']);
-const cmRank=id=>(P.cm&&P.cm[id])||0, cmw=id=>CMW[cmRank(id)], bq=id=>bst(id)*cmw(id);
+const CONT=new Set([]);
+const cmRank=()=>0, cmw=()=>1, bq=id=>bst(id);   /* in-run cards are not upgraded: every pick is worth its full listed value */
 const wlv=w=>CARDS.reduce((a,c)=>a+(c.w===w&&c.t===1&&!c.unlock?bst(c.id):0),0);
 const mastery=w=>UPS.reduce((a,u)=>a+(u.tab===w?L(u.id):0),0);
 const EVO_LV=4, ULT_LV=8, EVO_MST=6, ULT_MST=14;
@@ -4641,7 +4625,7 @@ function specGap(w){ const o=ownedW().filter(x=>x!==w); return o.length?spec(w)-
 function specPen(c){ const g=specGap(c.w); if(g<=2) return 1; const p=1/(1+0.3*(g-2)); return Math.max(0.15,c.t>=2||c.evo||c.ult?p*p:p); }
 /* Finite deck: each card has a fixed number of copies for the level (its max, or fewer for count cards until you rank them up) and every copy you take is gone.
    A card's odds follow the copies it has left, so the weapon you keep drawing from thins out while untouched weapons' cards rise. Rare cards also thin out the deeper you go on their weapon. */
-const effMax=c=>COUNTC.has(c.id)?Math.min(c.max,1+cmRank(c.id)):c.max;
+const effMax=c=>c.max;
 /* copies = a one-time card shuffled in several times so it still turns up; taking it pulls every copy */
 const copiesLeft=c=>c.copies?(bst(c.id)>=c.max?0:c.copies):Math.max(0,effMax(c)-bst(c.id));
 const deckSize=w=>CARDS.reduce((a,c)=>a+(c.w===w&&c.t===1&&!c.unlock&&!c.cond&&c.w!=='base'?(c.copies||c.max):0),0);
@@ -4704,7 +4688,6 @@ const reqOk=c=>!c.req||Object.keys(c.req).every(k=>bst(k)>=c.req[k]);
 const reqText=r=>Object.keys(r).map(k=>CARDBY[k].name+(CARDBY[k].max>1?' '+r[k]:'')).join(' + ');
 function eligible(c){
   if(bst(c.id)>=c.max||!reqOk(c)) return false;
-  if(COUNTC.has(c.id)&&bst(c.id)>=1+cmRank(c.id)) return false;
   if(c.cond&&!c.cond()) return false;
   if(c.lv&&wlv(c.w)<c.lv) return false;
   if(c.mst&&mastery(c.w)<c.mst) return false;
@@ -4959,15 +4942,15 @@ if(!P.intro){ const io=document.createElement('div'); io.id='introov'; io.innerH
 requestAnimationFrame(frame);
 
 /* test hook for headless checks */
-window.__rr={pickTarget:pickTarget,fire:fire,spawn:spawn,killEnemy:killEnemy,openPack:openPack,renderArmory:renderArmory,UI:UI,fuse:fuse,queueTeach:queueTeach,DEMO:DEMO,coach:coach,save:save,paintTurret:paintTurret,coachGrab:coachGrab,GR:GR,CTL:CTL,wReady:wReady,isManual:isManual,chainSnap:chainSnap,T:T,MOB:MOB,SKIN:SKIN,applySkin:applySkin,PKEYS:PKEYS,rollKey:rollKey,rollCard:rollCard,useCmd:useCmd,cmdBuy:cmdBuy,cmdNodeBuy:cmdNodeBuy,cmdP:cmdP,cmdLeft:cmdLeft,cmdEarned:cmdEarned,CMDS:CMDS,kName:kName,loadPools:loadPools,fireball:fireball,chip:chip,openTeach:openTeach,fireMortar:fireMortar,shape:shape,spawn:spawn,G:G,get P(){return P;},set P(v){P=v;},newP:newP,startLevel:startLevel,update:update,UPS:UPS,waveCount:waveCount,levelPool:levelPool,hpScale:hpScale,tune:(a,b,c,d,m,k,bk,wh,pm,lk,c0,cg)=>{if(lk!==undefined)LATEK=lk;if(pm!==undefined)PICKM=pm;if(wh!==undefined)WAVEHP=wh;if(k!==undefined)HPK=k;if(m!==undefined)MOBN=m;if(c0!==undefined)CDROP0=c0;if(cg!==undefined)CDROPG=cg;HPG=a;POOL0=b;POOLG=c;if(d!==undefined)HPA=d;},bst:bst,pickCard:pickCard,CARDS:CARDS,offerCards:offerCards,applyCard:applyCard,hasTool:hasTool,fireMortar:fireMortar,canMortar:canMortar,T:T,wcount:wcount,canBuy:canBuy,buyUp:buyUp,cardNeed:cardNeed,bandOf:bandOf,avail:avail,awardCards:awardCards,dropCount:dropCount,fuse:fuse,useEnergy:useEnergy,enTick:enTick,tryStart:tryStart,win:win,gameOver:gameOver,profileFor:profileFor,MOB:MOB,WORLDS:WORLDS,briefFor:briefFor,welcomeReady:welcomeReady,claimWelcome:claimWelcome,premActive:premActive,passActive:passActive,spAdd:spAdd,spClaim:spClaim,ssCur:ssCur,seasonNo:seasonNo,tierRw:tierRw,buyGems:buyGems,claim:claim,closePack:closePack,shopHtml:shopHtml};
+window.__rr={eligible:eligible,pickTarget:pickTarget,fire:fire,spawn:spawn,killEnemy:killEnemy,openPack:openPack,renderArmory:renderArmory,UI:UI,fuse:fuse,queueTeach:queueTeach,DEMO:DEMO,coach:coach,save:save,paintTurret:paintTurret,coachGrab:coachGrab,GR:GR,CTL:CTL,wReady:wReady,isManual:isManual,chainSnap:chainSnap,T:T,MOB:MOB,SKIN:SKIN,applySkin:applySkin,PKEYS:PKEYS,rollKey:rollKey,rollCard:rollCard,useCmd:useCmd,cmdBuy:cmdBuy,cmdNodeBuy:cmdNodeBuy,cmdP:cmdP,cmdLeft:cmdLeft,cmdEarned:cmdEarned,CMDS:CMDS,kName:kName,loadPools:loadPools,fireball:fireball,chip:chip,openTeach:openTeach,fireMortar:fireMortar,shape:shape,spawn:spawn,G:G,get P(){return P;},set P(v){P=v;},newP:newP,startLevel:startLevel,update:update,UPS:UPS,waveCount:waveCount,levelPool:levelPool,hpScale:hpScale,tune:(a,b,c,d,m,k,bk,wh,pm,lk,c0,cg)=>{if(lk!==undefined)LATEK=lk;if(pm!==undefined)PICKM=pm;if(wh!==undefined)WAVEHP=wh;if(k!==undefined)HPK=k;if(m!==undefined)MOBN=m;if(c0!==undefined)CDROP0=c0;if(cg!==undefined)CDROPG=cg;HPG=a;POOL0=b;POOLG=c;if(d!==undefined)HPA=d;},bst:bst,pickCard:pickCard,CARDS:CARDS,offerCards:offerCards,applyCard:applyCard,hasTool:hasTool,fireMortar:fireMortar,canMortar:canMortar,T:T,wcount:wcount,canBuy:canBuy,buyUp:buyUp,cardNeed:cardNeed,bandOf:bandOf,avail:avail,awardCards:awardCards,dropCount:dropCount,fuse:fuse,useEnergy:useEnergy,enTick:enTick,tryStart:tryStart,win:win,gameOver:gameOver,profileFor:profileFor,MOB:MOB,WORLDS:WORLDS,briefFor:briefFor,welcomeReady:welcomeReady,claimWelcome:claimWelcome,premActive:premActive,passActive:passActive,spAdd:spAdd,spClaim:spClaim,ssCur:ssCur,seasonNo:seasonNo,tierRw:tierRw,buyGems:buyGems,claim:claim,closePack:closePack,shopHtml:shopHtml};
 })();
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 103</div>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 104</div>
 <script>
 /* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
-(function(){ const BUILD=103; let busy=false, shown=false;
+(function(){ const BUILD=104; let busy=false, shown=false;
   const inRun=()=>{ try{ return typeof G!=='undefined'&&(G.state==='playing'||G.state==='cards'||G.state==='shop'||G.state==='paused'||G.state==='teach'||G.state==='ctl'); }catch(e){ return false; } };
   function wipeReload(){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
     if(n>=3) return;
