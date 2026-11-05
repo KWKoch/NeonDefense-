@@ -151,7 +151,9 @@ async function runDevice(d, url, expectBuild) {
   // more tips can follow a moment later (Fire a weapon, new enemy cards), so wait for 3 s of clear play
   const taps = await clearTips(page, 3000);
   const running = await page.waitForFunction(() => __rr.G.state === 'playing', null, { timeout: 8000 }).then(() => true, () => false);
-  chk('tips close with taps and the battle resumes', running, `${taps} taps, state ${await page.evaluate(() => __rr.G.state)}`);
+  const whatsUp = () => page.evaluate(() => { const t = document.querySelector('#coach h3, #teachov h2'); const bs = [...document.querySelectorAll('#coach button, #teachov button')].map(b => { const r = b.getBoundingClientRect(); return `${b.textContent.trim()}${b.disabled ? ' (disabled)' : ''} @ ${Math.round(r.left)},${Math.round(r.top)} ${Math.round(r.width)}x${Math.round(r.height)}`; }); return (t ? '"' + t.textContent + '"' : 'no tip') + (bs.length ? ', buttons: ' + bs.join(', ') : '') + ', screen ' + innerWidth + 'x' + innerHeight; });
+  chk('tips close with taps and the battle resumes', running, `${taps} taps, state ${await page.evaluate(() => __rr.G.state)}${running ? '' : ', showing ' + await whatsUp()}`);
+  if (!running) await shot(page, '04-stuck');
   if (running) {
     const c0 = await page.evaluate(() => __rr.G.waveT);
     // FPS / stutter over 4 s of live play
