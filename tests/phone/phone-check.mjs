@@ -128,7 +128,7 @@ async function runDevice(d, url, expectBuild) {
   chk('it is Level 1', await page.evaluate(() => __rr.G.n === 1), 'level ' + await page.evaluate(() => __rr.G.n));
 
   // --- first in-battle tip must freeze the field ---
-  const tipUp = await page.waitForFunction(() => document.querySelector('#coach .ccard') || document.getElementById('teachov'), null, { timeout: 6000 }).then(() => true, () => false);
+  const tipUp = await page.waitForFunction(() => __rr.G.state === 'teach' && (document.querySelector('#coach .ccard') || document.getElementById('teachov')), null, { timeout: 8000 }).then(() => true, () => false);
   chk('first battle tip appears', tipUp);
   if (tipUp) {
     // G.time is the animation clock and always runs; G.waveT is the battle clock that drives spawns and waves
@@ -149,7 +149,7 @@ async function runDevice(d, url, expectBuild) {
 
   // --- dismiss every tip with taps, then the battle must run ---
   // more tips can follow a moment later (Fire a weapon, new enemy cards), so wait for 3 s of clear play
-  const taps = await clearTips(page, 3000);
+  const taps = await clearTips(page, 1500);
   const running = await page.waitForFunction(() => __rr.G.state === 'playing', null, { timeout: 8000 }).then(() => true, () => false);
   const whatsUp = () => page.evaluate(() => { const t = document.querySelector('#coach h3, #teachov h2'); const bs = [...document.querySelectorAll('#coach button, #teachov button')].map(b => { const r = b.getBoundingClientRect(); return `${b.textContent.trim()}${b.disabled ? ' (disabled)' : ''} @ ${Math.round(r.left)},${Math.round(r.top)} ${Math.round(r.width)}x${Math.round(r.height)}`; }); return (t ? '"' + t.textContent + '"' : 'no tip') + (bs.length ? ', buttons: ' + bs.join(', ') : '') + ', screen ' + innerWidth + 'x' + innerHeight; });
   chk('tips close with taps and the battle resumes', running, `${taps} taps, state ${await page.evaluate(() => __rr.G.state)}${running ? '' : ', showing ' + await whatsUp()}`);
@@ -179,14 +179,16 @@ async function runDevice(d, url, expectBuild) {
   return { id: d.id, label: d.label, build, checks, shots, errors };
 }
 
-// taps through tip cards until the battle has run with nothing on top for holdMs; returns the number of taps
+// taps through tip cards until the first mob is on the field (its "new enemy" card comes with it) and the battle
+// has then run with nothing on top for holdMs; returns the number of taps. Slow emulated phones run game time slowly,
+// so this waits on the game's state, not a fixed time.
 async function clearTips(page, holdMs) {
-  let taps = 0, clear = 0;
-  for (let i = 0; i < 60 && clear < holdMs; i++) {
-    const st = await page.evaluate(() => __rr.G.state);
+  let taps = 0, clear = 0; const end = Date.now() + 60000;
+  while (Date.now() < end && clear < holdMs) {
+    const st = await page.evaluate(() => ({ s: __rr.G.state, mob: __rr.G.enemies.length > 0 || __rr.G.wave > 1 }));
     const btn = page.locator('#coach button[data-c="next"], #teachov .tcard button, #coach button[data-c="skip"]').first();
     const vis = await btn.isVisible().catch(() => false);
-    if (st === 'playing' && !vis && !(await page.locator('#coach, #teachov').count())) { clear += 500; await page.waitForTimeout(500); continue; }
+    if (st.s === 'playing' && !vis && !(await page.locator('#coach, #teachov').count())) { if (st.mob) clear += 500; await page.waitForTimeout(500); continue; }
     clear = 0;
     if (vis && await btn.isEnabled().catch(() => false)) { await btn.tap({ timeout: 4000 }).catch(() => {}); taps++; await page.waitForTimeout(450); }
     else await page.waitForTimeout(600);
