@@ -12,6 +12,10 @@ on:
         default: local
         type: choice
         options: [local, live]
+      log_shots:
+        description: 'Also print small screenshots into the log'
+        default: false
+        type: boolean
 permissions:
   contents: read
 concurrency:
@@ -31,6 +35,8 @@ jobs:
         run: npm install --no-audit --no-fund && npx playwright install --with-deps chromium webkit
       - name: Run phone check
         working-directory: tests/phone
+        env:
+          PHONE_LOG_SHOTS: ${{ inputs.log_shots && '1' || '' }}
         run: node phone-check.mjs ${{ inputs.target == 'live' && '--live' || '' }}
       - name: Keep screenshots
         if: always()

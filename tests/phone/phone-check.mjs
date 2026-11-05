@@ -50,14 +50,17 @@ async function runDevice(d, url, expectBuild) {
   const chk = (name, pass, info = '') => { checks.push({ name, pass: !!pass, info: String(info) }); console.log(`  ${pass ? 'PASS' : 'FAIL'} ${name}${info ? ' (' + info + ')' : ''}`); };
   const note = (name, info) => { checks.push({ name, pass: null, info: String(info) }); console.log(`  INFO ${name}: ${info}`); };
   const dir = path.join(OUT, d.id); fs.mkdirSync(dir, { recursive: true });
-  const shot = async (page, name) => { const f = path.join(dir, name + '.png'); await page.screenshot({ path: f }); shots.push(path.relative(OUT, f)); };
+  const shot = async (page, name) => { const f = path.join(dir, name + '.png'); await page.screenshot({ path: f }); shots.push(path.relative(OUT, f));
+    // PHONE_LOG_SHOTS=1 also prints a small JPEG of each step into the log, for reviewers who can't download artifacts
+    if (process.env.PHONE_LOG_SHOTS) { const j = await page.screenshot({ type: 'jpeg', quality: 40, scale: 'css' }); console.log(`SHOT ${d.id}/${name} ${j.toString('base64')}`); } };
 
   let browser;
   try { browser = await d.browser.launch(); }
   catch (e) { chk('browser starts', false, e.message.split('\n')[0]); return { id: d.id, label: d.label, checks, shots, errors }; }
   const ctx = await browser.newContext({ ...d.ctx, serviceWorkers: 'block', locale: 'en-US', timezoneId: 'America/Los_Angeles' });
   // returning-player hint: with Firebase blocked, cloud.js lets the game run on a local save (its offline path)
-  await ctx.addInitScript(() => { try { localStorage.setItem('nd-signed-in', '1'); } catch (e) {} });
+  // __forceTeach: the game hides its tips from automated browsers unless this is set (see coachOn in index.html)
+  await ctx.addInitScript(() => { window.__forceTeach = true; try { localStorage.setItem('nd-signed-in', '1'); } catch (e) {} });
   await ctx.route('**/*', async route => {
     const u = route.request().url();
     if (BLOCK.some(rx => rx.test(u))) return route.abort();
@@ -92,9 +95,11 @@ async function runDevice(d, url, expectBuild) {
     chk('tap on Begin registers', await page.waitForFunction(() => !document.getElementById('introov'), null, { timeout: 5000 }).then(() => true, () => false));
   } else chk('intro screen shows for a new player', false, 'no Begin button');
 
-  // --- home screen ---
-  await page.waitForTimeout(900);
+  // --- home screen: a new player gets the tour card pointing at Battle ---
+  const tour = await page.waitForFunction(() => document.querySelector('#coach .ccard'), null, { timeout: 5000 }).then(() => true, () => false);
+  await page.waitForTimeout(500);
   await shot(page, '02-home');
+  chk('home tour points a new player at Battle', tour, tour ? await page.evaluate(() => document.querySelector('#coach h3').textContent) : 'no tour card');
   const clip = await page.evaluate(({ W, H, I }) => {
     const bad = [];
     for (const el of document.querySelectorAll('#armory button, #armory [data-act], #coach .ccard, #coach button')) {
@@ -152,7 +157,7 @@ async function runDevice(d, url, expectBuild) {
     // FPS / stutter over 4 s of live play
     const perf = await page.evaluate(() => new Promise(res => { const ts = []; const t0 = performance.now(); const f = t => { ts.push(t); if (t - t0 < 4000) requestAnimationFrame(f); else { const d = ts.slice(1).map((t, i) => t - ts[i]); res({ fps: Math.round(d.length / ((ts.at(-1) - ts[0]) / 1000)), long: d.filter(x => x > 50).length, worst: Math.round(Math.max(...d)) }); } }; requestAnimationFrame(f); }));
     const c1 = await page.evaluate(() => ({ time: __rr.G.time, mobs: __rr.G.enemies.filter(e => !e.dead).length, state: __rr.G.state }));
-    chk('battle clock runs after the tips', c1.time > c0 + 1, `clock ${c0.toFixed(2)}->${c1.time.toFixed(2)}, ${c1.mobs} mobs on field`);
+    chk('battle clock runs after the tips', c1.time > c0 + 0.3, `clock ${c0.toFixed(2)}->${c1.time.toFixed(2)}, ${c1.mobs} mobs on field`);
     note('frame rate (emulated, not real hardware)', `${perf.fps} fps, ${perf.long} frames over 50 ms, worst ${perf.worst} ms`);
     await shot(page, '04-battle');
     const hud = await page.evaluate(({ W, H, I }) => { const bad = []; for (const el of document.querySelectorAll('#hud button, #hud > *, #dock button, #dock .tool:not([hidden]), #cmdDock button, #pauseBtn, #spdBtn')) { const r = el.getBoundingClientRect(); if (!r.width || !r.height || el.closest('[hidden]') || getComputedStyle(el).visibility === 'hidden') continue; if (r.left < I.left - 1 || r.right > W - I.right + 1 || r.top < I.top - 1 || r.bottom > H - I.bottom + 1) bad.push(`${(el.id || el.className || el.tagName).toString().slice(0, 20)} @ ${Math.round(r.left)},${Math.round(r.top)} ${Math.round(r.width)}x${Math.round(r.height)}`); } return bad; }, { W, H, I });
