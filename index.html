@@ -2116,7 +2116,7 @@ function hitsFrom(e,loose){
 function pickTarget(){
   const pend=new Map();
   for(const b of G.bullets) if(b.target&&!b.target.dead) pend.set(b.target,(pend.get(b.target)||0)+b.dmg*b.target.res.k);
-  const sup=G.superOn>0, shot=ST.dmg(L('dmg'))*Math.pow(1.5,bst('dmg'))*(sup?1.5:1), slide=ST.slide(L('rate'))*Math.pow(2.5,bst('slide'));
+  const sup=G.superOn>0, shot=ST.dmg(L('dmg'))*Math.pow(1.5,bst('dmg'))*(sup?1.5:1), slide=ST.slide(L('rate'))*(bst('slide')?2:1);
   let best=null,bs=-1e9;
   for(const e of G.enemies){
     if(e.dead||e.y<-e.r*0.3||!inRange(e)) continue;
@@ -2151,7 +2151,7 @@ function inLine(tg,pend){
   return hit;
 }
 function updateTurret(dt){
-  const slide=ST.slide(L('rate'))*Math.pow(2.5,bst('slide'));
+  const slide=ST.slide(L('rate'))*(bst('slide')?2:1);
   T.cool-=dt; T.recoil=Math.max(0,T.recoil-dt*6);
   if(bst('super')>0){ if(G.superOn>0) G.superOn-=dt; else { G.superCd-=dt; if(G.superCd<=0){ G.superOn=4; G.superCd=22-3*bst('super'); float(T.x,TURRET_Y-60,'SUPERCHARGE',C.yellow); G.rings.push({x:T.x,y:TURRET_Y-14,r:10,max:90,life:0.5,t:0,color:C.yellow}); } } }
   if(input.active){
@@ -4640,8 +4640,9 @@ function specPen(c){ const g=specGap(c.w); if(g<=2) return 1; const p=1/(1+0.3*(
 /* Finite deck: each card has a fixed number of copies for the level (its max, or fewer for count cards until you rank them up) and every copy you take is gone.
    A card's odds follow the copies it has left, so the weapon you keep drawing from thins out while untouched weapons' cards rise. Rare cards also thin out the deeper you go on their weapon. */
 const effMax=c=>COUNTC.has(c.id)?Math.min(c.max,1+cmRank(c.id)):c.max;
-const copiesLeft=c=>Math.max(0,effMax(c)-bst(c.id));
-const deckSize=w=>CARDS.reduce((a,c)=>a+(c.w===w&&c.t===1&&!c.unlock&&!c.cond&&c.w!=='base'?c.max:0),0);
+/* copies = a one-time card shuffled in several times so it still turns up; taking it pulls every copy */
+const copiesLeft=c=>c.copies?(bst(c.id)>=c.max?0:c.copies):Math.max(0,effMax(c)-bst(c.id));
+const deckSize=w=>CARDS.reduce((a,c)=>a+(c.w===w&&c.t===1&&!c.unlock&&!c.cond&&c.w!=='base'?(c.copies||c.max):0),0);
 const rareDecay=w=>{ const n=deckSize(w); return n?Math.max(RARE_FLOOR,Math.pow(Math.max(0,1-wlv(w)/n),1.5)):1; };
 let PICKM=1;
 const pickWave=w=>w>=2&&(w-2)%PICKM===0;
@@ -4652,7 +4653,7 @@ const CARDS=[
  {id:'dmg',w:'turret',t:1,max:6,name:'Heavy Rounds',txt:l=>'+'+Math.round((Math.pow(1.5,l)-1)*100)+'% damage'},
  {id:'barrel',w:'turret',t:1,max:5,name:'Extra Barrel',txt:l=>'+'+l+(l>1?' barrels':' barrel')},
  {id:'pierce',w:'turret',t:1,max:2,name:'Piercing Rounds',txt:l=>'+'+l+' pierce'},
- {id:'slide',w:'turret',t:1,max:4,name:'Servo Motors',txt:l=>'+'+Math.round((Math.pow(2.5,l)-1)*100)+'% turret speed'},
+ {id:'slide',w:'turret',t:1,max:1,copies:4,name:'Servo Motors',txt:l=>'+'+(Math.min(l,1)*100)+'% turret speed'},
  {id:'arc',w:'turret',t:2,max:3,name:'Arc Rounds',txt:l=>'shots add +'+(l*35)+'% energy damage and fork 3 mini lightning bolts at '+(l*15)+'% damage',lv:EVO_LV,ovl:1},
  {id:'frag',w:'turret',t:2,max:3,name:'Explosive Rounds',txt:l=>'shots splash +'+(l*30)+' % blast damage'.replace(' %','%'),lv:EVO_LV,ovl:1},
  {id:'deep',w:'turret',t:2,max:1,name:'Deep Pierce',txt:l=>'+2 more pierce',lv:EVO_LV},
@@ -4961,10 +4962,10 @@ window.__rr={pickTarget:pickTarget,fire:fire,spawn:spawn,killEnemy:killEnemy,ope
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 101</div>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 102</div>
 <script>
 /* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
-(function(){ const BUILD=101; let busy=false, shown=false;
+(function(){ const BUILD=102; let busy=false, shown=false;
   const inRun=()=>{ try{ return typeof G!=='undefined'&&(G.state==='playing'||G.state==='cards'||G.state==='shop'||G.state==='paused'||G.state==='teach'||G.state==='ctl'); }catch(e){ return false; } };
   function wipeReload(){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
     if(n>=3) return;

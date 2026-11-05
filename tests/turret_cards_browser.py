@@ -12,7 +12,7 @@ async def main():
           P.prog={belt:{best:30,sel:1,perf:{},eclr:{},stars:{}}}; R.startLevel(1,'belt',false); const G=R.G, T=R.T; G.teachQ=[]; const o=document.getElementById('teachov'); if(o) o.remove(); G.state='playing';
           const out={}, C=Object.fromEntries(R.CARDS.map(c=>[c.id,c]));
           out.max=['rate','dmg','barrel','slide','arc','frag'].map(k=>k+':'+C[k].max).join(' '); out.crit=!!C.crit;
-          out.txt=[C.rate.txt(1),C.dmg.txt(1),C.slide.txt(1),C.slide.txt(2),C.arc.txt(1)].join(' | ');
+          out.txt=[C.rate.txt(1),C.dmg.txt(1),C.slide.txt(1),C.slide.copies,C.arc.txt(1)].join(' | ');
           G.cm=null; G.boost={}; G.bullets.length=0; T.cool=0; R.fire(null); const d0=G.bullets[0].dmg, c0=T.cool;
           G.boost={rate:1,dmg:1}; G.bullets.length=0; R.fire(null); const d1=G.bullets[0].dmg, c1=T.cool;
           out.dmgRatio=+(d1/d0).toFixed(3); out.coolRatio=+(c0/c1).toFixed(3); R.P.cm={rate:0,dmg:0};
