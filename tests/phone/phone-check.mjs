@@ -131,32 +131,36 @@ async function runDevice(d, url, expectBuild) {
   const tipUp = await page.waitForFunction(() => document.querySelector('#coach .ccard') || document.getElementById('teachov'), null, { timeout: 6000 }).then(() => true, () => false);
   chk('first battle tip appears', tipUp);
   if (tipUp) {
-    const snap = () => page.evaluate(() => { const G = __rr.G; return { state: G.state, time: G.time, n: G.enemies.length, pos: G.enemies.filter(e => !e.dead).map(e => [Math.round(e.x), Math.round(e.y)]).join('|') }; });
+    // G.time is the animation clock and always runs; G.waveT is the battle clock that drives spawns and waves
+    const snap = () => page.evaluate(() => { const G = __rr.G; return { state: G.state, time: G.waveT, wave: G.wave, n: G.enemies.length, pos: G.enemies.filter(e => !e.dead).map(e => [Math.round(e.x), Math.round(e.y)]).join('|') }; });
     const a = await snap(); await page.waitForTimeout(2000); const b = await snap();
     await shot(page, '03-tip');
-    chk('field is frozen while the tip is up', a.state === 'teach' && b.state === 'teach' && a.time === b.time && a.pos === b.pos && a.n === b.n,
-      `state ${a.state}->${b.state}, clock ${a.time?.toFixed?.(2)}->${b.time?.toFixed?.(2)}, mobs ${a.n}->${b.n}`);
+    chk('field is frozen while the tip is up', a.state === 'teach' && b.state === 'teach' && a.time === b.time && a.wave === b.wave && a.pos === b.pos && a.n === b.n,
+      `over 2 s: battle clock ${a.time?.toFixed?.(2)}->${b.time?.toFixed?.(2)}, wave ${a.wave}->${b.wave}, mobs ${a.n}->${b.n}${a.pos === b.pos ? '' : ', mobs moved'}`);
     const card = await page.evaluate(({ W, H, I }) => { const c = document.querySelector('#coach .ccard') || document.querySelector('#teachov .tcard'); if (!c) return null; const r = c.getBoundingClientRect(); return { ok: r.left >= I.left - 1 && r.right <= W - I.right + 1 && r.top >= I.top - 1 && r.bottom <= H - I.bottom + 1, r: `${Math.round(r.left)},${Math.round(r.top)} ${Math.round(r.width)}x${Math.round(r.height)}` }; }, { W, H, I });
     if (card) chk('tip card fits on screen, clear of notch and home bar', card.ok, card.r);
   }
 
   // --- dismiss every tip with taps, then the battle must run ---
-  let taps = 0;
-  for (let i = 0; i < 30; i++) {
+  // more tips can follow a moment later (Fire a weapon, new enemy cards), so wait for 3 s of clear play
+  let taps = 0, clear = 0;
+  for (let i = 0; i < 60 && clear < 3000; i++) {
     const st = await page.evaluate(() => __rr.G.state);
     const btn = page.locator('#coach button[data-c="next"], #teachov .tcard button, #coach button[data-c="skip"]').first();
-    if (st === 'playing' && !(await btn.isVisible().catch(() => false))) break;
-    if (await btn.isVisible().catch(() => false) && await btn.isEnabled().catch(() => false)) { await btn.tap().catch(() => {}); taps++; await page.waitForTimeout(450); }
+    const vis = await btn.isVisible().catch(() => false);
+    if (st === 'playing' && !vis && !(await page.locator('#coach, #teachov').count())) { clear += 500; await page.waitForTimeout(500); continue; }
+    clear = 0;
+    if (vis && await btn.isEnabled().catch(() => false)) { await btn.tap({ timeout: 4000 }).catch(() => {}); taps++; await page.waitForTimeout(450); }
     else await page.waitForTimeout(600);
   }
   const running = await page.waitForFunction(() => __rr.G.state === 'playing', null, { timeout: 8000 }).then(() => true, () => false);
   chk('tips close with taps and the battle resumes', running, `${taps} taps, state ${await page.evaluate(() => __rr.G.state)}`);
 
   if (running) {
-    const c0 = await page.evaluate(() => __rr.G.time);
+    const c0 = await page.evaluate(() => __rr.G.waveT);
     // FPS / stutter over 4 s of live play
     const perf = await page.evaluate(() => new Promise(res => { const ts = []; const t0 = performance.now(); const f = t => { ts.push(t); if (t - t0 < 4000) requestAnimationFrame(f); else { const d = ts.slice(1).map((t, i) => t - ts[i]); res({ fps: Math.round(d.length / ((ts.at(-1) - ts[0]) / 1000)), long: d.filter(x => x > 50).length, worst: Math.round(Math.max(...d)) }); } }; requestAnimationFrame(f); }));
-    const c1 = await page.evaluate(() => ({ time: __rr.G.time, mobs: __rr.G.enemies.filter(e => !e.dead).length, state: __rr.G.state }));
+    const c1 = await page.evaluate(() => ({ time: __rr.G.waveT, mobs: __rr.G.enemies.filter(e => !e.dead).length, state: __rr.G.state }));
     chk('battle clock runs after the tips', c1.time > c0 + 0.3, `clock ${c0.toFixed(2)}->${c1.time.toFixed(2)}, ${c1.mobs} mobs on field`);
     note('frame rate (emulated, not real hardware)', `${perf.fps} fps, ${perf.long} frames over 50 ms, worst ${perf.worst} ms`);
     await shot(page, '04-battle');
@@ -165,9 +169,10 @@ async function runDevice(d, url, expectBuild) {
     // pause button tap
     const pause = page.locator('#pauseBtn');
     if (await pause.isVisible().catch(() => false)) {
-      await pause.tap(); await page.waitForTimeout(400);
+      const err = await pause.tap({ timeout: 5000 }).then(() => '', e => e.message.split('\n').find(l => /intercepts|not visible|outside/.test(l)) || 'tap timed out');
+      await page.waitForTimeout(400);
       const ps = await page.evaluate(() => __rr.G.state);
-      chk('tap on Pause registers', ps !== 'playing', 'state ' + ps);
+      chk('tap on Pause registers', !err && ps === 'paused', err || 'state ' + ps);
       await shot(page, '05-paused');
     }
   }
