@@ -27,12 +27,12 @@ async def main():
         # dismiss intro, go to Shop
         await page.evaluate("()=>{ const b=[...document.querySelectorAll('button')].find(x=>/^\\s*begin\\s*$/i.test(x.textContent)); if(b) b.click(); }")
         await page.evaluate("()=>{ __rr.UI.nav='shop'; __rr.renderArmory(); }")
-        shop=await page.evaluate("()=>document.getElementById('content').innerText")
-        check('no Founder card on Shop', 'Founder' not in shop, shop[:80])
-        check('Season pass card shows on Shop', 'Season ' in shop and ' pass' in shop, shop[:200])
+        shop=(await page.evaluate("()=>document.getElementById('content').innerText")).lower()   # headings are styled uppercase, so compare in lower case
+        check('no Founder card on Shop', 'founder' not in shop, shop[:80])
+        check('Season pass card shows on Shop', 'season ' in shop and ' pass' in shop, shop[:200])
         check('no ad wording in the Season premium text', 'remove ads' not in shop and 'reward ad' not in shop)
-        check('Neon Pass hidden in play', 'Neon Pass' not in shop)
-        check('Gem bundles / Coming soon hidden in play', 'Gem bundles' not in shop and 'Coming soon' not in shop)
+        check('Neon Pass hidden in play', 'neon pass' not in shop)
+        check('Gem bundles / Coming soon hidden in play', 'gem bundles' not in shop and 'coming soon' not in shop)
         check('no "watch ad" wording anywhere on Shop', 'watch ad' not in shop.lower(), shop)
         # rewards need active play: locked until a level is played today
         check('daily reward is locked before playing today', await page.evaluate("()=>document.querySelector('button[data-claim=chest]').disabled"))
