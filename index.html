@@ -793,7 +793,7 @@ body.menu{background:
   .wpn{letter-spacing:.01em; padding:8px 2px; gap:3px; font-size:10.5px}
 }
 
-/* ---- currency cleanup (build 104): calm headings, one crystal per type, violet gems ---- */
+/* ---- currency cleanup (build 105): calm headings, one crystal per type, violet gems ---- */
 #banner,#overlay h1,.ahead h1,.lvlpick .n,.ttl h1,#coach h3,.ch2,#cpack h3{font-weight:700; letter-spacing:.06em; text-transform:uppercase}
 #overlay h1,.ahead h1{text-shadow:0 0 14px color-mix(in srgb,var(--cyan) 35%,transparent)}
 #banner{text-shadow:0 0 14px color-mix(in srgb,var(--cyan) 40%,transparent)}
@@ -4944,10 +4944,10 @@ window.__rr={eligible:eligible,pickTarget:pickTarget,fire:fire,spawn:spawn,killE
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 105</div>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 106</div>
 <script>
 /* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
-(function(){ const BUILD=105; let busy=false, shown=false;
+(function(){ const BUILD=106; let busy=false, shown=false;
   const inRun=()=>{ try{ return typeof G!=='undefined'&&(G.state==='playing'||G.state==='cards'||G.state==='shop'||G.state==='paused'||G.state==='teach'||G.state==='ctl'); }catch(e){ return false; } };
   function wipeReload(){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
     if(n>=3) return;

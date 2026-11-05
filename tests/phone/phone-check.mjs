@@ -184,7 +184,7 @@ async function runDevice(d, url, expectBuild) {
     o.upgrade = R.buyUp(u.id) && R.cry('pow') === c0 - need && (P.lv[u.id] || 0) === lv0 + 1;
     P.gems = Math.max(P.gems || 0, 200); R.UI.pt = 'frt'; const f0 = R.cry('frt'), g0 = P.gems; R.openPack('m'); o.crate = R.cry('frt') === f0 + 38 && P.gems === g0 - 150;
     const c = R.CMDS.find(x => x.id === 'rook'), r0 = c.tier | 0, pr = R.cmdPrice(c, -1, r0); o.mix = Object.keys(pr).map(t => t + ' ' + pr[t]).join(', ');
-    o.short = !R.cmdBuy('rook', r0) || R.cmdP().own.rook !== undefined ? 'bought without crystals' : '';
+    o.short = (R.cmdBuy('rook', r0) || R.cmdP().own.rook !== undefined) ? 'bought without crystals' : '';
     for (const t in pr) R.cryAdd(t, pr[t]); o.cmd = R.cmdBuy('rook', r0) && R.cmdP().own.rook === r0 && !o.short;
     P.prog.belt.best = Math.max(P.prog.belt.best || 0, 6); R.toArmory(); return o; } catch (e) { return { err: e.message }; } });
   chk('crystals: old saves convert, drops, upgrades, crates and commanders pay the right amounts', cur.legacy && cur.drops && cur.upgrade && cur.crate && cur.cmd, cur.err || JSON.stringify(cur));
