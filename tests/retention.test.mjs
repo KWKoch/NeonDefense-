@@ -44,4 +44,18 @@ t('an old save (per-weapon crystals + shards) converts at forge value and drops 
 });
 t('commander ownership counts toward the progress score',()=>{ const a=base(), b=base(); b.cmd.own.rook=0; assert(score(J(b))>score(J(a))); });
 t('merge is stable: merging a save with itself changes nothing',()=>{ const A=base(); A.cmd.own.rook=2; A.vault.items['cmd:rook']=3; const m=P(merge(J(A),J(A))); assert.strictEqual(m.cmd.own.rook,2); assert.strictEqual(m.gems,100); });
+/* Test-only buttons (Reset progress, Demo ad) must never show in the store app or on any other host. */
+{ const html=fs.readFileSync(new URL('../index.html',import.meta.url),'utf8'); const m=html.match(/const TEST_BUILD=(\(\(\)=>\{[\s\S]*?\}\)\(\));/);
+  const gate=(loc,cap)=>new Function('window','location','return '+m[1])(cap?{Capacitor:{}}:{},loc);
+  t('reset and demo ad buttons: testing site and local dev only, never the store app',()=>{
+    assert(m,'TEST_BUILD not found in index.html');
+    assert.strictEqual(gate({hostname:'neon.squatchsquad.games',port:''}),true);
+    assert.strictEqual(gate({hostname:'127.0.0.1',port:'8123'}),true);
+    assert.strictEqual(gate({hostname:'localhost',port:''}),false);          /* Capacitor Android serves https://localhost */
+    assert.strictEqual(gate({hostname:'localhost',port:'8124'},true),false); /* any Capacitor shell */
+    assert.strictEqual(gate({hostname:'squatchsquad.games',port:''}),false);
+    assert.strictEqual(gate({hostname:'html5.gamedistribution.com',port:''}),false);
+    assert(/if\(TEST_BUILD\) h\+='<div class="foot">/.test(html),'the Arsenal foot (Reset progress, Demo ad) must be behind TEST_BUILD');
+    assert(/a==='reset2'&&TEST_BUILD/.test(html),'the erase action must check TEST_BUILD');
+  }); }
 console.log(n+' passed');

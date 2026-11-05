@@ -1290,6 +1290,11 @@ applySkin(P.world);
 /* TESTERS_OPEN: while true, every account that plays is marked a tester, and keeps that mark for good.
    Set it to false to stop adding new testers; anyone already marked keeps the welcome package and their free season. */
 const TESTERS_OPEN=true;
+/* TEST_BUILD: true only on the testing website (neon.squatchsquad.games) and on a local dev server with a port (the phone check).
+   Never in the store app (Capacitor serves https://localhost with no port) or anywhere else, so a merge into production cannot carry
+   the test-only buttons (Reset progress, Demo ad) into the store build. */
+const TEST_BUILD=(()=>{ try{ if(window.Capacitor) return false; const h=location.hostname||'', p=location.port||'';
+  return h==='neon.squatchsquad.games'||((h==='localhost'||h==='127.0.0.1')&&p!==''); }catch(e){ return false; } })();
 const WELCOME={lvl:5,gems:100,pack:'m'};   /* tester welcome package: once per account, after clearing level 5 in any world. 100 gems fits the save rules' 300-per-save cap. */
 /* Seasons run back to back from Season 1 (starts Nov 4 2026, midnight Pacific), 30 days each. 30 tiers of 100 season points.
    free = seasons whose premium track a tester gets with the welcome package. */
@@ -1922,7 +1927,11 @@ function pRate(num,den,min,goal){
 const ECON={achGems:[5,10,20,40],achCry:[1,2,3,5],    /* free reward per achievement tier (awards take real effort, so they pay a little more) */
   starGems:[0,1,1],starCry:[1,1,2],fullGems:3,fullCry:3, /* per newly earned level star (clear, hold, featured mob) and the all-three bonus */
   gate:100};                                               /* stars needed in a world to open the next one */
-const UPCOST=[3,20,100,480];   /* crystals per upgrade level in each quarter of an upgrade's range: the old 3/5/8/12 crystals of Common/Rare/Epic/Legendary at forge value */
+/* Upgrade prices (build 107; tuned with a turret-only play simulation to about 1.5x to 2x the runs of build 106 to reach each level, with the same ceiling): priced in clears, scaled to how far you've played.
+   One level of an upgrade costs UPC(stage) x depth x line weight "clears" of that crystal type, where a clear is what a first clear of your next
+   level pays in that type. Stage = the furthest level reached in any world, so prices grow as you progress but stay a steady number of runs:
+   early levels about UPC0 runs, late game about UPC1 runs, deeper levels of a line up to UPG times more. Short lines (Barrels, Forks) weigh more per level. */
+const UPC0=1.2, UPC1=3, UPG=3.5;
 /* ---- level stars: 1 = clear it, 2 = hold enough mobs above the ozone, 4 = hold 95% of the level's featured mob above the ozone ---- */
 const starHold=n=>n<=10?0.8:n<=30?0.85:0.9;
 const popc=b=>(b&1)+((b>>1)&1)+((b>>2)&1);
@@ -4291,7 +4300,10 @@ function awardCards(count,n,bonus,el){
   cryAddMap(got); return got;
 }
 const bandOf=(lv,max)=>Math.min(3,Math.floor(4*lv/max));
-const upCost=(u,lv)=>UPCOST[bandOf(lv,u.max)];   /* crystals of the upgrade's type for the next level */
+const upStage=()=>{ let b=0; const pr=P.prog||{}; for(const k in pr) b=Math.max(b,(pr[k]&&pr[k].best)|0); return Math.min(LEVELS,b+1); };
+const niceN=c=>c<20?Math.ceil(c):c<100?Math.round(c/5)*5:c<1000?Math.round(c/10)*10:Math.round(c/50)*50;
+const typeClear=(t,n)=>dropCount(n,1,false,false)*dropVal(n,false)*CW[t]/100;   /* crystals of type t from one first clear of level n */
+const upCost=(u,lv,n)=>{ n=n||upStage(); const c=(UPC0+(UPC1-UPC0)*(n-1)/(LEVELS-1))*Math.min(3,Math.sqrt(25/u.max))*Math.pow(UPG,lv/u.max)*typeClear(u.ty,n); return Math.max(3,niceN(c)); };   /* crystals of the upgrade's type for the next level */
 function canBuy(id){ const u=UPS.find(x=>x.id===id); if(!u) return false; const lv=L(id); return lv<u.max&&cry(u.ty)>=upCost(u,lv); }
 function buyUp(id){
   if(!canBuy(id)) return false;
@@ -4331,7 +4343,7 @@ function battleHtml(){
     +'<div class="brief">'+briefFor(wd,n,el)+'</div>'
     +(el?'':'<div class="goals">'+goalsFor(wd,n).map((t,k)=>'<span class="gl'+(((pr.stars||{})[n]|0)>>k&1?' on':'')+'">'+ico('pow',13)+t+'</span>').join('')+'</div>')
     +'<div class="facts"><span title="Waves">'+ico('wave',18)+waveCount(n)+'</span><span title="Crystals per clear">'+ico('crystal',18)+'~'+Math.round(cnt*dropVal(n,el))+'</span>'+(el?'<span style="color:var(--red)" title="Elite costs double energy">'+ico('bolt',18)+'x2</span>':'')+'</div>'
-    +(P.en<(el?EN_COST*2:EN_COST)?'<button class="mini" data-act="ad" type="button">Watch ad: +'+EN_AD+' energy</button>':'')+'</div>';
+    +(P.en<(el?EN_COST*2:EN_COST)?'<button class="mini" data-act="ad" data-real="1" type="button">Watch ad: +'+EN_AD+' energy</button>':'')+'</div>';
   return h;
 }
 function accountHtml(){
@@ -4346,7 +4358,7 @@ function arsenalHtml(){
   /* Weapons across the top (wraps to more rows), the five crystal balances, then each upgrade; tap one for its next level and Upgrade button. */
   let h='<div class="wpns" role="tablist" aria-label="Weapon">'+TABS.filter(t=>t.id!=='bestiary').map(t=>'<button class="wpn" role="tab" data-tab="'+t.id+'" style="--c:'+t.color+'" aria-selected="'+(tab===t.id)+'" type="button">'+ico(TABICO[t.id],18)+'<span>'+t.name+'</span></button>').join('')+'<button class="wpn'+(cmdUnlocked()?'':' lk')+'" role="tab" data-tab="command" style="--c:#ffc400" aria-selected="'+(tab==='command')+'" type="button">'+ico('bolt',18)+'<span>Command</span></button></div>';
   if(tab==='command') return h+commandHtml();
-  h+=cryStrip()+'<div class="ucats">';
+  h+=cryStrip()+'<div class="note">Upgrade prices grow with the furthest level you\'ve reached.</div><div class="ucats">';
   UPS.filter(u=>u.tab===tab).forEach(u=>{
     const lv=L(u.id), maxed=lv>=u.max, ct=CT[u.ty], need=maxed?0:upCost(u,lv), have=cry(u.ty), ok=!maxed&&have>=need, open=UI.uc===u.id;
     h+='<div class="ucat'+(open?' open':'')+'" style="--c:'+ct.color+'">'
@@ -4361,7 +4373,8 @@ function arsenalHtml(){
     h+='</div>';
   });
   h+='</div>';
-  h+='<div class="foot">'+(confirmReset?'<span class="note">Erase all upgrades, crystals and progress?</span><button class="btn sm" data-act="reset2" type="button" style="--c:var(--red)">Erase</button><button class="btn sm" data-act="cancel" type="button">Cancel</button>':'<button class="mini" data-act="reset" type="button">Reset progress</button><button class="mini" data-act="ad" type="button" title="Placeholder for a rewarded ad">Demo: ad +5 energy</button>')+'</div>'+accountHtml();
+  if(TEST_BUILD) h+='<div class="foot">'+(confirmReset?'<span class="note">Erase all upgrades, crystals and progress?</span><button class="btn sm" data-act="reset2" type="button" style="--c:var(--red)">Erase</button><button class="btn sm" data-act="cancel" type="button">Cancel</button>':'<button class="mini" data-act="reset" type="button">Reset progress</button><button class="mini" data-act="ad" type="button" title="Placeholder for a rewarded ad">Demo: ad +5 energy</button>')+'</div>';
+  h+=accountHtml();
   return h;
 }
 /* ---- Codex tabs: Bestiary / Awards / Record ---- */
@@ -4597,10 +4610,10 @@ armoryEl.addEventListener('click',e=>{
   if(a==='prev'){ P.sel=Math.max(1,P.sel-1); renderArmory(); }
   else if(a==='next'){ P.sel=Math.min(Math.min(P.best+1,LEVELS),P.sel+1); renderArmory(); }
   else if(a==='deploy'){ save(); if(UI.elite&&!pw(P).perf[P.sel]) return; tryStart(P.sel,UI.elite); }
-  else if(a==='reset'){ confirmReset=true; renderArmory(); }
+  else if(a==='reset'){ if(TEST_BUILD){ confirmReset=true; renderArmory(); } }
   else if(a==='cancel'){ confirmReset=false; renderArmory(); }
-  else if(a==='reset2'){ P=newP(); P.epoch=Date.now(); UI.elite=false; confirmReset=false; save(); renderArmory(); }
-  else if(a==='ad'){ rewardFlow('energy_refill',grantAdEnergy); }
+  else if(a==='reset2'&&TEST_BUILD){ P=newP(); P.epoch=Date.now(); UI.elite=false; confirmReset=false; save(); renderArmory(); }
+  else if(a==='ad'){ if(TEST_BUILD||t.dataset.real) rewardFlow('energy_refill',grantAdEnergy); }
 });
 
 /* ================= upgrade cards (pick 1 of 3, reset every level) ================= */
@@ -4939,15 +4952,15 @@ if(!P.intro){ const io=document.createElement('div'); io.id='introov'; io.innerH
 requestAnimationFrame(frame);
 
 /* test hook for headless checks */
-window.__rr={eligible:eligible,pickTarget:pickTarget,fire:fire,spawn:spawn,killEnemy:killEnemy,openPack:openPack,renderArmory:renderArmory,UI:UI,queueTeach:queueTeach,DEMO:DEMO,coach:coach,save:save,paintTurret:paintTurret,coachGrab:coachGrab,GR:GR,CTL:CTL,wReady:wReady,isManual:isManual,chainSnap:chainSnap,T:T,MOB:MOB,SKIN:SKIN,applySkin:applySkin,PKEYS:PKEYS,cry:cry,cryAdd:cryAdd,crySpend:crySpend,cryLegacy:cryLegacy,loadCry:loadCry,cmdPrice:cmdPrice,cmdMix:cmdMix,CRANK:CRANK,PACKS:PACKS,useCmd:useCmd,cmdBuy:cmdBuy,cmdNodeBuy:cmdNodeBuy,cmdP:cmdP,cmdLeft:cmdLeft,cmdEarned:cmdEarned,CMDS:CMDS,kName:kName,fireball:fireball,chip:chip,openTeach:openTeach,fireMortar:fireMortar,shape:shape,spawn:spawn,G:G,get P(){return P;},set P(v){P=v;},newP:newP,startLevel:startLevel,update:update,UPS:UPS,waveCount:waveCount,levelPool:levelPool,hpScale:hpScale,tune:(a,b,c,d,m,k,bk,wh,pm,lk,c0,cg)=>{if(lk!==undefined)LATEK=lk;if(pm!==undefined)PICKM=pm;if(wh!==undefined)WAVEHP=wh;if(k!==undefined)HPK=k;if(m!==undefined)MOBN=m;if(c0!==undefined)CDROP0=c0;if(cg!==undefined)CDROPG=cg;HPG=a;POOL0=b;POOLG=c;if(d!==undefined)HPA=d;},bst:bst,pickCard:pickCard,CARDS:CARDS,offerCards:offerCards,applyCard:applyCard,hasTool:hasTool,fireMortar:fireMortar,canMortar:canMortar,T:T,wcount:wcount,canBuy:canBuy,buyUp:buyUp,upCost:upCost,bandOf:bandOf,awardCards:awardCards,dropCount:dropCount,dropVal:dropVal,useEnergy:useEnergy,enTick:enTick,tryStart:tryStart,win:win,gameOver:gameOver,profileFor:profileFor,MOB:MOB,WORLDS:WORLDS,briefFor:briefFor,welcomeReady:welcomeReady,claimWelcome:claimWelcome,premActive:premActive,passActive:passActive,spAdd:spAdd,spClaim:spClaim,ssCur:ssCur,seasonNo:seasonNo,tierRw:tierRw,buyGems:buyGems,claim:claim,showGain:showGain,shopHtml:shopHtml,toArmory:toArmory};
+window.__rr={eligible:eligible,pickTarget:pickTarget,fire:fire,spawn:spawn,killEnemy:killEnemy,openPack:openPack,renderArmory:renderArmory,UI:UI,queueTeach:queueTeach,DEMO:DEMO,coach:coach,save:save,paintTurret:paintTurret,coachGrab:coachGrab,GR:GR,CTL:CTL,wReady:wReady,isManual:isManual,chainSnap:chainSnap,T:T,MOB:MOB,SKIN:SKIN,applySkin:applySkin,PKEYS:PKEYS,cry:cry,cryAdd:cryAdd,crySpend:crySpend,cryLegacy:cryLegacy,loadCry:loadCry,cmdPrice:cmdPrice,cmdMix:cmdMix,CRANK:CRANK,PACKS:PACKS,useCmd:useCmd,cmdBuy:cmdBuy,cmdNodeBuy:cmdNodeBuy,cmdP:cmdP,cmdLeft:cmdLeft,cmdEarned:cmdEarned,CMDS:CMDS,kName:kName,fireball:fireball,chip:chip,openTeach:openTeach,fireMortar:fireMortar,shape:shape,spawn:spawn,G:G,get P(){return P;},set P(v){P=v;},newP:newP,startLevel:startLevel,update:update,UPS:UPS,waveCount:waveCount,levelPool:levelPool,hpScale:hpScale,tune:(a,b,c,d,m,k,bk,wh,pm,lk,c0,cg)=>{if(lk!==undefined)LATEK=lk;if(pm!==undefined)PICKM=pm;if(wh!==undefined)WAVEHP=wh;if(k!==undefined)HPK=k;if(m!==undefined)MOBN=m;if(c0!==undefined)CDROP0=c0;if(cg!==undefined)CDROPG=cg;HPG=a;POOL0=b;POOLG=c;if(d!==undefined)HPA=d;},bst:bst,pickCard:pickCard,CARDS:CARDS,offerCards:offerCards,applyCard:applyCard,hasTool:hasTool,fireMortar:fireMortar,canMortar:canMortar,T:T,wcount:wcount,canBuy:canBuy,buyUp:buyUp,upCost:upCost,upStage:upStage,bandOf:bandOf,awardCards:awardCards,dropCount:dropCount,dropVal:dropVal,useEnergy:useEnergy,enTick:enTick,tryStart:tryStart,win:win,gameOver:gameOver,profileFor:profileFor,MOB:MOB,WORLDS:WORLDS,briefFor:briefFor,welcomeReady:welcomeReady,claimWelcome:claimWelcome,premActive:premActive,passActive:passActive,spAdd:spAdd,spClaim:spClaim,ssCur:ssCur,seasonNo:seasonNo,tierRw:tierRw,buyGems:buyGems,claim:claim,showGain:showGain,shopHtml:shopHtml,toArmory:toArmory};
 })();
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 106</div>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 107</div>
 <script>
 /* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
-(function(){ const BUILD=106; let busy=false, shown=false;
+(function(){ const BUILD=107; let busy=false, shown=false;
   const inRun=()=>{ try{ return typeof G!=='undefined'&&(G.state==='playing'||G.state==='cards'||G.state==='shop'||G.state==='paused'||G.state==='teach'||G.state==='ctl'); }catch(e){ return false; } };
   function wipeReload(){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
     if(n>=3) return;

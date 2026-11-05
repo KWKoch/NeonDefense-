@@ -193,6 +193,7 @@ async function runDevice(d, url, expectBuild) {
   if (!cur.err) {
     await scr('06-shop', () => { __rr.UI.nav = 'shop'; __rr.renderArmory(); });
     await scr('07-arsenal', () => { __rr.UI.nav = 'arsenal'; __rr.UI.uc = __rr.UPS.find(x => x.tab === 'turret' && x.ty === 'pow').id; __rr.renderArmory(); const b = document.querySelector('.wpn[data-tab="turret"]'); if (b) b.click(); const u = document.querySelector('.uh[data-uc]'); if (u && u.getAttribute('aria-expanded') !== 'true') u.click(); });
+    chk('test build: Arsenal shows Reset progress and Demo ad (hidden in the store app)', await page.evaluate(() => !!document.querySelector('.foot [data-act="reset"]') && !!document.querySelector('.foot [data-act="ad"]')));
     await scr('08-command', () => { const b = document.querySelector('.wpn[data-tab="command"]'); if (b) b.click(); });
     await scr('09-commander', () => { Object.assign(__rr.UI, { cmm: 'vex', cmw: 'cmd', cmv: 'info' }); __rr.renderArmory(); });
     await scr('10-reward', () => { Object.assign(__rr.UI, { cmm: '' }); __rr.showGain('Supply crate', { pow: 12, tmp: 8, rch: 7, cap: 6, frt: 5 }); });
