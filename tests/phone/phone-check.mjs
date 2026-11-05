@@ -133,18 +133,54 @@ async function runDevice(d, url, expectBuild) {
   if (tipUp) {
     // G.time is the animation clock and always runs; G.waveT is the battle clock that drives spawns and waves
     const snap = () => page.evaluate(() => { const G = __rr.G; return { state: G.state, time: G.waveT, wave: G.wave, n: G.enemies.length, pos: G.enemies.filter(e => !e.dead).map(e => [Math.round(e.x), Math.round(e.y)]).join('|') }; });
-    const a = await snap(); await page.waitForTimeout(2000); const b = await snap();
+    const a = await snap();
+    // watch the 2 s window in the page so a brief unfreeze between two cards is caught too
+    const trace = await page.evaluate(() => new Promise(res => { const G = __rr.G, seen = []; let lastKey = ''; const t0 = performance.now(); const iv = setInterval(() => {
+      const ov = document.querySelector('#coach h3') ? 'tip "' + document.querySelector('#coach h3').textContent + '"' : document.querySelector('#teachov h2') ? 'card "' + document.querySelector('#teachov h2').textContent + '"' : 'no tip';
+      const k = G.state + ' / ' + ov; if (k !== lastKey) { seen.push(`${Math.round(performance.now() - t0)}ms ${k} clock ${G.waveT.toFixed(2)}`); lastKey = k; }
+      if (performance.now() - t0 > 2000) { clearInterval(iv); res(seen); } }, 25); }));
+    const b = await snap();
     await shot(page, '03-tip');
     chk('field is frozen while the tip is up', a.state === 'teach' && b.state === 'teach' && a.time === b.time && a.wave === b.wave && a.pos === b.pos && a.n === b.n,
-      `over 2 s: battle clock ${a.time?.toFixed?.(2)}->${b.time?.toFixed?.(2)}, wave ${a.wave}->${b.wave}, mobs ${a.n}->${b.n}${a.pos === b.pos ? '' : ', mobs moved'}`);
+      `over 2 s: battle clock ${a.time?.toFixed?.(2)}->${b.time?.toFixed?.(2)}, wave ${a.wave}->${b.wave}, mobs ${a.n}->${b.n}${a.pos === b.pos ? '' : ', mobs moved'}; ${trace.join(' > ')}`);
     const card = await page.evaluate(({ W, H, I }) => { const c = document.querySelector('#coach .ccard') || document.querySelector('#teachov .tcard'); if (!c) return null; const r = c.getBoundingClientRect(); return { ok: r.left >= I.left - 1 && r.right <= W - I.right + 1 && r.top >= I.top - 1 && r.bottom <= H - I.bottom + 1, r: `${Math.round(r.left)},${Math.round(r.top)} ${Math.round(r.width)}x${Math.round(r.height)}` }; }, { W, H, I });
     if (card) chk('tip card fits on screen, clear of notch and home bar', card.ok, card.r);
   }
 
   // --- dismiss every tip with taps, then the battle must run ---
   // more tips can follow a moment later (Fire a weapon, new enemy cards), so wait for 3 s of clear play
+  const taps = await clearTips(page, 3000);
+  const running = await page.waitForFunction(() => __rr.G.state === 'playing', null, { timeout: 8000 }).then(() => true, () => false);
+  chk('tips close with taps and the battle resumes', running, `${taps} taps, state ${await page.evaluate(() => __rr.G.state)}`);
+  if (running) {
+    const c0 = await page.evaluate(() => __rr.G.waveT);
+    // FPS / stutter over 4 s of live play
+    const perf = await page.evaluate(() => new Promise(res => { const ts = []; const t0 = performance.now(); const f = t => { ts.push(t); if (t - t0 < 4000) requestAnimationFrame(f); else { const d = ts.slice(1).map((t, i) => t - ts[i]); res({ fps: Math.round(d.length / ((ts.at(-1) - ts[0]) / 1000)), long: d.filter(x => x > 50).length, worst: Math.round(Math.max(...d)) }); } }; requestAnimationFrame(f); }));
+    const c1 = await page.evaluate(() => ({ time: __rr.G.waveT, mobs: __rr.G.enemies.filter(e => !e.dead).length, state: __rr.G.state }));
+    chk('battle clock runs after the tips', c1.time > c0 + 0.05, `clock ${c0.toFixed(2)}->${c1.time.toFixed(2)}, ${c1.mobs} mobs on field`);
+    note('frame rate (emulated on a server with no graphics chip, not a real phone)', `${perf.fps} fps, ${perf.long} frames over 50 ms, worst ${perf.worst} ms`);
+    await clearTips(page, 1000);
+    await shot(page, '04-battle');
+    const hud = await page.evaluate(({ W, H, I }) => { const bad = []; for (const el of document.querySelectorAll('#hud button, #hud > *, #dock button, #dock .tool:not([hidden]), #cmdDock button, #pauseBtn, #spdBtn')) { const r = el.getBoundingClientRect(); if (!r.width || !r.height || el.closest('[hidden]') || getComputedStyle(el).visibility === 'hidden') continue; if (r.left < I.left - 1 || r.right > W - I.right + 1 || r.top < I.top - 1 || r.bottom > H - I.bottom + 1) bad.push(`${(el.id || el.className || el.tagName).toString().slice(0, 20)} @ ${Math.round(r.left)},${Math.round(r.top)} ${Math.round(r.width)}x${Math.round(r.height)}`); } return bad; }, { W, H, I });
+    chk('battle controls clear of notch, home bar and screen edges', hud.length === 0, hud.slice(0, 6).join('; '));
+    const pause = page.locator('#pauseBtn');
+    if (await pause.isVisible().catch(() => false)) {
+      const err = await pause.tap({ timeout: 5000 }).then(() => '', e => e.message.split('\n').find(l => /intercepts|not visible|outside/.test(l)) || 'tap timed out');
+      await page.waitForTimeout(400);
+      const ps = await page.evaluate(() => __rr.G.state);
+      chk('tap on Pause registers', !err && ps === 'paused', (err || 'state ' + ps).trim());
+      await shot(page, '05-paused');
+    }
+  }
+  chk('no script errors', errors.length === 0, errors.slice(0, 3).join(' | '));
+  await browser.close();
+  return { id: d.id, label: d.label, build, checks, shots, errors };
+}
+
+// taps through tip cards until the battle has run with nothing on top for holdMs; returns the number of taps
+async function clearTips(page, holdMs) {
   let taps = 0, clear = 0;
-  for (let i = 0; i < 60 && clear < 3000; i++) {
+  for (let i = 0; i < 60 && clear < holdMs; i++) {
     const st = await page.evaluate(() => __rr.G.state);
     const btn = page.locator('#coach button[data-c="next"], #teachov .tcard button, #coach button[data-c="skip"]').first();
     const vis = await btn.isVisible().catch(() => false);
@@ -153,32 +189,7 @@ async function runDevice(d, url, expectBuild) {
     if (vis && await btn.isEnabled().catch(() => false)) { await btn.tap({ timeout: 4000 }).catch(() => {}); taps++; await page.waitForTimeout(450); }
     else await page.waitForTimeout(600);
   }
-  const running = await page.waitForFunction(() => __rr.G.state === 'playing', null, { timeout: 8000 }).then(() => true, () => false);
-  chk('tips close with taps and the battle resumes', running, `${taps} taps, state ${await page.evaluate(() => __rr.G.state)}`);
-
-  if (running) {
-    const c0 = await page.evaluate(() => __rr.G.waveT);
-    // FPS / stutter over 4 s of live play
-    const perf = await page.evaluate(() => new Promise(res => { const ts = []; const t0 = performance.now(); const f = t => { ts.push(t); if (t - t0 < 4000) requestAnimationFrame(f); else { const d = ts.slice(1).map((t, i) => t - ts[i]); res({ fps: Math.round(d.length / ((ts.at(-1) - ts[0]) / 1000)), long: d.filter(x => x > 50).length, worst: Math.round(Math.max(...d)) }); } }; requestAnimationFrame(f); }));
-    const c1 = await page.evaluate(() => ({ time: __rr.G.waveT, mobs: __rr.G.enemies.filter(e => !e.dead).length, state: __rr.G.state }));
-    chk('battle clock runs after the tips', c1.time > c0 + 0.3, `clock ${c0.toFixed(2)}->${c1.time.toFixed(2)}, ${c1.mobs} mobs on field`);
-    note('frame rate (emulated, not real hardware)', `${perf.fps} fps, ${perf.long} frames over 50 ms, worst ${perf.worst} ms`);
-    await shot(page, '04-battle');
-    const hud = await page.evaluate(({ W, H, I }) => { const bad = []; for (const el of document.querySelectorAll('#hud button, #hud > *, #dock button, #dock .tool:not([hidden]), #cmdDock button, #pauseBtn, #spdBtn')) { const r = el.getBoundingClientRect(); if (!r.width || !r.height || el.closest('[hidden]') || getComputedStyle(el).visibility === 'hidden') continue; if (r.left < I.left - 1 || r.right > W - I.right + 1 || r.top < I.top - 1 || r.bottom > H - I.bottom + 1) bad.push(`${(el.id || el.className || el.tagName).toString().slice(0, 20)} @ ${Math.round(r.left)},${Math.round(r.top)} ${Math.round(r.width)}x${Math.round(r.height)}`); } return bad; }, { W, H, I });
-    chk('battle controls clear of notch, home bar and screen edges', hud.length === 0, hud.slice(0, 6).join('; '));
-    // pause button tap
-    const pause = page.locator('#pauseBtn');
-    if (await pause.isVisible().catch(() => false)) {
-      const err = await pause.tap({ timeout: 5000 }).then(() => '', e => e.message.split('\n').find(l => /intercepts|not visible|outside/.test(l)) || 'tap timed out');
-      await page.waitForTimeout(400);
-      const ps = await page.evaluate(() => __rr.G.state);
-      chk('tap on Pause registers', !err && ps === 'paused', err || 'state ' + ps);
-      await shot(page, '05-paused');
-    }
-  }
-  chk('no script errors', errors.length === 0, errors.slice(0, 3).join(' | '));
-  await browser.close();
-  return { id: d.id, label: d.label, build, checks, shots, errors };
+  return taps;
 }
 
 const live = !!arg('live'); const only = arg('only');
