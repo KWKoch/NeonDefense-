@@ -3,21 +3,38 @@ service cloud.firestore {
   match /databases/{database}/documents {
     function me(uid) { return request.auth != null && request.auth.uid == uid; }
 
-    // Player profile + cloud save. Written by cloud.js as {data, score, updated}.
+    // Player profile + cloud save. Written by cloud.js as {data, score, updated, gems, gt, stats?, ledger?, ...}.
+    // gems is the account's authoritative gem balance (the game takes it over the copy inside the data blob).
+    // gt is the server time of the last gem increase. Gems may fall freely, but may only rise by
+    // 1 gem per second elapsed since the last increase, at most 300 in one write, and a new account starts at <= 50.
+    function saveShape(d) {
+      return d.keys().hasOnly(['data', 'score', 'updated', 'gems', 'gt', 'displayName', 'createdAt', 'stats', 'ledger'])
+        && d.keys().hasAll(['data', 'score', 'updated', 'gems', 'gt'])
+        && d.data is string
+        && d.data.size() < 200000
+        && d.score is int
+        && d.score >= 0
+        && d.updated is int
+        && d.gems is int
+        && d.gems >= 0
+        && d.gt is timestamp
+        && (!('stats' in d) || (d.stats is map && d.stats.size() <= 30))
+        && (!('ledger' in d) || (d.ledger is list && d.ledger.size() <= 100))
+        && (!('displayName' in d) || (d.displayName is string && d.displayName.size() <= 40))
+        && (!('createdAt' in d) || d.createdAt is int);
+    }
+    function gemsOk(n, o) {
+      return (n.gems <= o.gems && n.gt == o.gt)
+        || (n.gems > o.gems && n.gt == request.time
+            && n.gems - o.gems <= 300
+            && n.gems - o.gems <= (request.time - o.gt).seconds());
+    }
     match /users/{uid} {
       allow read, delete: if me(uid);
-      allow create, update: if me(uid)
-        && request.resource.data.keys().hasOnly(['data', 'score', 'updated', 'displayName', 'createdAt', 'stats', 'ledger'])
-        && request.resource.data.keys().hasAll(['data', 'score', 'updated'])
-        && request.resource.data.data is string
-        && request.resource.data.data.size() < 200000
-        && request.resource.data.score is int
-        && request.resource.data.score >= 0
-        && request.resource.data.updated is int
-        && (!('stats' in request.resource.data) || (request.resource.data.stats is map && request.resource.data.stats.size() <= 30))
-        && (!('ledger' in request.resource.data) || (request.resource.data.ledger is list && request.resource.data.ledger.size() <= 100))
-        && (!('displayName' in request.resource.data) || (request.resource.data.displayName is string && request.resource.data.displayName.size() <= 40))
-        && (!('createdAt' in request.resource.data) || request.resource.data.createdAt is int);
+      allow create: if me(uid) && saveShape(request.resource.data)
+        && request.resource.data.gems <= 50 && request.resource.data.gt == request.time;
+      allow update: if me(uid) && saveShape(request.resource.data)
+        && resource.data.keys().hasAll(['gems', 'gt']) && gemsOk(request.resource.data, resource.data);
 
       // Wallet / entitlements: client read-only, written only by Cloud Functions (Admin SDK).
       match /private/{doc} {

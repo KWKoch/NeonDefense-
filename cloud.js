@@ -77,45 +77,58 @@ else (async()=>{
       o.st=mergeSt(a.st,b.st); mergeStars(o,a,b); { const side=x=>{ const f=x.frag||{}; return x.fe?{e:x.fe,s:x.fs||{}}:{e:f,s:{}}; }, sa=side(a), sb=side(b); o.fe=maxObj(sa.e,sb.e); o.fs=maxObj(sa.s,sb.s); o.frag={}; for(const k of new Set([...Object.keys(o.fe),...Object.keys(o.fs)])) o.frag[k]=Math.max(0,(+o.fe[k]||0)-(+o.fs[k]||0)); }
       { const ca=a.cmd||{}, cb=b.cmd||{}, tl={}; const rs=maxObj(ca.rs,cb.rs); for(const id of new Set([...Object.keys(ca.tl||{}),...Object.keys(cb.tl||{})])){ const ra=+(ca.rs||{})[id]||0, rb=+(cb.rs||{})[id]||0; tl[id]=ra>rb?Object.assign({},(ca.tl||{})[id]):rb>ra?Object.assign({},(cb.tl||{})[id]):maxObj((ca.tl||{})[id],(cb.tl||{})[id]); } const own=Object.assign({},cb.own||{},ca.own||{}); for(const id in (cb.own||{})) own[id]=Math.max(+(ca.own||{})[id]||0,+cb.own[id]||0); o.tut=Object.assign({},b.tut||{},a.tut||{}); o.cmd={eq:ca.eq||cb.eq||'warden',own:own,tl:tl,rs:rs}; }
       o.vault={v:1,items:maxObj((a.vault||{}).items,(b.vault||{}).items)}; o.epoch=+a.epoch||0; for(const k in b) if(!(k in o)) o[k]=b[k];
-      o.pass=Math.max(+a.pass||0,+b.pass||0); o.starter=(a.starter||b.starter)?1:0; o.chestDay=[a.chestDay||'',b.chestDay||''].sort().pop(); { const da=a.adDay||'', db=b.adDay||''; o.adDay=da===db?da:(+da.split('-').join('')>+db.split('-').join('')?da:db)||''; o.adN=da===db?Math.max(+a.adN||0,+b.adN||0):(o.adDay===da?(+a.adN||0):(+b.adN||0)); } o.passDay=[a.passDay||'',b.passDay||''].sort().pop();
+      o.pass=Math.max(+a.pass||0,+b.pass||0); o.starter=(a.starter||b.starter)?1:0; o.tester=(a.tester||b.tester)?1:0; o.tw=(a.tw||b.tw)?1:0; o.prem=Object.assign({},b.prem||{},a.prem||{}); { const sa=a.ss||null, sb=b.ss||null; o.ss=sa&&sb&&sa.n===sb.n?{n:sa.n,pts:Math.max(+sa.pts||0,+sb.pts||0),cf:(+sa.cf||0)|(+sb.cf||0),cp:(+sa.cp||0)|(+sb.cp||0)}:((sa&&sb)?((+sa.n||0)>(+sb.n||0)?sa:sb):(sa||sb)); } o.chestDay=[a.chestDay||'',b.chestDay||''].sort().pop(); { const da=a.adDay||'', db=b.adDay||''; o.adDay=da===db?da:(+da.split('-').join('')>+db.split('-').join('')?da:db)||''; o.adN=da===db?Math.max(+a.adN||0,+b.adN||0):(o.adDay===da?(+a.adN||0):(+b.adN||0)); } o.passDay=[a.passDay||'',b.passDay||''].sort().pop();
       o.ledger=[].concat(a.ledger||[],(b.ledger||[]).filter(x=>!(a.ledger||[]).some(y=>y.t===x.t&&y.k===x.k))).sort((x,y)=>x.t-y.t).slice(-100);
       return JSON.stringify(o); }catch(e){ return score(cj)>score(lj||'{}')?cj:lj; } };
   const code=e=>(e&&e.code)||'error';
   const nice=e=>code(e).replace('auth/','').replace(/-/g,' ');
   /* Until the new rules (stats + ledger fields) are published, fall back to the plain save so cloud sync never breaks. */
   let slim=false;
-  const put=async(u,r)=>{ if(slim){ const {stats,ledger,...rest}=r; return F.setDoc(mine(u),rest); } try{ return await F.setDoc(mine(u),r); }catch(e){ if(code(e)==='permission-denied'){ slim=true; const {stats,ledger,...rest}=r; return F.setDoc(mine(u),rest); } throw e; } };
+  /* gems + gt sit next to the blob so the security rules can cap how fast the balance grows (see firestore.rules).
+     gt is the server time of the last gem increase: kept as-is when gems did not rise, set to server time when they did. */
+  const gemsOf=j=>{ try{ return Math.max(0,Math.floor(+JSON.parse(j||'{}').gems||0)); }catch(e){ return 0; } };
+  const withGems=(r,prev)=>Object.assign({},r,{gems:gemsOf(r.data),gt:(prev&&typeof prev.gems==='number'&&prev.gt&&gemsOf(r.data)<=prev.gems)?prev.gt:F.serverTimestamp()});
+  /* the cloud's gem balance is the gems field, not the copy inside the blob */
+  const cloudData=d=>{ try{ if(typeof d.gems!=='number') return d.data; const o=JSON.parse(d.data); o.gems=d.gems; return JSON.stringify(o); }catch(e){ return d.data; } };
+  const put=async(u,r,prev)=>{ r=withGems(r,prev); const lean=()=>{ const {stats,ledger,...rest}=r; return rest; }; if(slim) return F.setDoc(mine(u),lean()); try{ return await F.setDoc(mine(u),r); }catch(e){ if(code(e)!=='permission-denied') throw e; await F.setDoc(mine(u),lean()); slim=true; } };
   let timer=null;
   R.enabled=true;
   /* Every write first reads the cloud copy and merges it in, so a stale device can never overwrite what another device earned. Anything new from the cloud is handed to the live game; failures retry until they land. */
   const canon=v=>Array.isArray(v)?v.map(canon):(v&&typeof v==='object')?Object.keys(v).sort().reduce((r,k)=>(r[k]=canon(v[k]),r),{}):v;
   const same=(x,y)=>{ try{ return JSON.stringify(canon(JSON.parse(x)))===JSON.stringify(canon(JSON.parse(y))); }catch(e){ return x===y; } };
-  let busy=false, again=false, retry=null;
-  const flushNow=async()=>{ const u=auth.currentUser; if(!u) return true; if(busy){ again=true; return false; } busy=true; let ok=false;
+  let busy=false, again=false, retry=null, synced=false;
+  const flushNow=async()=>{ const u=auth.currentUser; if(!u) return true; if(!synced) return false; if(busy){ again=true; return false; } busy=true; let ok=false;
     try{
       let local=localStorage.getItem(SKEY); const snap=await F.getDoc(mine(u));
-      if(snap.exists()&&snap.data().data&&local){ const m=merge(local,snap.data().data); if(!same(m,local)){ localStorage.setItem(SKEY,m); local=m; if(window.NDAdopt) window.NDAdopt(m); } }
-      await put(u,rec(local)); R.status='saved'; ok=true; clearTimeout(retry);
+      /* the cloud save was deleted on the server while this tab was open: drop this device's copy instead of re-uploading it */
+      if(!snap.exists()){ wipeLocal(); try{ sessionStorage.removeItem('nd-synced'); }catch(e){} location.reload(); return false; }
+      if(snap.exists()&&snap.data().data&&local){ const m=merge(local,cloudData(snap.data())); if(!same(m,local)){ localStorage.setItem(SKEY,m); local=m; if(window.NDAdopt) window.NDAdopt(m); } }
+      await put(u,rec(local),snap.data()); R.status='saved'; ok=true; clearTimeout(retry);
     }catch(e){ R.status='offline'; clearTimeout(retry); retry=setTimeout(flushNow,15000); }
     busy=false; ping(); if(again){ again=false; setTimeout(flushNow,200); } return ok; };
   R.flush=()=>{ clearTimeout(timer); return flushNow(); };
   R.push=()=>{ if(!auth.currentUser) return; clearTimeout(timer); timer=setTimeout(flushNow,1500); };
   addEventListener('online',()=>{ if(auth.currentUser) flushNow(); });
-  // merge: keep whichever save (cloud vs this device) has the higher progress score.
-  // This also migrates an existing pre-sign-in local save into the first account that signs in.
+  /* The server copy is the account's source of truth. This device only keeps a cache of it so the game can boot instantly and play offline.
+     On every sign-in/load the cloud save replaces the device copy outright. If the account has no cloud save (new account, or the save was
+     wiped on the server), the device copy is cleared too, so an old local save can never be uploaded into the account. */
+  const LOCAL_KEYS=[SKEY,'nd-backup-v1','nd-seen-v1','rave-rampart-v4'];
+  const wipeLocal=()=>{ for(const k of LOCAL_KEYS){ try{ localStorage.removeItem(k); }catch(e){} } };
   async function sync(u){
     try{
       const snap=await F.getDoc(mine(u)), local=localStorage.getItem(SKEY);
-      /* Reload loop guard: the merged save can re-serialize differently from the local save on every load, which used to reload forever. Reload at most once per tab session per account. */
+      /* Reload loop guard: the save can re-serialize differently on every load, which used to reload forever. Reload at most once per tab session per account. */
       let did=false; try{ did=sessionStorage.getItem('nd-synced')===u.uid; }catch(e){}
       const mark=()=>{ try{ sessionStorage.setItem('nd-synced',u.uid); }catch(e){} };
       if(snap.exists()&&snap.data().data){
-        const cloud=snap.data().data;
-        if(local){ const m=merge(local,cloud); if(!same(m,local)){ localStorage.setItem(SKEY,m); await put(u,rec(m)); if(!did){ mark(); location.reload(); return; } if(window.NDAdopt) window.NDAdopt(m); } }
-        else { localStorage.setItem(SKEY,cloud); if(!did){ mark(); location.reload(); return; } if(window.NDAdopt) window.NDAdopt(cloud); }
+        const cloud=cloudData(snap.data());
+        if(!local||!same(cloud,local)){ localStorage.setItem(SKEY,cloud); localStorage.setItem('nd-backup-v1',cloud); if(!did){ mark(); location.reload(); return; } if(window.NDAdopt) window.NDAdopt(cloud); }
+        mark(); synced=true; R.status='saved';
+      } else {
+        if(!did&&LOCAL_KEYS.some(k=>localStorage.getItem(k)!==null)){ wipeLocal(); mark(); location.reload(); return; }
+        mark();
+        await put(u,rec(localStorage.getItem(SKEY)),null); synced=true; R.status='saved';
       }
-      mark();
-      await put(u,rec(localStorage.getItem(SKEY))); R.status='saved';
     }catch(e){ R.status='offline'; }
     ping();
   }

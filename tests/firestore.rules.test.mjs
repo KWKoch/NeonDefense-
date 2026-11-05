@@ -1,12 +1,12 @@
 import fs from 'fs';
 /* Needs the Firestore emulator and two npm packages. Locally without them this test reports SKIP and passes; CI (.github/workflows/rules.yml) installs them and runs it for real:
    npm i --no-save @firebase/rules-unit-testing firebase && npx firebase-tools emulators:exec --only firestore --project demo-nd "node tests/firestore.rules.test.mjs" */
-let initializeTestEnvironment,assertSucceeds,assertFails,doc,setDoc,getDoc,updateDoc;
-try{ ({initializeTestEnvironment,assertSucceeds,assertFails}=await import('@firebase/rules-unit-testing')); ({doc,setDoc,getDoc,updateDoc}=await import('firebase/firestore')); }
+let initializeTestEnvironment,assertSucceeds,assertFails,doc,setDoc,getDoc,updateDoc,serverTimestamp,Timestamp;
+try{ ({initializeTestEnvironment,assertSucceeds,assertFails}=await import('@firebase/rules-unit-testing')); ({doc,setDoc,getDoc,updateDoc,serverTimestamp,Timestamp}=await import('firebase/firestore')); }
 catch(e){ console.log('SKIP firestore rules: test packages not installed ('+e.code+'). Run it in CI or after the npm i line above.'); process.exit(0); }
 const env=await initializeTestEnvironment({projectId:'demo-nd',firestore:{rules:fs.readFileSync(new URL('../firestore.rules',import.meta.url),'utf8'),host:'127.0.0.1',port:8080}});
 const a=env.authenticatedContext('alice').firestore(), b=env.authenticatedContext('bob').firestore(), anon=env.unauthenticatedContext().firestore();
-const ok={data:'{"prog":{}}',score:12,updated:Date.now()};
+const ok={data:'{"prog":{}}',score:12,updated:Date.now(),gems:0,gt:serverTimestamp()};
 const T=[
 ['owner write save',assertSucceeds(setDoc(doc(a,'users/alice'),ok))],
 ['owner read',assertSucceeds(getDoc(doc(a,'users/alice')))],
@@ -22,6 +22,26 @@ const T=[
 ];
 let bad=0;
 for(const [n,p] of T){ try{await p;console.log('PASS',n)}catch(e){ bad++; console.log('FAIL',n,e.message)} }
+/* gem cap: rises at most 1 gem per second since the last increase (max 300 per write); falls freely */
+const seed=async(gems,agoSec)=>env.withSecurityRulesDisabled(async c=>setDoc(doc(c.firestore(),'users/carol'),{data:'{}',score:0,updated:1,gems,gt:Timestamp.fromMillis(Date.now()-agoSec*1000)}));
+const c=env.authenticatedContext('carol').firestore(), cd=doc(c,'users/carol');
+const save=(gems,gt)=>setDoc(cd,{data:'{}',score:0,updated:2,gems,gt});
+const getGt=async()=>{ let gt; await env.withSecurityRulesDisabled(async x=>{ gt=(await getDoc(doc(x.firestore(),'users/carol'))).data().gt; }); return Timestamp.fromMillis(gt.toMillis()); };
+const G=[
+['new account starting at 50 gems ok',async()=>{ await env.withSecurityRulesDisabled(async x=>{ const {deleteDoc}=await import('firebase/firestore'); await deleteDoc(doc(x.firestore(),'users/carol')); }); await assertSucceeds(save(50,serverTimestamp())); }],
+['new account starting at 51 gems denied',async()=>{ await env.withSecurityRulesDisabled(async x=>{ const {deleteDoc}=await import('firebase/firestore'); await deleteDoc(doc(x.firestore(),'users/carol')); }); await assertFails(save(51,serverTimestamp())); }],
+['+50 gems after 60s ok',async()=>{ await seed(100,60); await assertSucceeds(save(150,serverTimestamp())); }],
+['+100 gems after 60s denied',async()=>{ await seed(100,60); await assertFails(save(200,serverTimestamp())); }],
+['+300 gems after an hour ok',async()=>{ await seed(100,3600); await assertSucceeds(save(400,serverTimestamp())); }],
+['+301 gems after an hour denied',async()=>{ await seed(100,3600); await assertFails(save(401,serverTimestamp())); }],
+['increase without fresh server time denied',async()=>{ await seed(100,3600); const gt=await getGt(); await assertFails(save(110,gt)); }],
+['spending gems keeps gt, ok',async()=>{ await seed(500,5); const gt=await getGt(); await assertSucceeds(save(10,gt)); }],
+['spending gems but resetting gt denied',async()=>{ await seed(500,5); await assertFails(save(10,serverTimestamp())); }],
+['missing gems field denied',async()=>{ await seed(100,60); await assertFails(setDoc(cd,{data:'{}',score:0,updated:3})); }],
+['negative gems denied',async()=>{ await seed(100,60); const gt=await getGt(); await assertFails(save(-5,gt)); }],
+['other player cannot write my gems',async()=>{ await seed(100,3600); await assertFails(setDoc(doc(b,'users/carol'),{data:'{}',score:0,updated:2,gems:150,gt:serverTimestamp()})); }],
+];
+for(const [n,f] of G){ try{await f();console.log('PASS',n)}catch(e){ bad++; console.log('FAIL',n,e.message)} }
 const lb=doc(a,'leaderboards/w1/scores/alice');
 const L=[['lb create',()=>assertSucceeds(setDoc(lb,{name:'A',score:100,wave:3,ts:1}))],
 ['lb increase',()=>assertSucceeds(setDoc(lb,{name:'A',score:200,wave:4,ts:2}))],
