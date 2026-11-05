@@ -15,13 +15,14 @@
 :root{
   --bg:#000; --fg:#e8f7ff; --dim:#7b93a1; --line:#17313b; --panel:#050a0d;
   --cyan:#00f0ff; --magenta:#ff2bd6; --lime:#b6ff00; --violet:#9d4dff; --orange:#ff8a00; --yellow:#fff200; --red:#ff3860;
-  --display:'Monoton',system-ui,sans-serif; --ui:'Chakra Petch',system-ui,sans-serif;
+  --display:'Chakra Petch',system-ui,sans-serif; --logo:'Monoton',system-ui,sans-serif; --ui:'Chakra Petch',system-ui,sans-serif;
+  --gemc:#b07cff;   /* gems (premium) are violet everywhere; crystals wear their type colour */
   color-scheme:dark;
 }
 html,body{height:100%}
 body{
   margin:0; box-sizing:border-box; background:var(--bg); color:var(--fg); font-family:var(--ui); font-size:14px;
-  padding-block:8px;
+  padding-top:max(8px,env(safe-area-inset-top,0px)); padding-bottom:max(8px,env(safe-area-inset-bottom,0px));
   padding-left:max(16px,env(safe-area-inset-left,0px));
   padding-right:max(16px,env(safe-area-inset-right,0px));
   overscroll-behavior:none; -webkit-user-select:none; user-select:none;
@@ -44,9 +45,12 @@ button{font-family:inherit}
 .bar.low{border-color:var(--red); box-shadow:0 0 8px rgba(255,56,96,.4)}
 .bar.low #hpFill{background:var(--red); box-shadow:0 0 8px var(--red)}
 
-#stage{flex:1 1 0; min-height:0; display:flex; align-items:flex-start; justify-content:center; overflow:hidden}
+#stage{flex:1 1 0; min-height:0; display:flex; align-items:flex-end; justify-content:center; overflow:hidden}
 #play{position:relative; container-type:size; width:300px; height:400px; box-shadow:0 0 0 1px var(--line),0 0 28px rgba(157,77,255,.12); background:#000}
 #c{display:block; width:100%; height:100%; touch-action:none}
+/* glow pass: a quarter-size copy of the field, blurred and screened back over it */
+#bloom{position:absolute; left:0; top:0; width:100%; height:100%; pointer-events:none; mix-blend-mode:screen; filter:blur(5px) contrast(1.5) brightness(.9); opacity:.7}
+#bloom.off{display:none}
 
 @media (max-width:480px){ #hint{display:none} #row1{gap:6px; flex-wrap:wrap; justify-content:space-between} #row1 .seg button{padding-left:10px;padding-right:10px} #row1 .mini{padding-left:7px;padding-right:7px;font-size:11px} }
 .pickgrid{display:grid; gap:10px}
@@ -97,7 +101,7 @@ button{font-family:inherit}
 #overlay{position:absolute; z-index:8; inset:0; background:rgba(0,0,0,.84); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; padding:16px; box-sizing:border-box; text-align:center; overflow:auto}
 #introov{position:absolute; inset:0; background:rgba(0,0,0,.84); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; padding:16px; box-sizing:border-box; text-align:center; overflow:auto}
 #overlay h1{margin:0; font-family:var(--display); font-weight:400; font-size:clamp(26px,12cqw,58px); line-height:1.05; color:var(--cyan); text-shadow:0 0 10px var(--cyan),0 0 34px var(--magenta); text-wrap:balance}
-#introov h1{margin:0; font-family:var(--display); font-weight:400; font-size:clamp(26px,12cqw,58px); line-height:1.05; color:var(--cyan); text-shadow:0 0 10px var(--cyan),0 0 34px var(--magenta); text-wrap:balance}
+#introov h1{margin:0; font-family:var(--logo); font-weight:400; font-size:clamp(26px,12cqw,58px); line-height:1.05; color:var(--cyan); text-shadow:0 0 10px var(--cyan),0 0 34px var(--magenta); text-wrap:balance}
 #overlay .sub{margin:0; max-width:34ch; line-height:1.45}
 #introov .sub{margin:0; max-width:34ch; line-height:1.45}
 .rows{display:grid; gap:4px; width:min(280px,100%); font-variant-numeric:tabular-nums}
@@ -355,7 +359,6 @@ canvas.tprev.dim{filter:saturate(.35) brightness(.7)}
 .sp{flex:1}
 .dly{display:flex; gap:8px}
 .dly .btn{flex:1}
-.gt{display:inline-flex; align-items:center; gap:2px; margin-right:5px}
 .pill{display:inline-flex; align-items:center; gap:6px; padding:6px 12px; border-radius:999px; background:#04101a; border:1px solid rgba(0,240,255,.35); font-weight:700; font-size:14px; font-variant-numeric:tabular-nums; box-shadow:inset 0 0 12px rgba(0,240,255,.10); color:var(--fg)}
 .pill small{font-size:10px; color:var(--dim); font-weight:600}
 #enBox{color:var(--yellow); border-color:rgba(255,242,0,.45)}
@@ -419,10 +422,31 @@ canvas.tprev.dim{filter:saturate(.35) brightness(.7)}
 #cpack h3{margin:0; font-family:var(--display); font-weight:400; font-size:26px; color:var(--c)}
 #cpack p{margin:0; font-size:14px; line-height:1.5}
 #cpack .cpres{font-weight:700; letter-spacing:.08em; color:var(--yellow)}
+#app.vin,#armory.vin{animation:vin .34s ease-out}
+@keyframes vin{0%{opacity:0; filter:brightness(2.2) saturate(1.4)}100%{opacity:1; filter:none}}
+#vwipe{position:fixed; left:0; right:0; top:0; height:2px; z-index:96; pointer-events:none; background:#aefbff; box-shadow:0 0 14px 3px #00f0ff,0 0 40px 8px rgba(255,43,214,.45); animation:vwipe .42s cubic-bezier(.3,.7,.4,1) forwards}
+@keyframes vwipe{0%{transform:translateY(0); opacity:1}85%{opacity:1}100%{transform:translateY(100vh); opacity:0}}
+#armory .content.cin{animation:cin2 .2s ease-out}
+@keyframes cin2{from{opacity:0; transform:translateY(6px)}to{opacity:1; transform:none}}
+@media (prefers-reduced-motion:reduce){ #app.vin,#armory.vin,#armory .content.cin{animation:none} #vwipe{display:none} }
 #coach{position:fixed; inset:0; z-index:70}
 #coach.flat{background:rgba(0,0,0,.78)}
-#coach .chole{position:fixed; border-radius:10px; border:2px solid var(--cyan); box-shadow:0 0 0 100vmax rgba(0,0,0,.78),0 0 18px var(--cyan); pointer-events:none; transition:all .2s}
-#coach .ccard{position:fixed; box-sizing:border-box; padding:14px; background:#0a0f1a; border:1px solid var(--cyan); box-shadow:0 0 24px rgba(0,240,255,.25); display:flex; flex-direction:column; gap:8px}
+#coach .chole{position:fixed; border-radius:12px; border:2px solid var(--cyan); box-shadow:0 0 0 100vmax rgba(0,0,0,.78),0 0 18px var(--cyan),inset 0 0 12px rgba(0,240,255,.35); pointer-events:none; transition:all .2s; animation:cpulse 1.4s ease-in-out infinite}
+@keyframes cpulse{50%{border-color:#aefbff; box-shadow:0 0 0 100vmax rgba(0,0,0,.78),0 0 30px var(--cyan),inset 0 0 18px rgba(0,240,255,.5)}}
+#coach .ccard{position:fixed; box-sizing:border-box; padding:16px; background:#05070c; border:1px solid var(--cyan); border-radius:18px; box-shadow:0 0 26px rgba(0,240,255,.45),inset 0 0 18px rgba(0,240,255,.08); display:flex; flex-direction:column; gap:8px; animation:cin .22s ease-out}
+@keyframes cin{from{opacity:0; transform:translateY(8px) scale(.97)}to{opacity:1; transform:none}}
+#coach.act,#coach.live{pointer-events:none}
+#coach.act .ccard{pointer-events:auto}
+#coach.live .ccard{pointer-events:none; padding:10px 12px; gap:4px; background:rgba(5,7,12,.86); border-radius:14px}
+#coach.live .ccard .btn{pointer-events:auto; padding:5px 12px; font-size:12px}
+#coach.live h3{font-size:16px}
+#coach.live p{font-size:13px; line-height:1.35}
+#coach.live .chole{box-shadow:0 0 18px var(--cyan),inset 0 0 12px rgba(0,240,255,.35); animation:cpulsel 1s ease-in-out infinite}
+@keyframes cpulsel{50%{border-color:#fff; box-shadow:0 0 34px var(--cyan),inset 0 0 18px rgba(0,240,255,.6)}}
+#coach.away{visibility:hidden}
+#coach .cbar{display:block; height:3px; border-radius:2px; background:rgba(0,240,255,.15); overflow:hidden}
+#coach .cbar i{display:block; height:100%; width:0; background:var(--cyan); box-shadow:0 0 8px var(--cyan); transition:width .2s linear}
+@media (prefers-reduced-motion:reduce){ #coach .chole,#coach .ccard{animation:none} }
 #coach .cdemo,.tcard .cdemo{display:block; width:100%; height:auto; border:1px solid color-mix(in srgb,var(--cyan) 35%,transparent); border-radius:10px; background:#04070d}
 .tcard .cdemo{margin:6px 0 4px}
 #coach .ck{font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--dim)}
@@ -456,13 +480,16 @@ canvas.tprev.dim{filter:saturate(.35) brightness(.7)}
 #teachov .tx{background:rgba(255,56,96,.1); border:1px solid rgba(255,56,96,.4)}
 #teachov button{margin-top:6px; min-width:180px}
 #teachov button:disabled{opacity:.55}
-#gate{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:24px;background:#05030c;color:var(--fg);text-align:center}
+#gate{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:max(24px,env(safe-area-inset-top,0px)) 24px max(24px,env(safe-area-inset-bottom,0px));background:#05030c;color:var(--fg);text-align:center;overflow:hidden}
+#gate>*{position:relative;z-index:1}
+#gate>#gateFx{position:absolute;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
+#gate::after{content:'';position:absolute;inset:0;z-index:0;pointer-events:none;background:radial-gradient(60% 40% at 50% 42%,rgba(5,3,12,.78),rgba(5,3,12,0) 70%)}
 #gate[hidden]{display:none}
-#gate h1{margin:0;font-family:var(--display);font-weight:400;font-size:clamp(34px,10vw,56px);color:var(--cyan);text-shadow:0 0 10px var(--cyan),0 0 30px var(--magenta)}
+#gate h1{margin:0;font-family:var(--logo);font-weight:400;font-size:clamp(34px,10vw,56px);color:var(--cyan);text-shadow:0 0 10px var(--cyan),0 0 30px var(--magenta)}
 #gate .gmsg{min-height:1.4em;max-width:320px;opacity:.85}
 #gate .gerr{color:var(--red)}
 
-.toast{position:fixed;left:50%;bottom:92px;transform:translate(-50%,20px);background:#06141f;border:1px solid #7df9ff;color:#e6fbff;padding:10px 16px;border-radius:12px;font-weight:700;font-size:14px;z-index:60;opacity:0;pointer-events:none;transition:.25s;max-width:90vw;text-align:center}
+.toast{position:fixed;left:50%;bottom:92px;transform:translate(-50%,20px);background:#0a1117;border:1px solid var(--line);border-left:3px solid var(--fg);color:#e6fbff;padding:10px 16px;border-radius:8px;font-weight:700;font-size:14px;z-index:60;opacity:0;pointer-events:none;transition:.25s;max-width:90vw;text-align:center}
 .toast.on{opacity:1;transform:translate(-50%,0)}
 
 /* achievements + record */
@@ -675,7 +702,7 @@ body.menu{background:
 .atile .an{flex:1 1 0; min-width:0; font-size:13px; line-height:1.15; color:var(--fg)}
 .atile .ad{font-size:11px; color:var(--dim); line-height:1.2}
 .atile .ap{display:flex; justify-content:space-between; align-items:center; gap:6px; font-size:10px; color:var(--dim)}
-.atile .rw{display:inline-flex; align-items:center; gap:2px; color:#7df9ff; white-space:nowrap}
+.atile .rw{display:inline-flex; align-items:center; gap:2px; color:var(--gemc); white-space:nowrap}
 .atile.got .an{color:var(--c)}
 .atile .rtag{font-size:8px; padding:1px 5px}
 .mast{margin:0 0 8px; padding:8px 10px; border:1px solid var(--line); border-radius:16px; background:var(--panel)}
@@ -769,8 +796,89 @@ body.menu{background:
   .wpn .ic{display:none}
   .wpn{letter-spacing:.01em; padding:8px 2px; gap:3px; font-size:10.5px}
 }
+
+/* ---- currency cleanup (build 105): calm headings, one crystal per type, violet gems ---- */
+#banner,#overlay h1,.ahead h1,.lvlpick .n,.ttl h1,#coach h3,.ch2,#cpack h3{font-weight:700; letter-spacing:.06em; text-transform:uppercase}
+#overlay h1,.ahead h1{text-shadow:0 0 14px color-mix(in srgb,var(--cyan) 35%,transparent)}
+#banner{text-shadow:0 0 14px color-mix(in srgb,var(--cyan) 40%,transparent)}
+.ch2{text-shadow:none}
+.cr b{color:var(--fg); text-shadow:none}
+.crys{display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:4px; margin:6px 0 8px}
+.cy{display:flex; flex-direction:column; align-items:center; gap:1px; padding:5px 2px 4px; border:1px solid color-mix(in srgb,var(--c) 40%,#000); border-radius:10px; background:color-mix(in srgb,var(--c) 7%,#000); color:var(--c); min-width:0}
+.cy b{font-size:14px; line-height:1.1; color:var(--fg); font-variant-numeric:tabular-nums}
+.cy small{font-size:9px; letter-spacing:.06em; text-transform:uppercase; color:var(--dim); max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.dcard{width:auto; height:auto; min-width:64px; border-radius:10px; padding:7px 10px; gap:2px; box-shadow:none; border-color:color-mix(in srgb,var(--g) 55%,#000)}
+.dcard i{color:var(--dim); letter-spacing:.06em}
+.ulv{height:2px; margin:0 12px 6px; background:var(--line); border-radius:2px; overflow:hidden}
+.ulv i{display:block; height:100%; background:var(--c)}
+.cost{display:inline-flex; align-items:center; gap:2px; margin-left:6px; font-variant-numeric:tabular-nums}
+.tcost .cost:first-child{margin-left:0}
+.btn.cbuy{display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap}
+.btn.cbuy small{display:inline-flex; flex-wrap:wrap}
+.tbar{display:grid; grid-template-columns:auto 1fr; align-items:baseline; gap:2px 10px; margin:0 0 8px}
+.tbar .lbl{font-size:10px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--dim)}
+.tbar .tbv{font-size:12px; color:var(--dim); text-align:right}
+.tbar .tbv b{color:var(--fg); font-size:14px}
+.tbar .spbar{grid-column:1/-1; margin:2px 0 0}
+.ptseg{display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:4px; margin:8px 0}
+.ptseg button{font:inherit; display:flex; flex-direction:column; align-items:center; gap:2px; padding:6px 2px; font-size:10px; font-weight:700; letter-spacing:.04em; color:var(--c); background:#000; border:1px solid color-mix(in srgb,var(--c) 35%,#000); border-radius:10px; cursor:pointer; min-width:0}
+.ptseg button span{max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.ptseg button[aria-pressed="true"]{background:color-mix(in srgb,var(--c) 18%,#000); border-color:var(--c); color:var(--fg)}
+.crates{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px}
+.crate{font:inherit; display:flex; flex-direction:column; align-items:center; gap:4px; padding:10px 4px; background:#000; color:var(--fg); border:1px solid color-mix(in srgb,var(--c) 45%,#000); border-radius:12px; cursor:pointer; min-width:0}
+.crate:disabled{opacity:.45; cursor:default}
+.crate .crn{font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--dim); text-align:center}
+.crate .crv{display:flex; align-items:center; gap:4px; color:var(--c)}
+.crate .crv b{font-size:20px; color:var(--fg); font-variant-numeric:tabular-nums}
+.crate .crp{font-size:12px; font-weight:700}
+.crate .crp span{display:inline-flex; align-items:center; gap:3px}
+#gainov{position:fixed; inset:0; z-index:80; background:rgba(0,0,0,.82); display:flex; align-items:center; justify-content:center; padding:16px}
+#gainov .gnp{width:min(340px,100%); box-sizing:border-box; padding:18px; background:#0a1117; border:1px solid var(--line); border-radius:14px; display:flex; flex-direction:column; align-items:center; gap:10px; text-align:center}
+#gainov .gnt{font-size:13px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--dim)}
 </style></head><body>
-<div id="gate" role="dialog" aria-modal="true" aria-label="Sign in"><h1>Neon Defense</h1><p class="gmsg" id="gateMsg">Loading…</p><div class="gbtns" id="gateBtns"></div><p class="gmsg gerr" id="gateErr"></p><p class="gmsg"><a href="https://kwkoch.github.io/privacy.html" target="_blank" rel="noopener" style="color:var(--cyan)">Privacy Policy</a></p></div>
+<div id="gate" role="dialog" aria-modal="true" aria-label="Sign in"><canvas id="gateFx" aria-hidden="true"></canvas><h1>Neon Defense</h1><p class="gmsg" id="gateMsg">Loading…</p><div class="gbtns" id="gateBtns"></div><p class="gmsg gerr" id="gateErr"></p><p class="gmsg"><a href="https://kwkoch.github.io/privacy.html" target="_blank" rel="noopener" style="color:var(--cyan)">Privacy Policy</a></p></div>
+
+<script>
+/* title screen backdrop: a neon horizon grid, drifting stars and raider shapes that a turret picks off. Runs only while the sign-in screen shows. */
+(function(){
+  var gate=document.getElementById('gate'), cv=document.getElementById('gateFx'); if(!gate||!cv||!cv.getContext) return;
+  var g=cv.getContext('2d'), W=0, H=0, D=1, raf=0, t0=0, last=0, still=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var COL=['#ff2bd6','#b6ff00','#9d4dff','#ff8a00'], stars=[], mobs=[], shots=[], booms=[], fireT=0.8;
+  function size(){ var r=gate.getBoundingClientRect(); D=Math.min(window.devicePixelRatio||1,2); W=Math.max(1,r.width); H=Math.max(1,r.height); cv.width=Math.round(W*D); cv.height=Math.round(H*D); }
+  function seed(){ stars=[]; for(var i=0;i<90;i++) stars.push({x:Math.random(),y:Math.random()*0.62,r:Math.random()*1.4+0.3,p:Math.random()*6}); mobs=[]; for(var j=0;j<6;j++) mobs.push(mob(Math.random()*0.5)); }
+  function mob(y){ return {x:0.1+Math.random()*0.8,y:y==null?-0.05:y,v:0.025+Math.random()*0.03,s:7+Math.random()*7,c:COL[(Math.random()*COL.length)|0],r:Math.random()*6,k:(Math.random()*3)|0}; }
+  function shape(x,y,s,c,r,k){ g.save(); g.translate(x,y); g.rotate(r); g.strokeStyle=c; g.shadowColor=c; g.shadowBlur=12; g.lineWidth=1.8; g.beginPath();
+    var n=k===0?3:k===1?4:6; for(var i=0;i<=n;i++){ var a=i/n*6.2832-1.5708; if(i) g.lineTo(Math.cos(a)*s,Math.sin(a)*s); else g.moveTo(Math.cos(a)*s,Math.sin(a)*s); } g.stroke(); g.restore(); }
+  function draw(now){
+    var t=(now-t0)/1000, dt=Math.min(0.05,(now-last)/1000||0); last=now;
+    g.setTransform(D,0,0,D,0,0); g.fillStyle='#05030c'; g.fillRect(0,0,W,H);
+    var hz=H*0.64, cx=W/2;
+    var sky=g.createLinearGradient(0,0,0,hz); sky.addColorStop(0,'rgba(157,77,255,0)'); sky.addColorStop(1,'rgba(255,43,214,.16)'); g.fillStyle=sky; g.fillRect(0,0,W,hz);
+    for(var i=0;i<stars.length;i++){ var st=stars[i]; g.fillStyle='rgba(170,215,255,'+(0.25+0.35*Math.sin(t*1.5+st.p))+')'; g.beginPath(); g.arc(st.x*W,st.y*H,st.r,0,6.2832); g.fill(); }
+    /* horizon grid scrolling toward the viewer */
+    g.save(); g.shadowColor='#ff2bd6'; g.shadowBlur=8; g.lineWidth=1.2;
+    g.strokeStyle='rgba(255,43,214,.75)'; g.beginPath(); g.moveTo(0,hz); g.lineTo(W,hz); g.stroke();
+    var off=(t*0.35)%1; for(var r=0;r<14;r++){ var q=(r+off)/14, y=hz+(H-hz)*q*q; g.strokeStyle='rgba(255,43,214,'+(0.12+0.55*q)+')'; g.beginPath(); g.moveTo(0,y); g.lineTo(W,y); g.stroke(); }
+    g.strokeStyle='rgba(0,240,255,.35)'; g.shadowColor='#00f0ff'; for(var v=-12;v<=12;v++){ g.beginPath(); g.moveTo(cx+v*W*0.02,hz); g.lineTo(cx+v*W*0.16,H); g.stroke(); }
+    g.restore();
+    /* raiders drift down; a turret at the horizon picks them off */
+    var tx=cx, ty=hz-4; fireT-=dt;
+    for(var m=0;m<mobs.length;m++){ var o=mobs[m]; if(!still){ o.y+=o.v*dt; o.r+=dt*0.8; } if(o.y>0.58) mobs[m]=mob(); shape(o.x*W,o.y*H,o.s,o.c,o.r,o.k); }
+    if(!still&&fireT<=0&&mobs.length){ var best=null; for(var b=0;b<mobs.length;b++) if(mobs[b].y>0.08&&(!best||mobs[b].y>best.y)) best=mobs[b];
+      if(best){ shots.push({x0:tx,y0:ty,x1:best.x*W,y1:best.y*H,l:0.18,c:best.c}); booms.push({x:best.x*W,y:best.y*H,l:0.6,c:best.c}); mobs[mobs.indexOf(best)]=mob(); } fireT=0.7+Math.random()*0.9; }
+    g.save(); g.globalCompositeOperation='lighter';
+    for(var s2=shots.length-1;s2>=0;s2--){ var sh=shots[s2]; sh.l-=dt; if(sh.l<=0){ shots.splice(s2,1); continue; } g.strokeStyle='rgba(174,248,255,'+(sh.l/0.18)+')'; g.shadowColor='#00f0ff'; g.shadowBlur=14; g.lineWidth=2.2; g.beginPath(); g.moveTo(sh.x0,sh.y0); g.lineTo(sh.x1,sh.y1); g.stroke(); }
+    for(var k2=booms.length-1;k2>=0;k2--){ var bo=booms[k2]; bo.l-=dt; if(bo.l<=0){ booms.splice(k2,1); continue; } var f=1-bo.l/0.6; g.strokeStyle=bo.c; g.shadowColor=bo.c; g.shadowBlur=16; g.globalAlpha=1-f; g.lineWidth=2; g.beginPath(); g.arc(bo.x,bo.y,4+f*34,0,6.2832); g.stroke(); g.beginPath(); g.arc(bo.x,bo.y,2+f*16,0,6.2832); g.stroke(); g.globalAlpha=1; }
+    g.restore();
+    g.save(); g.strokeStyle='#00f0ff'; g.shadowColor='#00f0ff'; g.shadowBlur=12; g.lineWidth=2; g.beginPath(); g.arc(tx,ty+4,12,Math.PI,0); g.stroke(); g.restore();
+    if(!still&&!gate.hidden) raf=requestAnimationFrame(draw); else raf=0;
+  }
+  function start(){ if(gate.hidden||raf) return; size(); t0=last=performance.now(); raf=requestAnimationFrame(draw); }
+  seed(); start();
+  window.addEventListener('resize',function(){ if(!gate.hidden) size(); });
+  if(window.MutationObserver) new MutationObserver(start).observe(gate,{attributes:true,attributeFilter:['hidden']});
+})();
+</script>
 
 <div id="app" hidden>
   <header id="hud">
@@ -783,6 +891,7 @@ body.menu{background:
   <main id="stage">
     <div id="play">
       <canvas id="c" aria-label="Neon Defense play field"></canvas>
+      <canvas id="bloom" aria-hidden="true"></canvas>
       <div id="banner" aria-live="polite"></div>
       <div id="overlay" hidden></div>
       <div id="mflash" aria-hidden="true"></div>
@@ -995,7 +1104,7 @@ const UPS=[
 ];
 const CT={pow:{name:'Power',color:'#ff3860'},tmp:{name:'Tempo',color:'#00f0ff'},rch:{name:'Reach',color:'#b6ff00'},cap:{name:'Capacity',color:'#ffc400'},frt:{name:'Fortify',color:'#6dffb0'}};
 const CTYPES=['pow','tmp','rch','cap','frt'], CW={pow:42,tmp:24,rch:13,cap:13,frt:8};
-const RAR=[{name:'Common',ab:'Com',color:'#b8c4cc'},{name:'Rare',ab:'Rare',color:'#3d8bff'},{name:'Epic',ab:'Epic',color:'#ff2bd6'},{name:'Legendary',ab:'Leg',color:'#fff200'}];
+const RAR=[{name:'Mk I',ab:'I',color:'#9fb2be'},{name:'Mk II',ab:'II',color:'#4fa3ff'},{name:'Mk III',ab:'III',color:'#ff8a3d'},{name:'Mk IV',ab:'IV',color:'#f5d36b'}];
 const TOOLS={
   mine:{name:'Mine layer',color:'#aeb8bf',cost:150,kind:'b',desc:'Drop proximity mines on the field. They detonate when an enemy gets close and hurt everything in the blast.'},
   field:{name:'Slow field',color:C.violet,cost:300,kind:'e',desc:'Lay a horizontal energy bar. Anything inside it slows down and takes energy damage over time.'}
@@ -1070,30 +1179,41 @@ const PKEYS=[...new Set(UPS.map(u=>u.k))], PWN={}; TABS.forEach(t=>{ PWN[t.id]=t
 const kW=k=>String(k).split('.')[0], kT=k=>String(k).split('.')[1];
 const kName=k=>(PWN[kW(k)]||'')+' '+((CT[kT(k)]||{}).name||'');
 const kOk=k=>PKEYS.indexOf(k)>=0;
-const newInv=()=>{ const o={}; PKEYS.forEach(k=>{ o[k]=[0,0,0,0]; }); return o; }, newFrag=()=>{ const o={}; PKEYS.forEach(k=>{ o[k]=0; }); return o; };
-/* Shards are a ledger: fe = every shard ever earned, fs = every shard ever spent, balance = fe - fs. Both only grow, so a merge with an older copy (max of each) can never hand spent shards back. */
-const fragAdd=(k,n)=>{ P.frag=P.frag||{}; P.fe=P.fe||{}; P.fe[k]=(P.fe[k]||0)+n; P.frag[k]=Math.max(0,(P.fe[k]||0)-((P.fs||{})[k]||0)); };
-const fragSpend=(k,n)=>{ P.fs=P.fs||{}; P.fs[k]=(P.fs[k]||0)+n; P.frag[k]=Math.max(0,((P.fe||{})[k]||0)-P.fs[k]); };
+/* ---- crystals: the one upgrade currency. Five types (Power, Tempo, Reach, Capacity, Fortify), shared by every weapon and by commanders.
+   A ledger per type: ce = every crystal ever earned, cs = every crystal ever spent, balance = ce - cs. Both only grow, so a merge with an
+   older copy (max of each) can never hand spent crystals back. ---- */
+const CVAL=[1,4,12,40];      /* crystals paid by one level drop of each luck tier (the old Common, Rare, Epic, Legendary) */
+const CVM=[1,4,12.5,40];     /* one-time save conversion: an old crystal of each rarity is worth this many new ones (forge value); 4 shards = 1 */
+const newCry=()=>({pow:0,tmp:0,rch:0,cap:0,frt:0});
+const cryT=k=>{ k=String(k); return k.indexOf('.')>=0?k.split('.')[1]:k; };
+const cry=t=>Math.max(0,Math.floor(((P.ce||{})[t]||0)-((P.cs||{})[t]||0)));
+const cryAll=()=>CTYPES.reduce((a,t)=>a+cry(t),0);
+function cryAdd(t,n){ t=cryT(t); n=Math.floor(+n||0); if(n<=0||!CT[t]) return 0; P.ce=P.ce||newCry(); P.ce[t]=(P.ce[t]||0)+n; return n; }
+function crySpend(t,n){ t=cryT(t); n=Math.min(cry(t),Math.floor(+n||0)); if(n<=0) return 0; P.cs=P.cs||newCry(); P.cs[t]=(P.cs[t]||0)+n; return n; }
+function cryAddMap(m){ for(const t in (m||{})) cryAdd(t,m[t]); }
+const cryHave=m=>{ for(const t in (m||{})) if(cry(t)<m[t]) return false; return true; };
 function splitN(n,w){ const s=w.reduce((a,b)=>a+b,0)||1, q=w.map(x=>n*x/s), r=q.map(Math.floor); let rest=n-r.reduce((a,b)=>a+b,0); q.map((x,i)=>[x-r[i],i]).sort((a,b)=>b[0]-a[0]).forEach(z=>{ if(rest>0){ r[z[1]]++; rest--; } }); return r; }
-function loadPools(o){
-  const inv=o.inv&&typeof o.inv==='object'?o.inv:{}, fr=o.frag&&typeof o.frag==='object'?o.frag:{};
-  PKEYS.forEach(k=>{ if(Array.isArray(inv[k])) for(let i=0;i<4;i++) P.inv[k][i]=Math.max(0,Math.floor(+inv[k][i]||0)); P.frag[k]=Math.max(0,Math.floor(+fr[k]||0)); });
-  /* older saves held one shared pile per specialty: split each pile across the weapons that use it, favouring the weapons the player has levelled */
-  CTYPES.forEach(t=>{
-    const a=Array.isArray(inv[t])?inv[t]:null, f=Math.floor(+fr[t]||0); if(!a&&f<=0) return;
-    const ks=PKEYS.filter(k=>kT(k)===t), w=ks.map(k=>1+(kW(k)==='turret'?2:0)+UPS.filter(u=>u.tab===kW(k)).reduce((q,u)=>q+(P.lv[u.id]||0),0));
-    if(a) for(let i=0;i<4;i++){ const n=Math.max(0,Math.floor(+a[i]||0)); if(n) splitN(n,w).forEach((v,j)=>{ P.inv[ks[j]][i]+=v; }); }
-    if(f>0) splitN(f,w).forEach((v,j)=>{ P.frag[ks[j]]+=v; });
-  });
-  const fe=o.fe&&typeof o.fe==='object'?o.fe:null, fs=o.fs&&typeof o.fs==='object'?o.fs:{};
-  PKEYS.forEach(k=>{ if(fe){ P.fe[k]=Math.max(0,Math.floor(+fe[k]||0)); P.fs[k]=Math.max(0,Math.floor(+fs[k]||0)); P.frag[k]=Math.max(0,P.fe[k]-P.fs[k]); } else { P.fe[k]=P.frag[k]; P.fs[k]=0; } });
+/* Older saves kept 100 piles (25 weapon specialties x 4 rarities) plus forge shards. They fold into the five types at forge value. */
+function cryLegacy(o){
+  const r=newCry(), add=(k,v)=>{ const t=cryT(k); if(CT[t]&&v>0) r[t]+=v; };
+  const inv=o&&o.inv&&typeof o.inv==='object'?o.inv:{};
+  for(const k in inv) if(Array.isArray(inv[k])) for(let i=0;i<4;i++) add(k,Math.max(0,+inv[k][i]||0)*CVM[i]);
+  const fe=o&&o.fe&&typeof o.fe==='object'?o.fe:null, fs=o&&o.fs&&typeof o.fs==='object'?o.fs:{}, fr=o&&o.frag&&typeof o.frag==='object'?o.frag:{};
+  new Set(Object.keys(fe||{}).concat(Object.keys(fr))).forEach(k=>{ add(k,(fe?Math.max(0,(+fe[k]||0)-(+fs[k]||0)):Math.max(0,+fr[k]||0))/4); });
+  CTYPES.forEach(t=>{ r[t]=Math.ceil(r[t]-1e-9); });
+  return r;
+}
+function loadCry(o){
+  P.ce=newCry(); P.cs=newCry();
+  if(o.ce&&typeof o.ce==='object'){ const cs=o.cs&&typeof o.cs==='object'?o.cs:{}; CTYPES.forEach(t=>{ P.ce[t]=Math.max(0,Math.floor(+o.ce[t]||0)); P.cs[t]=Math.min(P.ce[t],Math.max(0,Math.floor(+cs[t]||0))); }); }
+  else { const r=cryLegacy(o); CTYPES.forEach(t=>{ P.ce[t]=r[t]; }); }
 }
 const newPW=()=>({best:0,sel:1,perf:{},eclr:{},stars:{}});
 /* Combat record + achievements. enc/kill/leak are per mob type; w[weapon][mob]=[engaged,defeated,killingBlows,resistedEngaged,resistedDefeated,resistedKillingBlows]; world[id][mob]=1 once met there; ach[id]=unlock time. */
 const newSt=()=>({v:1,enc:{},kill:{},leak:{},rz:{},hold:{},w:{},world:{},ach:{},pw:{}});
 function pw(o){ return o.prog[o.world]||(o.prog[o.world]=newPW()); }
 const newP=()=>{
-  const o={inv:newInv(),lv:{},cm:{},gems:0,pass:0,starter:0,chestDay:'',passDay:'',adDay:'',adN:0,ledger:[],world:'belt',own:{belt:true},prog:{},seen:{},st:newSt(),frag:newFrag(),fe:newFrag(),fs:newFrag(),pk:{s:0,m:0,l:0,f:0},intro:0,en:EN_MAX,enV:2,enT:Date.now(),tester:0,tw:0,prem:{},ss:null};
+  const o={ce:newCry(),cs:newCry(),lv:{},cm:{},gems:0,pass:0,starter:0,chestDay:'',passDay:'',adDay:'',adN:0,ledger:[],world:'belt',own:{belt:true},prog:{},seen:{},st:newSt(),pk:{s:0,m:0,l:0,f:0},intro:0,en:EN_MAX,enV:2,enT:Date.now(),tester:0,tw:0,prem:{},ss:null};
   Object.defineProperty(o,'best',{get(){ return pw(o).best; },set(v){ pw(o).best=v; },enumerable:false});
   Object.defineProperty(o,'sel',{get(){ return pw(o).sel; },set(v){ pw(o).sel=v; },enumerable:false});
   return o;
@@ -1133,6 +1253,7 @@ function vaultHeal(){
   }
 }
 const BAKK='nd-backup-v1';
+const OLDK={inv:1,frag:1,fe:1,fs:1};   /* the old crystal piles and shards: folded into ce/cs on load, never carried forward */
 function hydrate(s){
     const o=JSON.parse(s); P.lv=o.lv||{};
     P.en=(o.enV===2&&isFinite(+o.en))?Math.max(0,Math.min(EN_MAX,+o.en)):EN_MAX; P.enT=+o.enT||Date.now();
@@ -1143,7 +1264,7 @@ function hydrate(s){
     if(o.st&&typeof o.st==='object') P.st=Object.assign(newSt(),o.st);
     P.tester=o.tester?1:0; P.tw=o.tw?1:0; P.prem={}; if(o.prem&&typeof o.prem==='object') for(const k in o.prem) if(o.prem[k]) P.prem[k]=1;
     P.ss=(o.ss&&typeof o.ss==='object')?{n:Math.floor(+o.ss.n||0),pts:Math.max(0,Math.floor(+o.ss.pts||0)),cf:Math.floor(+o.ss.cf||0),cp:Math.floor(+o.ss.cp||0)}:null;
-    loadPools(o);
+    loadCry(o);
     if(o.pk&&typeof o.pk==='object') for(const k in P.pk) P.pk[k]=Math.max(0,Math.floor(+o.pk[k]||0));
     if(o.seen&&typeof o.seen==='object') P.seen=o.seen;
     else { /* old save: assume mobs up to the player's best level were seen */
@@ -1155,7 +1276,7 @@ function hydrate(s){
     P.epoch=+o.epoch||0;
     if(o.vault&&o.vault.items&&typeof o.vault.items==='object') P.vault={v:1,items:Object.assign({},o.vault.items)};
     /* forward compatibility: any field this build does not know about is carried through untouched, never dropped */
-    for(const k in o) if(!(k in P)) P[k]=o[k];
+    for(const k in o) if(!(k in P)&&!OLDK[k]) P[k]=o[k];
     vaultHeal();
 }
 try{
@@ -1178,6 +1299,11 @@ applySkin(P.world);
 /* TESTERS_OPEN: while true, every account that plays is marked a tester, and keeps that mark for good.
    Set it to false to stop adding new testers; anyone already marked keeps the welcome package and their free season. */
 const TESTERS_OPEN=true;
+/* TEST_BUILD: true only on the testing website (neon.squatchsquad.games) and on a local dev server with a port (the phone check).
+   Never in the store app (Capacitor serves the page from localhost with no port) or anywhere else, so a merge into production cannot carry
+   the test-only buttons (Reset progress, Demo ad) into the store build. */
+const TEST_BUILD=(()=>{ try{ if(window.Capacitor) return false; const h=location.hostname||'', p=location.port||'';
+  return h==='neon.squatchsquad.games'||((h==='localhost'||h==='127.0.0.1')&&p!==''); }catch(e){ return false; } })();
 const WELCOME={lvl:5,gems:100,pack:'m'};   /* tester welcome package: once per account, after clearing level 5 in any world. 100 gems fits the save rules' 300-per-save cap. */
 /* Seasons run back to back from Season 1 (starts Nov 4 2026, midnight Pacific), 30 days each. 30 tiers of 100 season points.
    free = seasons whose premium track a tester gets with the welcome package. */
@@ -1205,6 +1331,11 @@ const $=id=>document.getElementById(id);
 const clamp=(v,a,b)=>v<a?a:v>b?b:v;
 const rnd=(a,b)=>a+Math.random()*(b-a);
 const canvas=$('c'), ctx=canvas.getContext('2d');
+/* glow: on by default, switchable in Settings; turns itself off on a device that can't hold the frame rate */
+const bloomCv=$('bloom'), bctx=bloomCv&&bloomCv.getContext('2d');
+const GLOW={on:(()=>{ try{ return localStorage.getItem('nd-glow')!=='0'; }catch(e){ return true; } })(),k:1,n:0,sum:0,checked:false};
+function glowSet(on,keep){ GLOW.on=!!on&&!!bctx; GLOW.k=GLOW.on?0.7:1; if(bloomCv) bloomCv.classList.toggle('off',!GLOW.on); if(keep) try{ localStorage.setItem('nd-glow',on?'1':'0'); }catch(e){} }
+glowSet(GLOW.on);
 let sx=1, sy=1;
 const isBoss=n=>n%10===0;
 function mulberry(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
@@ -1514,12 +1645,13 @@ function openOrb(){
   orbOpen=true; g.setAttribute('aria-expanded','true');
   const sc=document.createElement('div'); sc.id='orbScrim'; sc.addEventListener('pointerdown',closeOrb); document.body.appendChild(sc);
   const o=document.createElement('div'); o.id='orb'; o.setAttribute('role','dialog'); o.setAttribute('aria-label','Sound settings');
-  o.innerHTML='<h2>Sound</h2>'+orbRow('m','Music','note','#ff2bd6')+orbRow('s','Sound FX','spk','#00f0ff')+'<div id="ctlwrap">'+ctlHtml()+'</div><button type="button" class="oreplay">Replay tutorials</button>'+(PLAY?'<a class="olink" href="mailto:'+PLAY_MAIL+'?subject='+encodeURIComponent('Neon Defense feedback (play 01)')+'">Send feedback</a><a class="olink" href="'+PLAY_PRIVACY+'" target="_blank" rel="noopener">Privacy policy</a>':'')+'<button type="button" class="odone">Done</button>';
+  o.innerHTML='<h2>Sound</h2>'+orbRow('m','Music','note','#ff2bd6')+orbRow('s','Sound FX','spk','#00f0ff')+'<div id="ctlwrap">'+ctlHtml()+'</div><button type="button" class="oreplay" data-glow="1">Glow: '+(GLOW.on?'On':'Off')+'</button><button type="button" class="oreplay">Replay tutorials</button>'+(PLAY?'<a class="olink" href="mailto:'+PLAY_MAIL+'?subject='+encodeURIComponent('Neon Defense feedback (play 01)')+'">Send feedback</a><a class="olink" href="'+PLAY_PRIVACY+'" target="_blank" rel="noopener">Privacy policy</a>':'')+'<button type="button" class="odone">Done</button>';
   document.body.appendChild(o);
   const r=g.getBoundingClientRect(), w=o.offsetWidth, left=Math.max(10,Math.min(innerWidth-w-10,r.right-w));
   o.style.left=left+'px'; o.style.top=(r.bottom+10)+'px'; o.style.setProperty('--ox',(r.left+r.width/2-left)+'px');
   o.addEventListener('click',e=>{
     if(e.target.closest('.odone')){ closeOrb(); return; }
+    const gb=e.target.closest('[data-glow]'); if(gb){ glowSet(!GLOW.on,true); gb.textContent='Glow: '+(GLOW.on?'On':'Off'); return; }
     if(e.target.closest('.oreplay')){ coachReplay(); return; }
     const cc=e.target.closest('[data-cw],[data-call]'); if(cc){ ctlToggle(cc); const cw=document.getElementById('ctlwrap'); if(cw) cw.innerHTML=ctlHtml(); return; }
     const t=e.target.closest('[data-tog]'); if(!t) return;
@@ -1601,7 +1733,7 @@ function grabEnd(fire){
   clearTimeout(GR.tm);
   if(fire&&GR.live){
     if(!(wReady(w)&&fireWeaponAt(w,GR.x,GR.y))) G.pin[w]={x:GR.x,y:GR.y,t:0};
-    else delete G.pin[w];
+    else { delete G.pin[w]; CF.fire++; }
     if(navigator.vibrate) try{ navigator.vibrate(12); }catch(e){}
   }
   GR.w=null; GR.live=false; toolKey='';
@@ -1715,6 +1847,7 @@ const newPwb=()=>({enc:{},kill:{},leak:{},rz:{},hold:{},w:{},mk:{}});
 const stWid=()=>(G.wd&&G.wd.id)||'belt';
 function pwOf(wid){ const s=stOf(); s.pw=s.pw||{}; return s.pw[wid]||(s.pw[wid]=newPwb()); }
 const fmtN=n=>Math.round(n).toLocaleString('en-US');
+const NKT=50;   /* resisted killing blows a mob type needs before it counts toward the variety awards */
 let achDirty=false, achLast=0, achQ=[], achEl=null, achBusy=false, ACHS=null;
 
 function stSpawn(e){
@@ -1781,11 +1914,11 @@ function agg(wid){
     for(const k in row){
       if(!MOB[k]) continue; const r=row[k]; if((r[2]|0)>a.bm[w].n) a.bm[w]={n:r[2]|0,k:k};
       for(let i=0;i<6;i++){ const v=r[i]||0; a.wt[w][i]+=v; a.wc[w][MOB[k].cls][i]+=v; }
-      if((r[5]||0)>0) types[k]=1;
+      if((r[5]||0)>0) types[k]=(types[k]||0)+(r[5]|0);
     }
     a.ne+=a.wt[w][3]; a.nd+=a.wt[w][4]; a.nk+=a.wt[w][5];
   }
-  a.nkTypes=Object.keys(types).length;
+  a.nkTypes=Object.keys(types).filter(k=>types[k]>=NKT).length;
   return a;
 }
 
@@ -1800,11 +1933,14 @@ function pRate(num,den,min,goal){
 }
 
 /* ---- economy knobs (one place) ---- */
-const ECON={achGems:[3,6,12,25],achFrag:[0,3,6,12],      /* free reward per achievement tier */
-  starGems:[0,1,1],starFrag:[2,3,5],fullGems:3,fullFrag:10, /* per newly earned level star (clear, hold, featured mob) and the all-three bonus */
+const ECON={achGems:[5,10,20,40],achCry:[1,2,3,5],    /* free reward per achievement tier (awards take real effort, so they pay a little more) */
+  starGems:[0,1,1],starCry:[1,1,2],fullGems:3,fullCry:3, /* per newly earned level star (clear, hold, featured mob) and the all-three bonus */
   gate:100};                                               /* stars needed in a world to open the next one */
-const FUSE_N=4;   /* crystals of one kind and rarity that fuse into one of the next rarity. Upward only: nothing converts down. */
-const FORGE=[4,15,50,160];                                 /* fragments to forge one card: Common, Rare, Epic, Legendary (same per-card value as the old pack prices) */
+/* Upgrade prices (build 107; tuned with a turret-only play simulation to about 1.5x to 2x the runs of build 106 to reach each level, with the same ceiling): priced in clears, scaled to how far you've played.
+   One level of an upgrade costs UPC(stage) x depth x line weight "clears" of that crystal type, where a clear is what a first clear of your next
+   level pays in that type. Stage = the furthest level reached in any world, so prices grow as you progress but stay a steady number of runs:
+   early levels about UPC0 runs, late game about UPC1 runs, deeper levels of a line up to UPG times more. Short lines (Barrels, Forks) weigh more per level. */
+const UPC0=1.2, UPC1=3, UPG=3.5;
 /* ---- level stars: 1 = clear it, 2 = hold enough mobs above the ozone, 4 = hold 95% of the level's featured mob above the ozone ---- */
 const starHold=n=>n<=10?0.8:n<=30?0.85:0.9;
 const popc=b=>(b&1)+((b>>1)&1)+((b>>2)&1);
@@ -1815,57 +1951,64 @@ function starBitsFor(run,hold,feat){
 }
 function starsOfWorld(wid){ const q=((P.prog||{})[wid]||{}).stars||{}; let n=0; for(const k in q) n+=popc(q[k]|0); return n; }
 function achReward(d){
-  const g=ECON.achGems[d.tier]||0, f=ECON.achFrag[d.tier]||0; P.gems=(P.gems||0)+g;
-  if(f){ const t=typeof rollCard==='function'?rollCard('run'):'turret.pow'; fragAdd(t,f); }
-  d.rw={g:g,f:f};
+  const g=ECON.achGems[d.tier]||0, f=ECON.achCry[d.tier]||0; P.gems=(P.gems||0)+g;
+  let t=null; if(f){ t=typeof rollType==='function'?rollType():'pow'; cryAdd(t,f); }
+  d.rw={g:g,f:f,t:t};
 }
 function achList(){
   if(ACHS) return ACHS;
   const A=[], keys=Object.keys(MOB);
   const CLSN={mineral:'Geologist',mech:'Signals Analyst',bio:'Biologist'};
-  /* Weapons: six awards per weapon, all counts. Three for kills with that weapon in one match, three for lifetime kills of a single mob type. */
+  /* Weapons: six awards per weapon, Bronze / Silver / Gold. Three for kills with that weapon in one match, three for lifetime kills of a single mob type in this world.
+     A level holds roughly 400 to 3,000 mobs (boss and elite levels more), so a match award means carrying a big level with that one weapon; Gold needs one of the world's biggest levels. */
   const WAW={
-    turret:{m:["Hot Barrel","Score 25 kills with the Turret in a single match."],m1:["Gunnery Sergeant","Score 60 kills with the Turret in a single match."],m2:["Bullet Storm","Score 120 kills with the Turret in a single match."],l:["Marksman","Land 250 Turret kills on one mob type."],l1:["Sharpshooter","Land 2,000 Turret kills on one mob type."],l2:["Ace Gunner","Land 10,000 Turret kills on one mob type."]},
-    mine:{m:["Trap Setter","Score 15 kills with Mines in a single match."],m1:["Minefield","Score 40 kills with Mines in a single match."],m2:["Boom Architect","Score 80 kills with Mines in a single match."],l:["Tripwire Pro","Land 150 Mine kills on one mob type."],l1:["Demolition Crew","Land 1,000 Mine kills on one mob type."],l2:["Blast Legend","Land 5,000 Mine kills on one mob type."]},
-    field:{m:["Slow Burn","Score 15 kills with the Field in a single match."],m1:["Time Dilator","Score 40 kills with the Field in a single match."],m2:["Stasis Sovereign","Score 80 kills with the Field in a single match."],l:["Cold Snap","Land 150 Field kills on one mob type."],l1:["Deep Freeze","Land 1,000 Field kills on one mob type."],l2:["Absolute Zero","Land 5,000 Field kills on one mob type."]},
-    chain:{m:["Spark Gap","Score 15 kills with Chain Lightning in a single match."],m1:["Storm Caller","Score 40 kills with Chain Lightning in a single match."],m2:["Thunder God","Score 80 kills with Chain Lightning in a single match."],l:["Bug Zapper","Land 150 Chain kills on one mob type."],l1:["Circuit Breaker","Land 1,000 Chain kills on one mob type."],l2:["Live Wire","Land 5,000 Chain kills on one mob type."]},
-    saw:{m:["Sharp Edge","Score 15 kills with the Saw in a single match."],m1:["Razor's Edge","Score 40 kills with the Saw in a single match."],m2:["Whirling Death","Score 80 kills with the Saw in a single match."],l:["Gravel Grinder","Land 150 Saw kills on one mob type."],l1:["Chop Shop","Land 1,000 Saw kills on one mob type."],l2:["Blade Master","Land 5,000 Saw kills on one mob type."]},
-    mortar:{m:["Lobber","Score 15 kills with the Mortar in a single match."],m1:["Artillery Ace","Score 40 kills with the Mortar in a single match."],m2:["Rain of Fire","Score 80 kills with the Mortar in a single match."],l:["Crater Maker","Land 150 Mortar kills on one mob type."],l1:["Siege Breaker","Land 1,000 Mortar kills on one mob type."],l2:["Hive Hammer","Land 5,000 Mortar kills on one mob type."]}
+    turret:{m:["Hot Barrel","Gunnery Sergeant","Bullet Storm"],l:["Marksman","Sharpshooter","Ace Gunner"],mn:'the Turret'},
+    mine:{m:["Trap Setter","Minefield","Boom Architect"],l:["Tripwire Pro","Demolition Crew","Blast Legend"],mn:'Mines'},
+    field:{m:["Slow Burn","Time Dilator","Stasis Sovereign"],l:["Cold Snap","Deep Freeze","Absolute Zero"],mn:'the Field'},
+    chain:{m:["Spark Gap","Storm Caller","Thunder God"],l:["Bug Zapper","Circuit Breaker","Live Wire"],mn:'Chain Lightning'},
+    saw:{m:["Sharp Edge","Razor's Edge","Whirling Death"],l:["Gravel Grinder","Chop Shop","Blade Master"],mn:'the Saw'},
+    mortar:{m:["Lobber","Artillery Ace","Rain of Fire"],l:["Crater Maker","Siege Breaker","Hive Hammer"],mn:'the Mortar'}
   };
-  const WMK={turret:[25,60,120],mine:[15,40,80],field:[15,40,80],chain:[15,40,80],saw:[15,40,80],mortar:[15,40,80]}, WLK={turret:[250,2000,10000],mine:[150,1000,5000],field:[150,1000,5000],chain:[150,1000,5000],saw:[150,1000,5000],mortar:[150,1000,5000]};
+  const WMK={turret:[1200,2000,2800],mine:[300,700,1200],field:[300,700,1200],chain:[300,700,1200],saw:[300,700,1200],mortar:[300,700,1200]},
+        WLK={turret:[2000,8000,20000],mine:[500,2500,7500],field:[500,2500,7500],chain:[500,2500,7500],saw:[500,2500,7500],mortar:[500,2500,7500]};
+  const WSH={turret:'Turret',mine:'Mine',field:'Field',chain:'Chain',saw:'Saw',mortar:'Mortar'};
   /* Every award exists once per world: id 'base@world', counted from that world's own record only. */
   WORLDS.forEach(wd=>{
     const wid=wd.id, wn=wd.name;
     const add=(cat,id,name,desc,tier,fn,icon,grp)=>A.push({cat:cat,id:id+'@'+wid,wid:wid,wname:wn,name:name,desc:desc,tier:tier,fn:fn,icon:icon||'eye',grp:grp||''});
     const set=new Set(Object.keys(wd.uw||UW).filter(k=>MOB[k])); if(set.has('chunk')) set.add('small'); if(set.has('egg')) set.add('hatch'); set.add('orb'); set.add('boss');
     const ks=[...set], seen=()=>stOf().world[wid]||{};
+    const best=()=>(((P.prog||{})[wid]||{}).best)|0;
 
-    /* Discovery: this world's roster, its mob classes, sightings here */
-    A.push({cat:'disc',id:'world_'+wid,wid:wid,wname:wn,name:wn+' Survey',desc:'Meet all '+ks.length+' mobs that appear in '+wn+'.',tier:2,fn:()=>pCount(ks.filter(k=>seen()[k]).length,ks.length),icon:'world',grp:'survey'});
+    /* Discovery: this world's roster, its mob classes, sightings here, and how far you have pushed */
+    A.push({cat:'disc',id:'world_'+wid,wid:wid,wname:wn,name:wn+' Survey',desc:'Meet all '+ks.length+' mobs that appear in '+wn+'. The last ones only show up deep in the world.',tier:1,fn:()=>pCount(ks.filter(k=>seen()[k]).length,ks.length),icon:'world',grp:'survey'});
     for(const c in CLS){
       const kc=ks.filter(k=>MOB[k].cls===c); if(!kc.length) continue;
-      add('disc','cls_'+c,CLSN[c]||CLS[c].name+' Survey','Meet every '+CLS[c].name+' mob in '+wn+': '+kc.map(k=>skinName(wid,k)).join(', ')+'.',1,()=>pCount(kc.filter(k=>seen()[k]).length,kc.length),'eye','class');
+      add('disc','cls_'+c,CLSN[c]||CLS[c].name+' Survey','Meet every '+CLS[c].name+' mob in '+wn+': '+kc.map(k=>skinName(wid,k)).join(', ')+'.',0,()=>pCount(kc.filter(k=>seen()[k]).length,kc.length),'eye','class');
     }
-    [[50,'Spotter'],[500,'Lookout'],[2500,'Watchtower'],[10000,'All-Seeing Rampart']].forEach((x,i)=>
+    [[5000,'Spotter'],[25000,'Lookout'],[100000,'Watchtower'],[250000,'All-Seeing Rampart']].forEach((x,i)=>
       add('disc','sight'+i,x[1],'Encounter '+fmtN(x[0])+' mobs in '+wn+'.',i,a=>pCount(a.sight,x[0]),'eye','sight'));
+    [[10,'Beachhead','Clear level 10 in '+wn+'.'],[25,'Holdout','Clear level 25 in '+wn+'.'],[LEVELS,'Conqueror','Clear level '+LEVELS+' in '+wn+'.']].forEach((x,i)=>
+      add('disc','lv'+x[0],x[1],x[2],i,()=>pCount(best(),x[0]),'world','conquest'));
+    add('disc','stars',wn+' Perfected','Earn all '+(LEVELS*3)+' stars in '+wn+'.',3,()=>pCount(starsOfWorld(wid),LEVELS*3),'world','conquest');
 
     /* Weapons */
     WLIST.forEach(w=>{
       const T=WAW[w];
       [0,1,2].forEach(t=>{
-        const mk=WMK[w][t], lk=WLK[w][t], sf=t?String(t):'';
-        add('wpn','wm'+t+'_'+w,T['m'+sf][0],T['m'+sf][1],t+1,a=>pCount(a.mk[w],mk),w,w);
-        add('wpn','wl'+t+'_'+w,T['l'+sf][0],T['l'+sf][1],t+1,a=>{ const r=pCount(a.bm[w].n,lk); if(a.bm[w].k&&!r.done) r.txt+=' ('+skinName(wid,a.bm[w].k)+')'; return r; },w,w);
+        const mk=WMK[w][t], lk=WLK[w][t];
+        add('wpn','wm'+t+'_'+w,T.m[t],'Score '+fmtN(mk)+' kills with '+T.mn+' in a single match.',t,a=>pCount(a.mk[w],mk),w,w);
+        add('wpn','wl'+t+'_'+w,T.l[t],'Land '+fmtN(lk)+' '+WSH[w]+' kills on one mob type.',t,a=>{ const r=pCount(a.bm[w].n,lk); if(a.bm[w].k&&!r.done) r.txt+=' ('+skinName(wid,a.bm[w].k)+')'; return r; },w,w);
       });
     });
 
-    /* Underdog: weapons used against mobs that resist them */
-    [[50,'Against the Odds'],[65,'Stubborn'],[80,'Defying Physics'],[90,'Rule Breaker']].forEach((x,i)=>
-      add('odds','ni'+x[0],x[1],'Win '+x[0]+'% of fights where your weapon is resisted by the mob.',i,a=>pRate(a.nd,a.ne,100,x[0]),'bolt','rate'));
-    [[10,'Off-Label Use'],[100,'Square Peg'],[400,'Duct Tape Engineer']].forEach((x,i)=>
-      add('odds','nk'+x[0],x[1],'Land '+fmtN(x[0])+' killing blows with a weapon the mob resists.',i,a=>pCount(a.nk,x[0]),'bolt','blows'));
+    /* Underdog: weapons used against mobs that resist them. Rate goals need a big sample first, so a lucky stretch cannot unlock them. */
+    [[50,500,'Against the Odds'],[65,2500,'Stubborn'],[80,10000,'Defying Physics'],[90,25000,'Rule Breaker']].forEach((x,i)=>
+      add('odds','ni'+x[0],x[2],'Win '+x[0]+'% of fights where your weapon is resisted by the mob, over at least '+fmtN(x[1])+' such fights.',i,a=>pRate(a.nd,a.ne,x[1],x[0]),'bolt','rate'));
+    [[250,'Off-Label Use'],[2000,'Square Peg'],[8000,'Duct Tape Engineer']].forEach((x,i)=>   /* ids keep the old numbers so unlocks earned before the retune stay put */
+      add('odds','nk'+[10,100,400][i],x[1],'Land '+fmtN(x[0])+' killing blows with a weapon the mob resists.',i,a=>pCount(a.nk,x[0]),'bolt','blows'));
     [[3,'Improviser'],[5,'Wild Card'],[8,'Anything Goes']].forEach((x,i)=>
-      add('odds','nt'+x[0],x[1],'Land a killing blow with a resisted weapon on '+x[0]+' different mob types.',i,a=>pCount(a.nkTypes,x[0]),'bolt','types'));
+      add('odds','nt'+x[0],x[1],'Land '+NKT+' killing blows with a resisted weapon on each of '+x[0]+' different mob types.',i,a=>pCount(a.nkTypes,x[0]),'bolt','types'));
   });
   return ACHS=A;
 }
@@ -1874,7 +2017,7 @@ let achPend=false;
 function achCheck(force){
   const now=Date.now();
   if(!force){ if(!achDirty) return; if(now-achLast<500){ if(!achPend&&typeof setTimeout!=='undefined'){ achPend=true; setTimeout(()=>{ achPend=false; achCheck(true); },600); } return; } }
-  achDirty=false; achLast=now;
+  achDirty=false; achLast=now; achRetier();
   const st=stOf(), AG={}, ag=w=>AG[w]||(AG[w]=agg(w)); let got=false;
   for(const d of achList()){ if(st.ach[d.id]) continue; let r; try{ r=d.fn(ag(d.wid)); }catch(e){ continue; } if(r&&r.done){ st.ach[d.id]=now; achReward(d); achQ.push(d); got=true; } }
   if(achQ.length>3){ const n=achQ.length, tier=Math.max.apply(null,achQ.map(x=>x.tier)), g=achQ.reduce((q,x)=>q+((x.rw||{}).g||0),0), f=achQ.reduce((q,x)=>q+((x.rw||{}).f||0),0); achQ=[{icon:'eye',tier:tier,name:n+' achievements unlocked',rw:{g:g,f:f}}]; }
@@ -1885,9 +2028,21 @@ function achShow(){
   const d=achQ.shift(), t=TIER[d.tier]; achBusy=true;
   if(!achEl){ achEl=document.createElement('div'); achEl.id='achToast'; achEl.setAttribute('role','status'); document.body.appendChild(achEl); }
   achEl.style.setProperty('--c',t.c);
-  achEl.innerHTML='<span class="ai">'+ico(d.icon,18)+'</span><span><small>'+t.n+' achievement'+(d.rw&&d.rw.g?' · +'+d.rw.g+' gems':'')+(d.rw&&d.rw.f?' · +'+d.rw.f+' '+ico('shard',11):'')+'</small><b>'+d.name+(d.wname?' &middot; '+d.wname:'')+'</b></span>';
+  achEl.innerHTML='<span class="ai">'+ico(d.icon,18)+'</span><span><small>'+t.n+' achievement'+(d.rw&&d.rw.g?' · +'+d.rw.g+' gems':'')+(d.rw&&d.rw.f&&CT[d.rw.t]?' · +'+d.rw.f+' '+CT[d.rw.t].name+' crystals':'')+'</small><b>'+d.name+(d.wname?' &middot; '+d.wname:'')+'</b></span>';
   achEl.classList.add('on'); try{ Music.up(); }catch(e){}
   setTimeout(()=>{ achEl.classList.remove('on'); setTimeout(()=>{ achBusy=false; achShow(); },350); },2800);
+}
+/* One-time (build 100): awards were made much harder and weapon awards moved down a tier (Silver/Gold/Platinum became Bronze/Silver/Gold).
+   Everything already unlocked stays unlocked and is never paid again. Command Points come from unlocked tiers, so the points those
+   unlocks were worth under the old tiers are kept as a bonus (st.cpb) and nobody loses points they may already have spent.
+   Runs lazily (first award check or Command Point read), so it also covers a save that arrives from the cloud. */
+function achRetier(){
+  const s=stOf(); if(s.am2) return; s.am2=1;
+  const old=id=>{ const b=id.split('@')[0], m=/^w[ml](\d)_/.exec(b); if(m) return +m[1]+1; if(b.indexOf('world_')===0) return 2; if(b.indexOf('cls_')===0) return 1;
+    const sg=/^sight(\d)$/.exec(b); if(sg) return +sg[1]; const r={ni50:0,ni65:1,ni80:2,ni90:3,nk10:0,nk100:1,nk400:2,nt3:0,nt5:1,nt8:2}; return b in r?r[b]:-1; };
+  const cur={}; for(const d of achList()) cur[d.id]=d.tier;
+  let was=0, now=0; for(const id in (s.ach||{})){ const t=old(id); if(t<0||!(id in cur)) continue; was+=CPT[t]||1; now+=CPT[cur[id]]||1; }
+  s.cpb=Math.max(s.cpb|0,was-now);
 }
 stBackfill(); stPwMigrate();
 
@@ -2030,7 +2185,7 @@ function hitsFrom(e,loose){
 function pickTarget(){
   const pend=new Map();
   for(const b of G.bullets) if(b.target&&!b.target.dead) pend.set(b.target,(pend.get(b.target)||0)+b.dmg*b.target.res.k);
-  const sup=G.superOn>0, shot=ST.dmg(L('dmg'))*Math.pow(1.5,bst('dmg'))*(sup?1.5:1), slide=ST.slide(L('rate'))*Math.pow(2.5,bst('slide'));
+  const sup=G.superOn>0, shot=ST.dmg(L('dmg'))*Math.pow(1.5,bst('dmg'))*(sup?1.5:1), slide=ST.slide(L('rate'))*(bst('slide')?2:1);
   let best=null,bs=-1e9;
   for(const e of G.enemies){
     if(e.dead||e.y<-e.r*0.3||!inRange(e)) continue;
@@ -2065,7 +2220,7 @@ function inLine(tg,pend){
   return hit;
 }
 function updateTurret(dt){
-  const slide=ST.slide(L('rate'))*Math.pow(2.5,bst('slide'));
+  const slide=ST.slide(L('rate'))*(bst('slide')?2:1);
   T.cool-=dt; T.recoil=Math.max(0,T.recoil-dt*6);
   if(bst('super')>0){ if(G.superOn>0) G.superOn-=dt; else { G.superCd-=dt; if(G.superCd<=0){ G.superOn=4; G.superCd=22-3*bst('super'); float(T.x,TURRET_Y-60,'SUPERCHARGE',C.yellow); G.rings.push({x:T.x,y:TURRET_Y-14,r:10,max:90,life:0.5,t:0,color:C.yellow}); } } }
   if(input.active){
@@ -2115,26 +2270,28 @@ function placeField(x,y){
   G.fieldCd=G.fields.length<1+bst('fcount')?1.5:ST.frech(L('frech')); Music.place(true); return true;
 }
 /* ================= commanders ================= */
-/* One commander card sits in the command slot. Each is a collectible in four rarities: rarity scales the buff, shrinks the weakness and unlocks the second ability natively.
-   Three specialty branches per commander are bought with Command Points (earned from achievements), and branch capstones unlock new capabilities. */
-const CRAR=['Common','Rare','Epic','Legendary'], CRM=[1,1.2,1.45,1.8], CWK=[1,0.8,0.6,0.4], CRP=[30,120,360,900], CPT=[1,1,2,3], CNODE=[1,2,3], CCAP=5, CCAPNEED=6;
+/* One commander sits in the command slot. Each has four ranks, Mk I to Mk IV: rank scales the buff, shrinks the weakness and unlocks the second ability natively.
+   Ranks are bought with crystals of three types (each commander's own mix, see cmdMix). Three specialty branches per commander are bought with
+   Talent points (earned from achievements), and branch capstones unlock new capabilities. */
+const CRAR=['Mk I','Mk II','Mk III','Mk IV'], CRM=[1,1.2,1.45,1.8], CWK=[1,0.8,0.6,0.4], CPT=[1,1,2,3],
+  CRANK=[600,4800,14400,36000],   /* play needed for each rank, in average-type crystals (Mk IV is about as much as every weapon upgrade combined); a step up costs the difference */ CNODE=[1,2,3], CCAP=5, CCAPNEED=6;
 const CSTAT={dmg:'Turret damage',rate:'Fire rate',hp:'City health',sh:'Ozone shield',shRg:'Shield recharge',blast:'Blast damage',crit:'Critical chance',cd1:'Ability 1 recharge time',cd2:'Ability 2 recharge time',pow1:'Ability 1 power',pow2:'Ability 2 power'};
 const CMDS=[
  {id:'warden',name:'Warden Sol',role:'Guardian',color:'#00ffa3',pas:{sh:0.25,shRg:0.25},wk:{dmg:-0.12},
   ab:[{n:'Ozone Mend',ic:'frt',cd:38,d:'Pours power into the ozone shield for 6 seconds. About half of it grows back.'},{n:'Field Repair',ic:'heart',cd:50,d:'Patches 25% of the city.'}],
   br:[{n:'Bastion',nodes:[{id:'b1',n:'Hardened Shield',max:3,fx:{sh:0.1},t:'+10% ozone shield per level'},{id:'b2',n:'Rapid Regen',max:3,fx:{shRg:0.2},t:'+20% shield recharge per level'},{id:'b3',n:'Reactive Plating',cap:1,max:1,fx:{sh:0.4},t:'+40% ozone shield'}]},
       {n:'Mend',nodes:[{id:'a1',n:'Quick Mend',max:3,fx:{cd1:-0.08},t:'-8% Mend cooldown per level'},{id:'a2',n:'Deep Reserves',max:3,fx:{pow1:0.15},t:'+15% Mend regrowth per level'},{id:'a3',n:'Retaliation',cap:1,max:1,flag:'aegisWave',t:'Mend also sends a shockwave through every mob'}]},
-      {n:'Resolve',nodes:[{id:'r1',n:'Reinforced Walls',max:3,fx:{hp:0.08},t:'+8% city health per level'},{id:'r2',n:'Rapid Crews',max:3,fx:{cd2:-0.08},t:'-8% Field Repair cooldown per level'},{id:'r3',n:'Field Engineers',cap:1,max:1,flag:'unlock2',t:'Unlocks Field Repair at any rarity'}]}]},
+      {n:'Resolve',nodes:[{id:'r1',n:'Reinforced Walls',max:3,fx:{hp:0.08},t:'+8% city health per level'},{id:'r2',n:'Rapid Crews',max:3,fx:{cd2:-0.08},t:'-8% Field Repair cooldown per level'},{id:'r3',n:'Field Engineers',cap:1,max:1,flag:'unlock2',t:'Unlocks Field Repair at any rank'}]}]},
  {id:'rook',name:'Cmdr Rook',role:'Gunnery',color:'#ff8a00',pas:{dmg:0.18,rate:0.1},wk:{hp:-0.2},
   ab:[{n:'Overdrive',ic:'bolt',cd:30,d:'Turret fires twice as fast for 5 seconds.'},{n:'Broadside',ic:'turret',cd:26,d:'Three extra turret volleys, back to back.'}],
   br:[{n:'Gunnery',nodes:[{id:'g1',n:'Heavy Rounds',max:3,fx:{dmg:0.08},t:'+8% turret damage per level'},{id:'g2',n:'Hair Trigger',max:3,fx:{rate:0.06},t:'+6% fire rate per level'},{id:'g3',n:'Armor Piercing',cap:1,max:1,fx:{pierce:1},t:'Bullets pierce one extra mob'}]},
-      {n:'Overdrive',nodes:[{id:'o1',n:'Extended Burn',max:3,fx:{pow1:0.2},t:'+20% Overdrive duration per level'},{id:'o2',n:'Quick Cycle',max:3,fx:{cd1:-0.08},t:'-8% Overdrive cooldown per level'},{id:'o3',n:'Heavy Battery',cap:1,max:1,flag:'unlock2',t:'Unlocks Broadside at any rarity'}]},
+      {n:'Overdrive',nodes:[{id:'o1',n:'Extended Burn',max:3,fx:{pow1:0.2},t:'+20% Overdrive duration per level'},{id:'o2',n:'Quick Cycle',max:3,fx:{cd1:-0.08},t:'-8% Overdrive cooldown per level'},{id:'o3',n:'Heavy Battery',cap:1,max:1,flag:'unlock2',t:'Unlocks Broadside at any rank'}]},
       {n:'Crew',nodes:[{id:'c1',n:'Flak Vests',max:3,fx:{hp:0.1},t:'+10% city health per level'},{id:'c2',n:'Drill Sergeant',max:3,fx:{pow2:0.2},t:'+20% Broadside volleys per level'},{id:'c3',n:'Last Stand',cap:1,max:1,flag:'lastStand',t:'+40% turret damage while the city is below 35% health'}]}]},
  {id:'vex',name:'Cmdr Vex',role:'Ordnance',color:'#9d4dff',pas:{blast:0.3},wk:{sh:-0.25},
   ab:[{n:'Airstrike',ic:'mortar',cd:34,d:'Three bombs land on the thickest clusters.'},{n:'EMP Burst',ic:'chain',cd:42,d:'Freezes the whole field for a beat. Mechs take damage.'}],
   br:[{n:'Ordnance',nodes:[{id:'n1',n:'High Explosive',max:3,fx:{blast:0.1},t:'+10% blast damage per level'},{id:'n2',n:'Shaped Charges',max:3,fx:{pow1:0.12},t:'+12% Airstrike damage per level'},{id:'n3',n:'Heavy Ordnance',cap:1,max:1,fx:{blast:0.4},t:'+40% blast damage'}]},
       {n:'Bombardment',nodes:[{id:'s1',n:'Rapid Dispatch',max:3,fx:{cd1:-0.08},t:'-8% Airstrike cooldown per level'},{id:'s2',n:'Extra Bombs',max:2,fx:{strikes:1},t:'+1 bombing run per level'},{id:'s3',n:'Carpet Bombing',cap:1,max:1,fx:{strikes:2},t:'+2 more bombing runs'}]},
-      {n:'Signals',nodes:[{id:'e1',n:'Wide Pulse',max:3,fx:{pow2:0.2},t:'+20% EMP freeze time per level'},{id:'e2',n:'Capacitors',max:3,fx:{cd2:-0.08},t:'-8% EMP cooldown per level'},{id:'e3',n:'Signals Corps',cap:1,max:1,flag:'unlock2',t:'Unlocks EMP Burst at any rarity'}]}]}
+      {n:'Signals',nodes:[{id:'e1',n:'Wide Pulse',max:3,fx:{pow2:0.2},t:'+20% EMP freeze time per level'},{id:'e2',n:'Capacitors',max:3,fx:{cd2:-0.08},t:'-8% EMP cooldown per level'},{id:'e3',n:'Signals Corps',cap:1,max:1,flag:'unlock2',t:'Unlocks EMP Burst at any rank'}]}]}
 ];
 const CMDBY={};
 /* ---- the wider roster: 15 more commanders across all four rarities. Each is built from the same parts: a passive buff, a weakness, two abilities from the effect library below, and a generated 3-branch specialty tree. tier = the rarity they are recruited at. ---- */
@@ -2144,7 +2301,7 @@ function mkCmd(s){
   s.br=[
     {n:s.role,nodes:[{id:'p1',n:N[0],max:3,fx:{[a0]:0.08},t:'+8% '+lab(a0)+' per level'},{id:'p2',n:N[1],max:3,fx:{[a1]:0.06},t:'+6% '+lab(a1)+' per level'},{id:'p3',n:N[2],cap:1,max:1,fx:{[a0]:0.3},t:'+30% '+lab(a0)}]},
     {n:a[0].n,nodes:[{id:'x1',n:N[3],max:3,fx:{pow1:0.15},t:'+15% '+a[0].n+' power per level'},{id:'x2',n:N[4],max:3,fx:{cd1:-0.08},t:'-8% '+a[0].n+' cooldown per level'},{id:'x3',n:N[5],cap:1,max:1,fx:{pow1:0.4,cd1:-0.1},t:'+40% '+a[0].n+' power, -10% cooldown'}]},
-    {n:a[1].n,nodes:[{id:'y1',n:N[6],max:3,fx:{pow2:0.15},t:'+15% '+a[1].n+' power per level'},{id:'y2',n:N[7],max:3,fx:{cd2:-0.08},t:'-8% '+a[1].n+' cooldown per level'},t0?{id:'y3',n:N[8],cap:1,max:1,flag:'unlock2',t:'Unlocks '+a[1].n+' at any rarity'}:{id:'y3',n:N[8],cap:1,max:1,fx:{pow2:0.4,cd2:-0.1},t:'+40% '+a[1].n+' power, -10% cooldown'}]}];
+    {n:a[1].n,nodes:[{id:'y1',n:N[6],max:3,fx:{pow2:0.15},t:'+15% '+a[1].n+' power per level'},{id:'y2',n:N[7],max:3,fx:{cd2:-0.08},t:'-8% '+a[1].n+' cooldown per level'},t0?{id:'y3',n:N[8],cap:1,max:1,flag:'unlock2',t:'Unlocks '+a[1].n+' at any rank'}:{id:'y3',n:N[8],cap:1,max:1,fx:{pow2:0.4,cd2:-0.1},t:'+40% '+a[1].n+' power, -10% cooldown'}]}];
   return s;
 }
 const FXL=(k,o)=>Object.assign({k:k},o);
@@ -2203,7 +2360,7 @@ CMDS.forEach(c=>{ if(!(c.tier>0)) c.tier=0; });
 CMDS.forEach(c=>CMDBY[c.id]=c);
 function cmdP(){ const q=P.cmd||(P.cmd={eq:'warden',own:{warden:0},tl:{}}); if(!q.own) q.own={warden:0}; if(!q.tl) q.tl={}; if(!q.eq||q.own[q.eq]===undefined) q.eq='warden'; if(q.own.warden===undefined) q.own.warden=0; return q; }
 const cmdTL=id=>cmdP().tl[id]||(cmdP().tl[id]={});
-function cmdEarned(){ const a=(stOf().ach)||{}; let n=0; for(const d of achList()) if(a[d.id]) n+=CPT[d.tier]||1; return n; }
+function cmdEarned(){ achRetier(); const s=stOf(), a=s.ach||{}; let n=s.cpb|0; for(const d of achList()) if(a[d.id]) n+=CPT[d.tier]||1; return n; }
 const cmdCost=(nd,l)=>nd.cap?CCAP:CNODE[l];
 function cmdBranchSpent(c,b){ const tl=cmdTL(c.id); let s=0; for(const nd of b.nodes){ if(nd.cap) continue; for(let i=0;i<(tl[nd.id]|0);i++) s+=CNODE[i]; } return s; }
 function cmdSpent(){ let s=0; for(const c of CMDS){ const tl=(cmdP().tl[c.id])||{}; for(const b of c.br) for(const nd of b.nodes) for(let i=0;i<(tl[nd.id]|0);i++) s+=cmdCost(nd,i); } return s; }
@@ -2224,10 +2381,25 @@ function cmdNodeBuy(cid,nid){
     const cost=cmdCost(nd,l); if(cmdLeft()<cost) return false; tl[nid]=l+1; return true; }
   return false;
 }
+/* Which crystals a commander costs: the two types that match their buff, plus one more, split 50/30/20 by effort. Counts are scaled by how often each type
+   drops (CW, average 20), so every commander takes the same play to rank up: a Power-heavy one shows bigger numbers than a Fortify-heavy one. */
+const CSTT={dmg:'pow',blast:'pow',crit:'pow',rate:'tmp',cd1:'tmp',cd2:'tmp',sh:'frt',shRg:'frt',hp:'frt',pow1:'cap',pow2:'cap'};
+function cmdMix(c){
+  if(c._mix) return c._mix; const sc={};
+  for(const k in (c.pas||{})){ const t=CSTT[k]||'pow'; sc[t]=(sc[t]||0)+Math.abs(c.pas[k]); }
+  const ts=Object.keys(sc).sort((a,b)=>sc[b]-sc[a]||CTYPES.indexOf(a)-CTYPES.indexOf(b)).slice(0,2);
+  for(const t of ['cap','rch','tmp','pow','frt']) if(ts.length<3&&ts.indexOf(t)<0) ts.push(t);
+  const sh=[0.5,0.3,0.2], m={};
+  ts.forEach((t,i)=>{ m[t]=sh[i]*CW[t]/20; }); return (c._mix=m);
+}
+/* crystals to go from rank `from` (-1 = not recruited) to rank `to` */
+function cmdPrice(c,from,to){ const d=CRANK[to]-(from>=0?CRANK[from]:0), m=cmdMix(c), o={}; for(const t in m) o[t]=Math.max(10,Math.round(d*m[t]/10)*10); return o; }
+const priceHtml=(o,sz)=>Object.keys(o).map(t=>'<span class="cost" style="color:'+CT[t].color+'" title="'+CT[t].name+' crystals">'+ico('crystal',sz||12)+o[t]+'</span>').join('');
 function cmdBuy(cid,r){
   const c=CMDBY[cid], p=cmdP(); if(!c||!(r>=0&&r<4)||r<(c.tier|0)) return false; const cur=p.own[cid];
-  if(cur!==undefined&&r<=cur) return false; const price=CRP[r]-(cur!==undefined?CRP[cur]:0);
-  if((P.gems||0)<price) return false; P.gems-=price; p.own[cid]=r; if(p.eq!==cid&&cur===undefined&&Object.keys(p.own).length===1) p.eq=cid; return true;
+  if(cur!==undefined&&r<=cur) return false; const price=cmdPrice(c,cur!==undefined?cur:-1,r);
+  if(!cryHave(price)) return false; for(const t in price) crySpend(t,price[t]);
+  p.own[cid]=r; try{ logEv('cmd',cid+':'+r); }catch(e){} if(p.eq!==cid&&cur===undefined&&Object.keys(p.own).length===1) p.eq=cid; return true;
 }
 /* ---- in a run ---- */
 const cmM=k=>G.cm?G.cm.M[k]:1;
@@ -2289,6 +2461,7 @@ function useCmd(i){
   const q=G.cm; if(!q||G.state!=='playing') return false; const M=q.M, c=q.c;
   if(i===1&&!M.unlock2) return false; if((i===0?q.t1:q.t2)>0) return false;
   const col=c.color, ty=TURRET_Y-30;
+  CF.cmd++;
   if(c.ab[i].fx) runFx(q,i);
   else if(c.id==='warden'){
     if(i===0){ FX.regen({t:6,v:0.09},M.pow1,q); float(T.x,ty-30,'OZONE MEND',col);
@@ -2346,22 +2519,21 @@ function cmdAct(s){
   else if(q[0]==='buy') cmdBuy(q[1],+q[2]);
   else if(q[0]==='node') cmdNodeBuy(q[1],q[2]);
   else if(q[0]==='reset'){ p.tl[q[1]]={}; p.rs=p.rs||{}; p.rs[q[1]]=(+p.rs[q[1]]||0)+1; }
-  else if(q[0]==='pack'){ cmdPack(q[1]); return; }
   const mp=armoryEl.querySelector('.cmpanel'), sc=mp?mp.scrollTop:0; save(); renderArmory(); const np=armoryEl.querySelector('.cmpanel'); if(np) np.scrollTop=sc;
 }
 const cmTier=c=>c.tier|0;
-const CMFLT=[['all','All'],['0','Common'],['1','Rare'],['2','Epic'],['3','Legendary'],['own','Owned']];
+const CMFLT=[['all','All'],['0','Mk I'],['1','Mk II'],['2','Mk III'],['3','Mk IV'],['own','Owned']];
 function cmTile(c,view){
   const p=cmdP(), own=p.own[c.id], has=own!==undefined, r=has?own:cmTier(c), eq=p.eq===c.id;
   return '<button type="button" class="cmtile'+(has?'':' lk')+(eq?' eq':'')+'" data-cmd="open:'+c.id+':'+view+'" style="--c:'+c.color+';--rc:'+RAR[r].color+'" aria-label="'+c.name+', '+CRAR[r]+'">'
     +'<canvas class="tprev" data-tp="'+c.id+'" data-r="'+r+'" width="240" height="170"></canvas>'
     +'<span class="tn">'+c.name+'</span><span class="tr">'+c.role+'</span>'
-    +'<span class="ts2" style="color:'+RAR[r].color+'">'+(eq?'In command':has?CRAR[r]:CRAR[r]+' &middot; '+CRP[r])+'</span></button>';
+    +'<span class="ts2" style="color:'+RAR[r].color+'">'+(eq?'In command':has?CRAR[r]:'<span class="tcost">'+priceHtml(cmdPrice(c,-1,r),11)+'</span>')+'</span></button>';
 }
 function cmGrid(view){
   const p=cmdP(), f=UI.cmf||'all', list=CMDS.filter(c=>{ const own=p.own[c.id], r=own!==undefined?own:cmTier(c); return f==='all'||(f==='own'?own!==undefined:+f===r); })
     .sort((x,y)=>((p.own[y.id]!==undefined)-(p.own[x.id]!==undefined))||(cmTier(x)-cmTier(y)));
-  return '<div class="cmflt" role="group" aria-label="Filter commanders">'+CMFLT.map(x=>'<button type="button" class="chip cf'+(f===x[0]?' on':'')+'" data-cmd="flt:'+x[0]+':'+view+'" style="--c:'+(/^\d$/.test(x[0])?RAR[+x[0]].color:'#7df9ff')+'">'+x[1]+'</button>').join('')+'</div>'
+  return '<div class="cmflt" role="group" aria-label="Filter commanders">'+CMFLT.map(x=>'<button type="button" class="chip cf'+(f===x[0]?' on':'')+'" data-cmd="flt:'+x[0]+':'+view+'" style="--c:'+(/^\d$/.test(x[0])?RAR[+x[0]].color:'#9fb2be')+'">'+x[1]+'</button>').join('')+'</div>'
     +'<div class="cmgrid">'+(list.length?list.map(c=>cmTile(c,view)).join(''):'<div class="note" style="grid-column:1/-1">No commanders here yet.</div>')+'</div>';
 }
 /* the commander sheet: details and recruiting on one page, specialties on another */
@@ -2372,7 +2544,7 @@ function cmModal(view){
   const head=(sub,back)=>'<div class="cmhead" style="--c:'+c.color+'"><div><div class="cn">'+c.name+'</div><div class="note">'+sub+'</div></div><div style="display:flex;gap:6px;flex:none">'+(back?'<button class="btn sm" type="button" data-cmd="info:'+c.id+'" style="--c:'+c.color+'">Back</button>':'')+'<button class="btn sm" type="button" data-cmd="close" style="--c:'+c.color+'" aria-label="Close">Done</button></div></div>';
   if(UI.cmv==='spec'&&has){
     const tl=cmdTL(c.id);
-    m+=head('Specialties. Capstones need '+CCAPNEED+' points spent in their branch. You have <b>'+left+'</b> to spend.',true);
+    m+=head('Specialties. Capstones need '+CCAPNEED+' talent points spent in their branch.',true)+talentBar(left);
     c.br.forEach(b=>{
       const bs=cmdBranchSpent(c,b);
       m+='<div class="card" style="--c:'+c.color+'"><div class="ct"><span class="cn">'+b.n+'</span><span class="chip" style="--c:'+c.color+'">'+bs+' spent</span></div>';
@@ -2385,23 +2557,26 @@ function cmModal(view){
     });
     m+='<button class="btn" type="button" data-cmd="reset:'+c.id+'" style="--c:#ff3860">Refund '+c.name+' points</button>';
   } else {
-    m+=head(c.role+' &middot; <span style="color:'+RAR[r].color+'">'+CRAR[r]+(has?'':' recruit')+'</span>');
+    m+=head(c.role+' &middot; <span style="color:'+RAR[r].color+'">'+CRAR[r]+'</span>'+(has?'':' &middot; not recruited'));
     m+='<canvas class="tprev big" data-tp="'+c.id+'" data-r="'+r+'" width="440" height="260"></canvas>';
     m+='<div class="cv"><b style="color:'+c.color+'">Buff:</b> '+cmdPas(c,r)+'.<br><b style="color:#ff6b86">Weakness:</b> '+cmdWk(c,r)+'.</div>';
-    m+='<div class="cv">1. <b>'+c.ab[0].n+'</b> ('+c.ab[0].cd+'s) '+c.ab[0].d+'<br>2. <b>'+c.ab[1].n+'</b> ('+c.ab[1].cd+'s) '+c.ab[1].d+(r<1?' <span class="note">Unlocks at Rare, or with this commander\'s Branch capstone.</span>':'')+'</div>';
+    m+='<div class="cv">1. <b>'+c.ab[0].n+'</b> ('+c.ab[0].cd+'s) '+c.ab[0].d+'<br>2. <b>'+c.ab[1].n+'</b> ('+c.ab[1].cd+'s) '+c.ab[1].d+(r<1?' <span class="note">Unlocks at Mk II, or with this commander\'s branch capstone.</span>':'')+'</div>';
     m+='<div class="cmbtns">';
     if(has) m+='<button class="btn" type="button" data-cmd="eq:'+c.id+'" style="--c:'+c.color+'" '+(eq?'disabled':'')+'>'+(eq?'In command':'Assign')+'</button><button class="btn" type="button" data-cmd="spec:'+c.id+'" style="--c:'+c.color+'">Specialties</button>';
-    for(let k=Math.max(tier,has?own+1:0);k<4;k++){ const price=CRP[k]-(has?CRP[own]:0); m+='<button class="btn" type="button" data-cmd="buy:'+c.id+':'+k+'" style="--c:'+RAR[k].color+'" '+((P.gems||0)<price?'disabled':'')+'>'+(has?'Upgrade to ':'Recruit as ')+CRAR[k]+' <small>'+price+' gems</small></button>'; }
-    if(has&&own===3) m+='<span class="note">Maximum rarity</span>';
+    for(let k=Math.max(tier,has?own+1:0);k<4;k++){ const price=cmdPrice(c,has?own:-1,k); m+='<button class="btn cbuy" type="button" data-cmd="buy:'+c.id+':'+k+'" style="--c:'+RAR[k].color+'" '+(cryHave(price)?'':'disabled')+'><span>'+(has?'Rank up to ':'Recruit at ')+CRAR[k]+'</span><small>'+priceHtml(price)+'</small></button>'; if(!has) break; }
+    if(has&&own===3) m+='<span class="note">Maximum rank</span>';
     m+='</div>';
   }
   return '<div class="cmmodal" role="dialog" aria-modal="true"><div class="cmbk" data-cmd="close"></div><div class="cmpanel" style="--c:'+c.color+'">'+m+'</div></div>';
 }
+/* talent points: progress, not a currency you collect */
+function talentBar(left){ const e=cmdEarned(), u=Math.max(0,e-left);
+  return '<div class="tbar"><span class="lbl">Talent points</span><span class="tbv"><b>'+left+'</b> to spend &middot; '+u+' of '+e+' used</span><div class="spbar" aria-hidden="true"><i style="width:'+(e?Math.round(100*u/e):0)+'%"></i></div></div>'; }
 function commandHtml(){
-  if(!cmdUnlocked()) return '<div class="wrap cmdv"><div class="card" style="--c:#6b7a85"><div class="ct"><span class="cn">Locked</span></div><div class="cv">Clear level '+CMD_LVL+' in any world to unlock commanders: leaders with a buff, a weakness and two abilities you tap during a level. Achievements will earn you the points to specialize them.</div></div></div>';
+  if(!cmdUnlocked()) return '<div class="wrap cmdv"><div class="card" style="--c:#6b7a85"><div class="ct"><span class="cn">Locked</span></div><div class="cv">Clear level '+CMD_LVL+' in any world to unlock commanders: leaders with a buff, a weakness and two abilities you tap during a level. Achievements earn the talent points to specialize them.</div></div></div>';
   const left=cmdLeft();
-  return '<div class="wrap cmdv"><div class="ahead" style="margin-bottom:6px"><span class="note"><b>Command</b></span><div class="cr"><span class="lbl">Command points</span><b>'+left+'</b></div></div>'
-    +'<div class="note"><b>One commander leads each run.</b> Tap a commander to see their buff, weakness and abilities, assign them, recruit or upgrade them, and spend Command Points on specialties. Higher rarity strengthens the buff, softens the weakness and unlocks the second ability. Earn Command Points from achievements (1 for Bronze and Silver, 2 for Gold, 3 for Platinum).</div>'
+  return '<div class="wrap cmdv">'+cryStrip()+talentBar(left)
+    +'<div class="note"><b>One commander leads each run.</b> Recruiting and each rank (Mk I to Mk IV) cost crystals of three types, shown on the commander. A higher rank strengthens the buff, softens the weakness and unlocks the second ability. Achievements earn talent points for specialties (1 for Bronze and Silver, 2 for Gold, 3 for Platinum).</div>'
     +cmGrid('cmd')+'</div>'+cmModal('cmd');
 }
 /* ================= guided tutorials ================= */
@@ -2475,92 +2650,141 @@ function demoRun(root){
 }
 const cmdUnlocked=()=>Object.keys(P.prog||{}).some(k=>((P.prog[k]||{}).best||0)>=CMD_LVL);
 const COACH={
+  /* first launch: one step, done by doing it */
   tour:[
-    {t:'Defend the city',x:'Stop mobs before they cross the ozone line. This tour covers each screen. Skip any time; Settings replays it.'},
-    {sel:'.topbar .pill[title^="Gems"]',t:'Gems',x:'Earned from level clears, stars, achievements and the daily reward. Spend them on crystal packs and commanders.'},
-    {sel:'.topbar .pill[title="Crystals"]',t:'Crystals',x:'They upgrade your weapons. Four of the same kind and rarity fuse into one of the next rarity.'},
-    {sel:'#enBox',t:'Energy',x:'A level costs '+EN_COST+' energy ('+EN_COST*2+' for Elite). You gain one every '+Math.round(EN_REGEN/6000)/10+' minutes, up to '+EN_MAX+'.'},
-    {sel:'nav.nav [data-nav="battle"]',t:'Battle',x:'Pick a level and deploy. Weapons fire on their own. After every wave you choose one upgrade card for that run.'},
-    {sel:'#gearBtn',t:'Manual control',x:'Set any weapon to Manual and it fires only when you do. The Aim button does the same in battle.'},
-    {sel:'nav.nav [data-nav="arsenal"]',t:'Arsenal',x:'Spend crystals on permanent upgrades for the turret and each weapon. Commanders unlock at level '+CMD_LVL+'.'},
-    {sel:'nav.nav [data-nav="codex"]',t:'Codex',x:'Every mob you have met, what it is weak to, and your achievements.'},
-    {sel:'nav.nav [data-nav="shop"]',t:'Shop',x:'A free daily reward, unlocked by playing a level that day, and crystal packs with their drop rates listed.'},
-    {sel:'nav.nav [data-nav="worlds"]',t:'Worlds',x:'Stars earned on levels open the next world. Each world sends a different faction.'}
+    {sel:'.pvgo',ok:'.pvwrap [data-act="deploy"]',act:'tap',t:'Deploy',x:'Tap Battle to start Level 1. Each run uses a little energy, and it refills on its own.'}
   ],
+  /* each menu explains itself the first time you open it */
+  nav_arsenal:[{sel:'#content .wpns',t:'Arsenal',x:'Spend crystals on the turret and each weapon. Commanders unlock at level '+CMD_LVL+'.'}],
+  nav_codex:[{t:'Codex',x:'Every mob you have met, what it fears, and your achievements.'}],
+  nav_shop:[{sel:'.topbar .pill[title="Gems"]',t:'Shop',x:'Daily chest, free gems, crystal crates and the season pass. Crystals upgrade weapons and commanders.'}],
+  nav_worlds:[{t:'Worlds',x:'Stars open new worlds. Each one sends a different faction.'}],
   command:[
     {nav:'arsenal',tab:'command',sel:'.wpn[data-tab="command"]',t:'Commanders',x:'Bring one into battle. Each gives you a buff, a weakness and two abilities to tap.'},
-    {nav:'arsenal',tab:'command',sel:'.cmdv .cr',t:'Command points',x:'Achievements pay points. Spend them on specialty branches.'},
+    {nav:'arsenal',tab:'command',sel:'.cmdv .tbar',t:'Talent points',x:'Achievements pay talent points. Spend them on specialty branches.'},
     {nav:'arsenal',tab:'command',sel:'.cmdv .card',t:'Warden Sol',x:'Yours free. Read the buff, the weakness and the abilities, then open Specialties.'},
-    {nav:'shop',sel:'#cmarket',t:'Market',x:'Recruit with gems or open a pack. Higher rarity means a bigger buff, a smaller weakness and the second ability.'}
+    {nav:'arsenal',tab:'command',sel:'.cmdv .cmgrid',t:'Ranks',x:'Recruit and rank up with crystals of three types. A higher rank means a bigger buff, a smaller weakness and the second ability.'}
   ],
+  /* in battle every card freezes the run (mobs, meteors, timers, waves) until it is dismissed */
   run:[
-    {sel:'#bar',demo:'ozone',t:'Hold the line',x:'Kill mobs above the dashed ozone line. Anything that crosses it hits the city bar. Your shield soaks the first hits.'},
-    {demo:'steer',t:'Hold to aim',x:'Press anywhere on the field and the turret follows your finger. Let go and the AI takes over.'}
+    {fx:'ozone',demo:'ozone',t:'Hold the line',x:'Kill mobs before they cross the glowing ozone line. Anything that crosses hits the city.'},
+    {demo:'steer',t:'Hold to aim',x:'Press and hold anywhere on the field. The turret follows your finger. Let go and the AI takes over.'}
   ],
   grab:[
-    {sel:'#row0 .tool[data-w]:not([hidden])',t:'Weapons fire on their own',x:'Each weapon fires when its timer fills. You can choose the target instead.'},
-    {sel:'#row0 .tool[data-w]:not([hidden])',demo:'drag',t:'Aim a weapon',x:'Press a weapon icon, drag onto the field and release to fire there. Drag back down to cancel.'},
-    {sel:'#ctlBtn',t:'Manual mode',x:'Aim sets any weapon, or all of them, to Manual. A Manual weapon fires only when you tell it to.'}
+    {sel:'#row0 .tool[data-w]:not([hidden])',demo:'drag',t:'Fire a weapon',x:'Hold the weapon icon, drag onto the field and let go to fire there. Aim sets weapons to Manual.'}
   ],
   speed:[
     {sel:'#spdBtn',t:'Game speed',x:'Tap to run battles at 2x or 3x. Your choice is remembered next time.'}
   ],
   cmdrun:[
-    {sel:'#cmdA1',demo:'ability',t:'Commander abilities',x:'Tap a button when it glows. Cooldowns run long, so save them for bad moments. Keys: Q and E.'}
+    {sel:'#cmdA1',demo:'ability',t:'Commander ability',x:'Tap it when it glows. Cooldowns run long, so save it for bad moments. Keys: Q and E.'}
   ]
 };
-let coachSt=null, coachQ=[];
-function coachSeen(id){ return !!((P.tut||{})[id]); }
-function coachMark(id){ P.tut=P.tut||{}; P.tut[id]=1; try{ save(); }catch(e){} }
+/* counters the live prompts watch */
+const CF={hold:0,fire:0,cmd:0,oz:0};
+let coachSt=null, coachQ=[], coachIv=0;
+const NAV_TIPS=['arsenal','codex','shop','worlds'];
+/* players who saw the old menu tour (tour set before v2) skip the per-menu tips */
+function coachSeen(id){ const t=P.tut||{}; if(t[id]) return true; return id.slice(0,4)==='nav_'&&!!(t.navOld||(t.tour&&!t.v2)); }
+function coachMark(id){ P.tut=P.tut||{}; if(id==='tour'&&!P.tut.tour) P.tut.v2=1; P.tut[id]=1; try{ save(); }catch(e){} }
 function coachOn(){ return !navigator.webdriver||window.__forceTeach; }
 function coach(id,force){
   if(!force&&(!coachOn()||coachSeen(id))) return;
   if(coachSt||coachQ.some(q=>q===id)){ if(!coachQ.includes(id)&&!(coachSt&&coachSt.id===id)) coachQ.push(id); return; }
   const steps=COACH[id]; if(!steps) return;
-  coachSt={id:id,i:0,steps:steps,pause:G.state==='playing'}; if(coachSt.pause){ G.state='teach'; G.armed=null; G.ghost.show=false; G.placing=false; input.active=false; }
+  coachSt={id:id,i:0,steps:steps,pause:false};
   coachShow();
 }
+function coachStep(){ const s=coachSt; return s&&s.steps[s.i]; }
+function coachNext(){ const s=coachSt; if(!s) return; s.i++; if(s.i>=s.steps.length) coachEnd(); else coachShow(); }
+/* taps during a do-it step: only the highlighted control (and the card's own buttons) get through */
+function coachGuard(e){
+  const st=coachStep(); if(!st||st.act!=='tap') return;
+  const t=e.target; if(t.closest&&t.closest('#coach .ccard')) return;
+  const ok=t.closest&&t.closest(st.ok||st.sel);
+  if(!ok){ e.preventDefault(); e.stopPropagation(); return; }
+  if(e.type==='click'){ const s=coachSt; setTimeout(()=>{ if(coachSt===s&&coachStep()===st) coachNext(); },0); }
+}
+['pointerdown','click'].forEach(k=>document.addEventListener(k,coachGuard,true));
 function coachShow(){
   const s=coachSt; if(!s) return; const st=s.steps[s.i];
   if((st.nav&&UI.nav!==st.nav)||(st.tab&&tab!==st.tab)){ if(st.nav) UI.nav=st.nav; if(st.tab) tab=st.tab; renderArmory(); }
+  const live=!!st.live;
+  /* any card shown during a run freezes it; menu cards have nothing to pause */
+  if(G.state==='playing'){ s.pause=true; G.state='teach'; G.armed=null; G.ghost.show=false; G.placing=false; input.active=false; }
   let ov=document.getElementById('coach');
   if(!ov){ ov=document.createElement('div'); ov.id='coach'; ov.innerHTML='<div class="chole"></div><div class="ccard" role="dialog" aria-live="polite"></div>';
-    ov.addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; if(b.dataset.c==='skip') coachEnd(); else if(b.dataset.c==='next'){ s.i++; if(coachSt.i>=coachSt.steps.length) coachEnd(); else coachShow(); } });
+    ov.addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; if(b.dataset.c==='skip') coachEnd(); else if(b.dataset.c==='next') coachNext(); });
     document.body.appendChild(ov); addEventListener('resize',coachPlace); }
-  const last=s.i>=s.steps.length-1, card=ov.querySelector('.ccard');
-  card.innerHTML='<div class="ck">'+(s.steps.length>1?'Step '+(s.i+1)+' of '+s.steps.length:'Tip')+'</div><h3>'+st.t+'</h3>'+demoHtml(st.demo)+'<p>'+st.x+'</p><div class="cb">'+(last?'':'<button type="button" class="btn ghost" data-c="skip">Skip</button>')+'<button type="button" class="btn" data-c="next">'+(last?'Got it':'Next')+'</button></div>';
-  requestAnimationFrame(()=>{ const el=st.sel&&document.querySelector(st.sel); if(el&&el.scrollIntoView) try{ el.scrollIntoView({block:'center'}); }catch(e){} requestAnimationFrame(coachPlace); });
+  ov.classList.toggle('live',live); ov.classList.toggle('act',st.act==='tap');
+  const last=s.i>=s.steps.length-1, card=ov.querySelector('.ccard'), wait=live&&st.done||st.act==='tap';
+  const kick=live?'Try it':st.act==='tap'?'Your move':s.steps.length>1?'Step '+(s.i+1)+' of '+s.steps.length:'Tip';
+  card.innerHTML='<div class="ck">'+kick+'</div><h3>'+st.t+'</h3>'+(live?'':demoHtml(st.demo))+'<p>'+st.x+'</p>'
+    +(live&&!st.done?'<i class="cbar"><i></i></i>':'')
+    +'<div class="cb">'+(last&&!wait?'':'<button type="button" class="btn ghost" data-c="skip">Skip</button>')+(wait?'':'<button type="button" class="btn" data-c="next">'+(last?'Got it':'Next')+'</button>')+'</div>';
+  st._t=0; CF.oz=st.fx==='ozone'?1:0;
+  if(st.done){ CF.hold=0; CF.fire=0; CF.cmd=0; }
+  requestAnimationFrame(()=>{ const el=st.sel&&document.querySelector(st.sel); if(el&&el.scrollIntoView&&!live) try{ el.scrollIntoView({block:'center'}); }catch(e){} requestAnimationFrame(coachPlace); });
   demoRun(card);
   const nb=card.querySelector('[data-c="next"]'); if(nb) nb.focus({preventScroll:true});
+  /* keep the cutout on its target while the screen moves, and drive the live prompts */
+  if(!coachIv) coachIv=setInterval(coachTick,200);
+}
+function coachTick(){
+  const s=coachSt; if(!s){ clearInterval(coachIv); coachIv=0; return; }
+  const st=s.steps[s.i], ov=document.getElementById('coach');
+  if(st.live){
+    const run=G.state==='playing'&&!document.getElementById('teachov');
+    if(G.state==='armory'||G.state==='won'||G.state==='over'){ coachEnd(); return; }
+    if(ov) ov.classList.toggle('away',!run);
+    if(run){
+      st._t+=0.2; if(input.active) CF.hold+=0.2;
+      const b=ov&&ov.querySelector('.cbar i'); if(b&&st.dur) b.style.width=Math.min(100,st._t/st.dur*100)+'%';
+      if((st.dur&&st._t>=st.dur)||(st.done&&st.done())||(st.max&&st._t>=st.max)){ coachNext(); return; }
+    }
+  }
+  coachPlace();
 }
 function coachPlace(){
   const s=coachSt, ov=document.getElementById('coach'); if(!s||!ov) return; const st=s.steps[s.i], hole=ov.querySelector('.chole'), card=ov.querySelector('.ccard');
   const el=st.sel&&document.querySelector(st.sel); let r=null; if(el&&!el.hidden){ const b=el.getBoundingClientRect(); if(b.width>0&&b.height>0) r=b; }
-  const vw=innerWidth, vh=innerHeight, cw=Math.min(340,vw-24); card.style.width=cw+'px';
+  const vw=innerWidth, vh=innerHeight, bs=getComputedStyle(document.body), top0=Math.max(12,parseFloat(bs.paddingTop)||0), bot0=Math.max(12,parseFloat(bs.paddingBottom)||0);
   if(r){ const p=6; hole.style.cssText='display:block;left:'+(r.left-p)+'px;top:'+(r.top-p)+'px;width:'+(r.width+2*p)+'px;height:'+(r.height+2*p)+'px'; ov.classList.remove('flat'); }
-  else { hole.style.display='none'; ov.classList.add('flat'); }
-  const ch=card.offsetHeight; let top;
-  if(!r) top=(vh-ch)/2; else if(r.bottom+ch+24<vh) top=r.bottom+16; else top=Math.max(12,r.top-ch-16);
-  const left=r?Math.max(12,Math.min(vw-cw-12,r.left+r.width/2-cw/2)):(vw-cw)/2;
+  else { hole.style.display='none'; ov.classList.toggle('flat',!st.live); }
+  let cw, top, left;
+  if(st.live){ /* prompts ride the top of the play field, clear of the action below */
+    const pr=$('c').getBoundingClientRect(); cw=Math.min(340,pr.width-16,vw-24); card.style.width=cw+'px';
+    top=Math.max(top0,pr.top+8); left=pr.left+(pr.width-cw)/2;
+  } else {
+    cw=Math.min(340,vw-24); card.style.width=cw+'px';
+    const ch=card.offsetHeight;
+    if(!r) top=(vh-ch)/2; else if(r.bottom+ch+24<vh-bot0) top=r.bottom+16; else top=Math.max(top0,r.top-ch-16);
+    left=r?Math.max(12,Math.min(vw-cw-12,r.left+r.width/2-cw/2)):(vw-cw)/2;
+  }
   card.style.top=top+'px'; card.style.left=left+'px';
 }
 function coachEnd(){
-  const s=coachSt; if(!s) return; coachMark(s.id); coachSt=null; if(demoIv){ clearInterval(demoIv); demoIv=0; }
+  const s=coachSt; if(!s) return; coachMark(s.id); coachSt=null; CF.oz=0; if(demoIv){ clearInterval(demoIv); demoIv=0; }
+  if(coachIv){ clearInterval(coachIv); coachIv=0; }
   const ov=document.getElementById('coach'); if(ov) ov.remove(); removeEventListener('resize',coachPlace);
-  if(s.pause&&G.state==='teach'){ G.state='playing'; toolKey=''; hudKey=''; }
+  /* another card waiting in battle: show it while the run is still frozen */
+  if(s.pause&&G.state==='teach'&&coachQ.length){ const n=coachQ.shift(); coach(n,true); if(coachSt){ coachSt.pause=true; return; } }
+  if(s.pause&&G.state==='teach'){ G.state='playing'; toolKey=''; hudKey=''; if(G.teachQ&&G.teachQ.length) openTeach(); }
   if(coachQ.length){ const n=coachQ.shift(); setTimeout(()=>coach(n,true),250); }
 }
 /* what to teach next, checked whenever the armory draws or a level begins */
 function coachArmory(){
   if(!coachOn()||coachSt||document.getElementById('introov')||G.state!=='armory') return;
-  if(!coachSeen('tour')){ if(Object.keys(P.prog||{}).some(k=>((P.prog[k]||{}).best||0)>0)){ coachMark('tour'); } else { setTimeout(()=>{ if(G.state==='armory'&&!document.getElementById('introov')) coach('tour'); },450); return; } }
-  if(cmdUnlocked()&&!coachSeen('command')) setTimeout(()=>{ if(G.state==='armory'&&!document.getElementById('introov')) coach('command'); },450);
+  const gate=document.getElementById('gate'); if(gate&&!gate.hidden){ setTimeout(coachArmory,1000); return; }
+  if(!coachSeen('tour')){ if(Object.keys(P.prog||{}).some(k=>((P.prog[k]||{}).best||0)>0)){ coachMark('tour'); P.tut.navOld=1; } else { if(UI.nav!=='battle'){ UI.nav='battle'; renderArmory(); return; } setTimeout(()=>{ if(G.state==='armory'&&!coachSt&&!document.getElementById('introov')) coach('tour'); },450); return; } }
+  if(cmdUnlocked()&&!coachSeen('command')){ setTimeout(()=>{ if(G.state==='armory'&&!coachSt&&!document.getElementById('introov')) coach('command'); },450); return; }
+  if(NAV_TIPS.includes(UI.nav)&&!coachSeen('nav_'+UI.nav)){ const id='nav_'+UI.nav; setTimeout(()=>{ if(G.state==='armory'&&!coachSt&&UI.nav===id.slice(4)) coach(id); },350); }
 }
 function coachWhenPlaying(id,delay){ let n=0; const tick=()=>{ if(G.state==='playing'&&!document.getElementById('teachov')) return coach(id); if(G.state!=='playing'&&G.state!=='teach'&&G.state!=='cards') return; if(++n<30) setTimeout(tick,500); }; setTimeout(tick,delay); }
 function coachRun(){
   if(!coachOn()) return;
-  if(!coachSeen('run')){ if(Object.keys(P.prog||{}).some(k=>((P.prog[k]||{}).best||0)>0)) coachMark('run'); else coachWhenPlaying('run',1200); }
-  if(G.cm&&!coachSeen('cmdrun')) coachWhenPlaying('cmdrun',1800);
+  if(!coachSeen('run')){ if(Object.keys(P.prog||{}).some(k=>((P.prog[k]||{}).best||0)>0)) coachMark('run'); else coachWhenPlaying('run',300); }
+  if(G.cm&&!coachSeen('cmdrun')) coachWhenPlaying('cmdrun',400);
   if(!coachSeen('speed')&&Object.keys(P.prog||{}).some(k=>((P.prog[k]||{}).best||0)>=2)) coachWhenPlaying('speed',3200);
   coachGrab();
 }
@@ -2573,30 +2797,7 @@ function coachGrab(){
   };
   setTimeout(tick,1500);
 }
-function coachReplay(){ P.tut={}; try{ save(); }catch(e){} closeOrb(); if(G.state==='armory'){ UI.nav='battle'; renderArmory(); } setTimeout(()=>coach('tour',true),150); }
-const CPACKS=[{id:'cr',name:'Recruit Pack',cost:60,odds:[74,21,4.6,0.4],color:'#3d8bff',blurb:'One commander card. Mostly Common, with a shot at better.'},
-  {id:'ce',name:'Elite Pack',cost:240,odds:[0,60,33,7],color:'#ff2bd6',blurb:'One commander card, Rare or better.'}];
-function cmdPack(id){
-  const pk=CPACKS.find(x=>x.id===id), p=cmdP(); if(!pk||!cmdUnlocked()) return;
-  if((P.gems||0)<pk.cost){ toast('Not enough gems.'); return; }
-  P.gems-=pk.cost;
-  let x=Math.random()*pk.odds.reduce((a,b)=>a+b,0), r=0; for(let i=0;i<4;i++){ x-=pk.odds[i]; if(x<=0){ r=i; break; } }
-  const ok=CMDS.filter(c=>(c.tier|0)<=r), need=ok.filter(c=>p.own[c.id]===undefined||p.own[c.id]<r), pool=need.length?need:ok, c=pool[Math.floor(Math.random()*pool.length)], cur=p.own[c.id];
-  let res; if(cur===undefined){ p.own[c.id]=r; res='NEW COMMANDER'; } else if(r>cur){ p.own[c.id]=r; res='UPGRADED TO '+CRAR[r].toUpperCase(); } else { const g=Math.round(CRP[r]*0.4); P.gems+=g; res='DUPLICATE: +'+g+' gems'; }
-  try{ logEv('cpack',id); }catch(e){} save(); showCmdReveal(pk,c,r,res); renderArmory();
-}
-function showCmdReveal(pk,c,r,res){
-  const old=document.getElementById('cpack'); if(old) old.remove(); const o=document.createElement('div'); o.id='cpack'; o.setAttribute('role','dialog');
-  o.innerHTML='<div class="cpc" style="--c:'+c.color+';--rc:'+RAR[r].color+'"><div class="ck">'+pk.name+'</div><div class="cpr" style="color:'+RAR[r].color+'">'+CRAR[r]+'</div><h3>'+c.name+'</h3><div class="note">'+c.role+'</div><p>'+cmdPas(c,r)+'<br>Weakness: '+cmdWk(c,r)+'</p><div class="cpres">'+res+'</div><button class="btn" type="button">Continue</button></div>';
-  o.addEventListener('click',e=>{ if(e.target.closest('button')) o.remove(); }); document.body.appendChild(o); const b=o.querySelector('button'); if(b) b.focus({preventScroll:true});
-}
-function marketHtml(){
-  const p=cmdP(); let h='<div class="note" style="margin:10px 0 4px" id="cmarket"><b>Commander Market.</b> '+(cmdUnlocked()?'Tap a commander to see them and recruit or upgrade them with gems. Rarity strengthens the buff, softens the weakness and unlocks the second ability.':'Opens when you clear level '+CMD_LVL+'.')+'</div>';
-  if(!cmdUnlocked()) return h;
-  CPACKS.forEach(pk=>{ h+='<div class="card" style="--c:'+pk.color+'"><div class="ct"><span class="cn">'+pk.name+'</span><span class="chip" style="--c:'+pk.color+'">Command pack</span></div><div class="cv">'+pk.blurb+' Duplicates refund gems.</div><button class="btn" type="button" data-cmd="pack:'+pk.id+'" style="--c:'+pk.color+'" '+((P.gems||0)<pk.cost?'disabled':'')+'>Open <small>'+pk.cost+' gems</small></button></div>'; });
-  h+=cmGrid('shop');
-  return h+cmModal('shop');
-}
+function coachReplay(){ P.tut={v2:1}; try{ save(); }catch(e){} closeOrb(); if(G.state==='armory'){ UI.nav='battle'; renderArmory(); } setTimeout(()=>coach('tour',true),150); }
 function blast(x,y,R,dmg,floor,src){
   dmg*=cmM('blast');
   for(const e of G.enemies){
@@ -3100,7 +3301,7 @@ function drawEnemy(e){
     ctx.strokeStyle='rgba(255,255,255,.35)'; ctx.lineWidth=1; ctx.strokeRect(bx-1.5,by-1.5,bw+3,bh+3);
   }
 }
-function neon(color,blur,lw){ ctx.strokeStyle=color; ctx.shadowColor=color; ctx.shadowBlur=blur*sx; ctx.lineWidth=lw; }
+function neon(color,blur,lw){ ctx.strokeStyle=color; ctx.shadowColor=color; ctx.shadowBlur=blur*sx*GLOW.k; ctx.lineWidth=lw; }
 function tri2(a,b,c,d,e,f){ ctx.beginPath(); ctx.moveTo(a,b); ctx.lineTo(c,d); ctx.lineTo(e,f); ctx.closePath(); ctx.stroke(); }
 function circ2(x,y,r,fill){ ctx.beginPath(); ctx.arc(x,y,r,0,6.2832); if(fill) ctx.fill(); ctx.stroke(); }
 const ORDER=[5,2,9,0,7,3,10,1,6,11,4,8], BH=[34,52,28,46,60,38,44,30,56,40,48,32];
@@ -3125,6 +3326,8 @@ function drawOzone(){
   ctx.strokeStyle=fl>0?'rgba(255,90,120,'+(0.55+0.4*fl)+')':'rgba(125,249,255,'+a*0.55+')'; ctx.lineWidth=1.4; ctx.setLineDash([14,9]); ctx.lineDashOffset=-t*18;
   ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); ctx.setLineDash([]);
   ctx.fillStyle='rgba(125,249,255,.38)'; ctx.font='600 10px "Chakra Petch", monospace'; ctx.textAlign='right'; ctx.fillText('OZONE',W-8,y-6); ctx.textAlign='left';
+  if(CF.oz){ const k=0.5+0.5*Math.sin(t*6); ctx.globalCompositeOperation='lighter'; ctx.strokeStyle='rgba(125,249,255,'+(0.45+0.5*k)+')'; ctx.shadowColor='#00f0ff'; ctx.shadowBlur=(10+10*k)*sx; ctx.lineWidth=3+2*k; ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); ctx.shadowBlur=0;
+    ctx.fillStyle='rgba(125,249,255,'+(0.5+0.5*k)+')'; for(let i=0;i<5;i++){ const ax=W*(i+0.5)/5, ay=y-18-6*k; ctx.beginPath(); ctx.moveTo(ax,ay+10); ctx.lineTo(ax-7,ay); ctx.lineTo(ax+7,ay); ctx.closePath(); ctx.fill(); } ctx.globalCompositeOperation='source-over'; }
   ctx.restore();
   drawMend();
 }
@@ -3669,8 +3872,8 @@ const IC={
   frt:'<path d="M8 1.5l5.5 2v4.2c0 3.2-2.4 5.3-5.5 6.8-3.100-1.500-5.500-3.600-5.500-6.800V3.500z"/>',
   bolt:'<path d="M9.5 1.5 4 9h4l-1.2 5.5L12.5 7H8.6z"/>',
   wave:'<path d="M1.500 8c2-4.500 3.500-4.500 5 0s3 4.500 5 0 2-3.500 3-3.500"/>',
-  crystal:'<path fill="currentColor" fill-opacity=".22" d="M8 1 3.500 4.500v7L8 15z"/><path fill="currentColor" fill-opacity=".52" d="M8 1l4.500 3.500v7L8 15z"/><path d="M8 1 3.500 4.500v7L8 15l4.500-3.500v-7z"/><path d="M3.500 4.500 8 7l4.500-2.500M8 7v8"/>',
-  shard:'<path fill="currentColor" fill-opacity=".5" d="M3.500 14.500 4 5.500 8 1.500l1.300 3.700-2.300 2.600 3.600 1.500-2.100 2.900 2.900 2.300z"/><path d="M4 5.500 7 7.800M12.800 5.500l.7 1.800M11.800 2.800l1 1"/>',
+  crystal:'<path fill="currentColor" fill-opacity=".14" d="M8 1.400 13.700 4.700v6.600L8 14.600 2.300 11.300V4.700z"/><circle cx="8" cy="8" r="2.300" fill="currentColor" fill-opacity=".9" stroke="none"/><path d="M8 1.400v2.400M8 12.200v2.400"/>',
+  crate:'<path d="M2 5 8 2l6 3v6l-6 3-6-3z"/><path d="M2 5l6 3 6-3M8 8v6"/>',
   cards:'<rect x="5" y="2.500" width="8.500" height="11" rx="1.600"/><path d="M2.500 5v8"/>',
   lock:'<rect x="3.500" y="7" width="9" height="7" rx="1.500"/><path d="M5.500 7V5a2.500 2.500 0 0 1 5 0v2"/>',
   world:'<circle cx="8" cy="8" r="3.300"/><ellipse cx="8" cy="8" rx="7" ry="2.500" transform="rotate(-25 8 8)"/>',
@@ -3678,28 +3881,14 @@ const IC={
   aim:'<circle cx="8" cy="8" r="4.500"/><path d="M8 1v3M8 12v3M1 8h3M12 8h3"/>',
   chev:'<path d="M10.500 2.500 5 8l5.500 5.500"/>',
   turret:'<path d="M8 2 12.500 11H3.500z"/><path d="M2.500 14h11"/>',
-  gem:'<path d="M4 2.500h8l2.500 3.500L8 14 1.500 6z"/><path d="M1.500 6h13M6 2.500 5 6l3 8 3-8-1-3.500"/>',
+  gem:'<path fill="currentColor" fill-opacity=".18" d="M8 1.500 14 8l-6 6.500L2 8z"/><path fill="currentColor" fill-opacity=".55" stroke="none" d="M8 1.500 14 8H8z"/><path d="M2 8h12"/>',
   cog:'<circle cx="8" cy="8" r="2.200"/><circle cx="8" cy="8" r="4.800"/><path d="M8 1v1.800M8 13.200V15M1 8h1.800M13.200 8H15M3 3l1.300 1.300M11.700 11.700 13 13M3 13l1.300-1.300M11.700 4.300 13 3"/>',
   note:'<path d="M6 11.500V3l7-1.500v8.500"/><circle cx="4.300" cy="11.800" r="1.700"/><circle cx="11.300" cy="10.300" r="1.700"/>',
   spk:'<path d="M2 6h3l4-3.200v10.400L5 10H2z"/><path d="M11.500 5.500a3.500 3.500 0 0 1 0 5M13 3.500a6.500 6.500 0 0 1 0 9"/>',
   heart:'<path d="M8 14 2.500 8.500a3.200 3.200 0 0 1 5.500-3.200 3.200 3.200 0 0 1 5.500 3.200z"/>'
 };
-let _vid=0;
-/* A crystal that fills up with the shards you hold: dashed outline = missing pieces, solid = assembled */
-function vessel(frac,sz){ const id='vs'+(++_vid), f=Math.max(0,Math.min(1,frac)), y=(2+36*(1-f)).toFixed(1), full=f>=1;
-  return '<svg class="vsl'+(full?' full':'')+'" viewBox="0 0 32 40" width="'+Math.round(sz*0.8)+'" height="'+sz+'" aria-hidden="true"><defs><clipPath id="'+id+'"><rect x="0" y="'+y+'" width="32" height="40"/></clipPath></defs>'
-    +'<path d="M16 2 26 10v20L16 38 6 30V10z" fill="none" stroke="currentColor" stroke-opacity=".45" stroke-width="1.4" stroke-dasharray="'+(full?'0':'3 2.500')+'"/>'
-    +'<g clip-path="url(#'+id+')"><path fill="currentColor" fill-opacity=".28" d="M16 2 6 10v20l10 8z"/><path fill="currentColor" fill-opacity=".62" d="M16 2l10 8v20l-10 8z"/></g>'
-    +'<path d="M6 10l10 6 10-6M16 16v22" fill="none" stroke="currentColor" stroke-opacity="'+(full?'.9':'.4')+'" stroke-width="1.100"/>'
-    +(full?'<path d="M16 2 26 10v20L16 38 6 30V10z" fill="none" stroke="currentColor" stroke-width="1.600"/>':'')+'</svg>'; }
-function forgeFx(r){ const o=document.createElement('div'); o.className='forgefx'; o.style.setProperty('--c',RAR[r].color); const n=5; let h='';
-  for(let i=0;i<n;i++){ const a=i/n*6.283+0.4; h+='<i style="--x:'+Math.round(Math.cos(a)*96)+'px;--y:'+Math.round(Math.sin(a)*96)+'px;--d:'+(i*45)+'ms">'+ico('shard',24)+'</i>'; }
-  h+='<b>'+ico('crystal',56)+'</b>'; o.innerHTML=h; document.body.appendChild(o); setTimeout(()=>o.remove(),1500); }
 const rarPips=r=>'<i class="pips" aria-hidden="true">'+'<u></u>'.repeat(r+1)+'</i>';
 /* Gems come in three tiers. The wallet P.gems stays one number counted in Common-gem value; it is shown as the fewest gems that make it up (Rare = 4 Common, Exquisite = 8 Rare = 32 Common), so saves and prices are unchanged. */
-const GEMV=[1,4,32], GEMC=['#b8c4cc','#3d8bff','#ff9d00'], GEMN=['Common','Rare','Exquisite'];
-const gemSplit=n=>{ n=Math.max(0,Math.floor(+n||0)); const e=Math.floor(n/32); n-=e*32; const r=Math.floor(n/4); return [n-r*4,r,e]; };
-const gemHtml=(n,z)=>{ const s=gemSplit(n); let h=''; for(let i=2;i>=0;i--) if(s[i]||(i===0&&!h)) h+='<span class="gt" title="'+s[i]+' '+GEMN[i]+' gem'+(s[i]===1?'':'s')+'" style="color:'+GEMC[i]+'">'+ico('gem',z||14)+s[i]+'</span>'; return h; };
 const ico=(n,sz)=>'<svg class="ic" viewBox="0 0 16 16" width="'+(sz||14)+'" height="'+(sz||14)+'" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+IC[n]+'</svg>';
 [['toolMine','mine'],['toolMortar','mortar'],['toolField','field'],['toolChain','chain'],['toolSaw','saw']].forEach(a=>$(a[0]).insertAdjacentHTML('afterbegin',ico(a[1])));
 const toolMine=$('toolMine'), toolField=$('toolField'), toolMortar=$('toolMortar'), toolChain=$('toolChain'), toolSaw=$('toolSaw');
@@ -3762,10 +3951,20 @@ function commitArmed(){
 }
 
 /* ================= flow ================= */
+let curView='';
 function showView(v){
   if(v!=='armory') closeOrb();
   appEl.hidden=v!=='game'; armoryEl.hidden=v!=='armory'; document.body.classList.toggle('menu',v==='armory');
   if(v==='game') fit();
+  if(curView&&curView!==v) viewFx(v==='game'?appEl:armoryEl);
+  curView=v;
+}
+/* switching between menu and battle: the new screen fades up behind a neon scan line */
+function viewFx(el){
+  if(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  el.classList.remove('vin'); void el.offsetWidth; el.classList.add('vin');
+  let w=document.getElementById('vwipe'); if(w) w.remove(); w=document.createElement('div'); w.id='vwipe'; w.setAttribute('aria-hidden','true'); document.body.appendChild(w);
+  setTimeout(()=>{ el.classList.remove('vin'); if(w.isConnected) w.remove(); },520);
 }
 function startWave(w){
   G.wave=w; G.waveT=0; G.nextT=null; G.wFac=1+WAVEHP*(w-1); save();
@@ -3795,14 +3994,13 @@ function startLevel(n,world,elite){
   startWave(1);
   say((G.elite?'Elite ':'')+(n%50===0?'Mega boss level '+n:isBoss(n)?'Boss level '+n:'Level '+n),(INTRO[n]?INTRO[n]+' \u00b7 ':'')+G.NW+' waves');
 }
+/* what a level paid: one line per crystal type, biggest first. got = {type: crystals} */
 function dropsHtml(got){
-  const m={}; got.forEach(c=>{ const k=c.t+':'+c.r; m[k]=(m[k]||0)+1; });
-  const ks=Object.keys(m).sort((a,b)=>(+b.split(':')[1])-(+a.split(':')[1]));
+  const ks=CTYPES.filter(t=>(got||{})[t]>0).sort((a,b)=>got[b]-got[a]);
   if(!ks.length) return '';
-  return '<div class="drops">'+ks.map(k=>{ const t=k.split(':')[0], r=+k.split(':')[1]; let d=''; for(let i=0;i<4;i++) d+='<i'+(i>r?' class="o"':'')+'></i>';
-    return '<span class="dcard" style="--g:'+RAR[r].color+'" title="'+RAR[r].name+' '+kName(t)+'" aria-label="'+m[k]+' '+RAR[r].name+' '+kName(t)+'">'+ico(kT(t),22)+'<i>'+(PWN[kW(t)]||'')+'</i><b>x'+m[k]+'</b><span class="dots">'+d+'</span></span>'; }).join('')+'</div>';
+  return '<div class="drops">'+ks.map(t=>'<span class="dcard" style="--g:'+CT[t].color+'" aria-label="'+got[t]+' '+CT[t].name+' crystals">'+ico('crystal',20)+'<b>+'+got[t]+'</b><i>'+CT[t].name+'</i></span>').join('')+'</div>';
 }
-function enLine(){ enTick(); return '<div class="stat1" title="Energy"><span style="color:var(--yellow)">'+ico('bolt',16)+P.en+'/'+EN_MAX+'</span></div>'; }
+function enLine(){ enTick(); return '<div class="stat1" title="Energy"><span style="color:var(--fg)">'+ico('bolt',16)+P.en+'/'+EN_MAX+'</span></div>'; }
 function win(){
   Ads.gameplayStop(); G.state='won'; G.armed=null; P.actDay=today(); achCheck(true); Music.win();
   const pr=pw(P), el=G.elite, replay=el?!!pr.eclr[G.n]:G.n<=pr.best, frac=G.hp/G.maxHp, perfect=frac>=0.999, hadPerf=!!pr.perf[G.n];
@@ -3814,15 +4012,16 @@ function win(){
   if(el) pr.eclr[G.n]=true;
   else { pr.best=Math.max(pr.best,G.n); pr.sel=Math.min(G.n+1,LEVELS); if(perfect) pr.perf[G.n]=true; }
   save();
+  achCheck(true);   /* Conquest awards read the level just cleared and the stars just earned */
   const last=G.n>=LEVELS, nx=G.n+1, canNext=!last&&(!el||!!pr.perf[nx]);
   const tx=(!el&&G.wd.id==='belt'&&STORY.win[G.n])||'';
   let h='<div class="ovb"><h1>'+(last?'Installment clear':(el?'Elite ':'Level ')+(el?G.n+' ':G.n+' ')+'clear')+'</h1>'
     +(tx?'<p class="sub">'+tx+'</p>':'')+dropsHtml(got)+gemLine(gem)+(sInfo?starsRow(sInfo):'')
     +'<div class="stat1"><span style="color:var(--red)" title="Base health left">'+ico('heart',16)+Math.round(frac*100)+'%</span>'
-    +(!el&&perfect?'<span style="color:var(--yellow)" title="Perfect">'+ico('pow',16)+(hadPerf?'':' Elite unlocked')+'</span>':'')+'</div>'
-    +(sp?'<div class="stat1" style="color:#9d4dff">+'+sp+' season points</div>':'')
+    +(!el&&perfect?'<span style="color:var(--fg)" title="Perfect">'+ico('pow',16)+(hadPerf?' Perfect':' Elite unlocked')+'</span>':'')+'</div>'
+    +(sp?'<div class="stat1" style="color:var(--dim)">+'+sp+' Season XP</div>':'')
     +enLine()
-    +(welcomeReady()?'<div class="note" style="color:#ffc400;text-align:center;margin-top:6px"><b>Tester welcome package unlocked!</b> '+WELCOME.gems+' gems, a free Surge Pack, full energy'+(SEASON.free.indexOf(seasonNo())>=0?' and Season '+seasonNo()+' premium':'')+'.</div>':'')
+    +(welcomeReady()?'<div class="note" style="color:#ffc400;text-align:center;margin-top:6px"><b>Tester welcome package unlocked.</b> '+WELCOME.gems+' gems, '+welcomeCry()+' crystals, full energy'+(SEASON.free.indexOf(seasonNo())>=0?' and Season '+seasonNo()+' premium':'')+'.</div>':'')
     +'</div><div class="ovf">'+(welcomeReady()?'<button class="btn big" data-o="welcome" type="button" style="--c:#ffc400;width:100%;margin-bottom:8px">'+ico('gem',16)+' Claim welcome package</button>':'')+'<div id="dblrow"><button class="btn dbl" data-o="double" type="button">'+ico('cards',16)+' Double rewards '+adTag()+'</button></div>'+'<div class="obtns"><button class="btn" data-o="armory" type="button">Home</button>'+(canNext?'<button class="btn big" data-o="next" type="button" aria-label="Next level">Level '+nx+' '+ico('bolt',14)+(el?EN_COST*2:EN_COST)+'</button>':'')+'</div></div>';
   overlay.innerHTML=h; overlay.hidden=false; focusFirst();
 }
@@ -3886,7 +4085,7 @@ const rarW=(n,e)=>{ const w=[100,n<3?0:20+1.5*n,n<10?0:8+1.6*(n-10),n<20?0:3+1.0
 function rollRar(n,e){ const w=rarW(n,e); let x=Math.random()*(w[0]+w[1]+w[2]+w[3]); for(let i=0;i<4;i++){ x-=w[i]; if(x<=0&&w[i]>0) return i; } return 0; }
 function rollType(){ let x=Math.random()*100; for(const t of CTYPES){ x-=CW[t]; if(x<=0) return t; } return 'pow'; }
 /* does anything still want this pool? (an upgrade below max, or an in-run card not yet mastered) */
-function keyNeed(k){ if(UPS.some(u=>u.k===k&&L(u.id)<u.max)) return true; const w=kW(k), t=kT(k); return CARDS.some(c=>c.t===1&&!c.unlock&&c.id!=='repair'&&c.w===w&&CIC[c.id]===t&&cmRank(c.id)<3); }
+function keyNeed(k){ if(UPS.some(u=>u.k===k&&L(u.id)<u.max)) return true; return false; }
 /* The specialty is rolled first (so each specialty's overall supply is unchanged), then the weapon: only weapons the player has met or levelled,
    favouring the weapons used in the run that paid out, and ignoring pools whose upgrades are all finished. */
 function rollKey(t,ctx){
@@ -3898,13 +4097,14 @@ function rollKey(t,ctx){
 }
 const rollCard=ctx=>rollKey(rollType(),ctx);
 function topRar(n,e){ const w=rarW(n,e); let t=0; for(let i=0;i<4;i++) if(w[i]>0) t=i; return t; }
+const dropVal=(n,el)=>{ const w=rarW(n,el), s=w[0]+w[1]+w[2]+w[3]; return (w[0]*CVAL[0]+w[1]*CVAL[1]+w[2]*CVAL[2]+w[3]*CVAL[3])/s; };   /* average crystals per drop */
 const dropCount=(n,frac,rep,el)=>Math.max(1,Math.round((CDROP0+CDROPG*n)*(rep?0.5:1)*(el?1.6:1)*Math.max(0.4,frac)));
 /* ================= gems, shop, rewarded ads, season pass ================= */
 /* account ledger: a short history of purchases, claims and clears, synced with the save and mirrored into the cloud profile */
 function logEv(k,d){ try{ (P.ledger=P.ledger||[]).push({t:Date.now(),k:k,d:String(d||'')}); if(P.ledger.length>100) P.ledger.splice(0,P.ledger.length-100); }catch(e){} }
 const today=()=>{ const d=new Date(); return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); };
 const passActive=()=>(P.pass||0)>Date.now()||premActive();   /* premium perks: the current season's premium track, or an old 30-day Neon Pass still running */
-const gemLine=g=>'<div class="stat1" style="color:#7df9ff" title="Gems worth '+g+' Common">+ '+gemHtml(g,16)+'</div>';
+const gemLine=g=>'<div class="stat1" style="color:var(--gemc)" title="Gems">'+ico('gem',16)+' +'+g+' gems</div>';
 let toastEl=null, toastT=0;
 function toast(t){ if(!toastEl){ toastEl=document.createElement('div'); toastEl.className='toast'; toastEl.setAttribute('role','status'); document.body.appendChild(toastEl); } toastEl.textContent=t; toastEl.classList.add('on'); clearTimeout(toastT); toastT=setTimeout(()=>toastEl.classList.remove('on'),2600); }
 /* Real-money purchases need the store's billing (Google Play / App Store). On the web build nothing is charged; the Android/iOS builds replace Billing.buy and call grantSku on success. */
@@ -3930,7 +4130,7 @@ const Billing={ready:false, buy(sku){ if(PAID_SOON){ toast('Coming soon'); retur
 function grantSku(sku){
   if(sku==='g100') P.gems+=100; else if(sku==='g550') P.gems+=550; else if(sku==='g1200') P.gems+=1200;
   else if(sku==='pass'){ P.prem=P.prem||{}; P.prem[seasonNo()]=1; }
-  else if(sku==='starter'&&!P.starter){ P.starter=1; P.gems+=150; for(const t in CT){ P.inv[t==='frt'?'base.frt':'turret.'+t][1]+=2; } enTick(); P.en=Math.min(EN_MAX,P.en+25); }
+  else if(sku==='starter'&&!P.starter){ P.starter=1; P.gems+=150; CTYPES.forEach(t=>cryAdd(t,8)); enTick(); P.en=Math.min(EN_MAX,P.en+25); }
   logEv('sku',sku); save(); renderArmory();
 }
 let rwBusy=false;
@@ -3946,25 +4146,26 @@ function goalsFor(wd,n){ const f=profileFor(wd,n,false).feat; return ['Clear the
 /* pay the free rewards for newly earned stars; returns what the win screen shows */
 function starPay(nb,bits,had){
   let g=0,f=0,t=null; const q=[];
-  for(let i=0;i<3;i++) if(nb&(1<<i)){ g+=ECON.starGems[i]; f+=ECON.starFrag[i]; }
-  if(bits===7&&had!==7){ g+=ECON.fullGems; f+=ECON.fullFrag; }
+  for(let i=0;i<3;i++) if(nb&(1<<i)){ g+=ECON.starGems[i]; f+=ECON.starCry[i]; }
+  if(bits===7&&had!==7){ g+=ECON.fullGems; f+=ECON.fullCry; }
   if(g) P.gems=(P.gems||0)+g;
-  if(f){ const ty=rollCard('run'); fragAdd(ty,f); t=ty; }
+  if(f){ t=rollType(); cryAdd(t,f); }
   return {bits:bits,nb:nb,g:g,f:f,t:t,n:G.n,wd:G.wd};
 }
 function starsRow(i){
   const gl=goalsFor(i.wd||curWorld(),i.n);
   return '<div class="srow">'+[0,1,2].map(k=>'<span class="sg'+((i.bits>>k)&1?' on':'')+((i.nb>>k)&1?' new':'')+'" title="'+gl[k]+'">'+ico('pow',22)+'</span>').join('')+'</div>'
-    +'<div class="note">'+(i.nb?'New star'+(popc(i.nb)>1?'s':'')+'! ':'')+gl.map((t,k)=>((i.bits>>k)&1?'\u2713 ':'\u2022 ')+t).join(' \u00b7 ')+'</div>'
-    +(i.g||i.f?'<div class="stat1" style="color:#7df9ff">'+(i.g?ico('gem',16)+' +'+i.g+' gems ':'')+(i.f?ico('shard',16)+' +'+i.f+' '+kName(i.t):'')+'</div>':'');
+    +'<div class="note">'+(i.nb?'New star'+(popc(i.nb)>1?'s':'')+'. ':'')+gl.map((t,k)=>((i.bits>>k)&1?'\u2713 ':'\u2022 ')+t).join(' \u00b7 ')+'</div>'
+    +(i.g||i.f?'<div class="stat1">'+(i.g?'<span style="color:var(--gemc)">'+ico('gem',16)+' +'+i.g+' gems</span> ':'')+(i.f?'<span style="color:'+CT[i.t].color+'">'+ico('crystal',16)+' +'+i.f+' '+CT[i.t].name+'</span>':'')+'</div>':'');
 }
 function doubleRewards(){
   if(!G.lastGot||G.doubled) return;
   rewardFlow('double_rewards',()=>{
     if(G.doubled) return; G.doubled=true;
-    G.lastGot.forEach(c=>{ P.inv[c.t][c.r]++; }); P.gems+=G.lastGems; save();
-    const dr=overlay.querySelector('.drops'); if(dr) dr.outerHTML=dropsHtml(G.lastGot.concat(G.lastGot));
-    const row=overlay.querySelector('#dblrow'); if(row) row.innerHTML='<div class="note" style="color:#7df9ff">Rewards doubled! +'+G.lastGems+' more gems</div>';
+    cryAddMap(G.lastGot); P.gems+=G.lastGems; save();
+    const two={}; for(const t in G.lastGot) two[t]=G.lastGot[t]*2;
+    const dr=overlay.querySelector('.drops'); if(dr) dr.outerHTML=dropsHtml(two);
+    const row=overlay.querySelector('#dblrow'); if(row) row.innerHTML='<div class="note">Rewards doubled'+(G.lastGems?': +'+G.lastGems+' more gems':'')+'</div>';
     Music.up();
   });
 }
@@ -3972,7 +4173,7 @@ function reviveRun(){
   if(G.state!=='over'||G.revived) return;
   rewardFlow('revive',()=>{
     if(G.state!=='over'||G.revived) return; G.revived=true;
-    (G.lastGot||[]).forEach(c=>{ P.inv[c.t][c.r]=Math.max(0,P.inv[c.t][c.r]-1); }); P.gems=Math.max(0,P.gems-(G.lastGems||0)); save();
+    for(const t in (G.lastGot||{})) crySpend(t,G.lastGot[t]); P.gems=Math.max(0,P.gems-(G.lastGems||0)); save();
     G.enemies.forEach(e=>{ if(!e.dead&&e.y>GROUND-330){ e.dead=true; explode(e); } });
     G.hp=Math.max(G.hp,G.maxHp*0.6); G.sh=G.shMax; G.shieldUntil=G.time+2.5; G.shake=0.6;
     G.state='playing'; overlay.hidden=true; Ads.gameplayStart(); Music.resume(); hudKey=''; toolKey='';
@@ -3980,11 +4181,6 @@ function reviveRun(){
   });
 }
 function adReroll(){ if(G.state!=='cards') return; if(!Ads.enabled&&!passActive()){ if((G.xr|0)>=2){ toast('No more extra rerolls this run'); return; } G.xr=(G.xr|0)+1; } rewardFlow('card_reroll',()=>{ if(G.state==='cards'){ G.offer=offerCards(); renderCards(); } }); }
-function forge(t,r){
-  if(!kOk(t)||!(r>=0&&r<4)) return; P.frag=P.frag||{};
-  if((P.frag[t]||0)<FORGE[r]){ toast('Not enough '+kName(t)+' shards'); return; }
-  fragSpend(t,FORGE[r]); P.inv[t][r]++; logEv('forge',t+':'+r); save(); Music.up(); toast('Forged: 1\u00d7 '+RAR[r].name+' '+kName(t)+' crystal'); forgeFx(r); renderArmory();
-}
 
 /* ================= testers, welcome package, season pass ================= */
 function premActive(){ return !!(P.prem&&P.prem[seasonNo()]); }
@@ -3993,19 +4189,20 @@ function ssCur(){ const n=seasonNo(); if(!P.ss||P.ss.n!==n) P.ss={n:n,pts:0,cf:0
 const spMax=()=>SEASON.tiers*SEASON.per;
 function spAdd(n){ n=Math.max(0,Math.floor(n||0)); if(!n) return 0; const s=ssCur(), was=s.pts; s.pts=Math.min(spMax(),s.pts+n); return s.pts-was; }
 const tierOf=s=>Math.min(SEASON.tiers,Math.floor(s.pts/SEASON.per));
-/* tier rewards. Free: small gems and shards, a Spark Pack every 10 tiers. Premium: crystals and shards (no gems, so the 600-gem price never pays back in gems), Surge Packs at 10 and 20, Supernova at 30. */
+/* tier rewards. Free: small gems and crystals, a Small crate every 10 tiers. Premium: crystals only (no gems, so the 600-gem price never pays back in gems), Supply crates at 10 and 20, a Heavy crate at 30. */
 function tierRw(t,prem){
-  if(!prem){ if(t%10===0) return {pack:'s'}; if(t%5===0) return {gems:15}; return t%2?{gems:5}:{frag:6}; }
-  if(t===SEASON.tiers) return {pack:'l'}; if(t%10===0) return {pack:'m'}; if(t%5===0) return {cry:2}; return t%2?{cry:1}:{frag:10};
+  if(!prem){ if(t%10===0) return {pack:'s'}; if(t%5===0) return {gems:15}; return t%2?{gems:5}:{cry:2}; }
+  if(t===SEASON.tiers) return {pack:'l'}; if(t%10===0) return {pack:'m'}; if(t%5===0) return {cry:12}; return t%2?{cry:4}:{cry:3};
 }
-const rwText=r=>r.pack?PACKS.find(x=>x.id===r.pack).name:r.gems?r.gems+' gems':r.frag?r.frag+' shards':'1 '+RAR[r.cry].name+' crystal';
-const rwIco=r=>ico(r.pack?'cards':r.gems?'gem':r.frag?'shard':'crystal',14);
-/* grants one reward; returns a pack's pulls so the caller can show the reveal */
+const rwText=r=>r.pack?PACKS.find(x=>x.id===r.pack).name:r.gems?r.gems+' gems':r.cry+' crystals';
+const rwIco=r=>ico(r.pack?'crate':r.gems?'gem':'crystal',14);
+/* a crate from a reward: its crystals spread across the five types, favouring the ones levels drop least */
+function spreadCry(n){ const w=CTYPES.map(t=>PACK_TW[t]), q=splitN(n,w), m={}; CTYPES.forEach((t,i)=>{ if(q[i]) m[t]=q[i]; }); return m; }
+/* grants one reward; returns what it paid so the caller can show it */
 function grantRw(r){
   if(r.gems){ P.gems=(P.gems||0)+r.gems; return null; }
-  if(r.frag){ const k=rollCard('run'); fragAdd(k,r.frag); toast('+'+r.frag+' '+kName(k)+' shards'); return null; }
-  if(r.cry){ const k=rollCard('run'); P.inv[k][r.cry]++; toast('+1 '+RAR[r.cry].name+' '+kName(k)+' crystal'); return null; }
-  if(r.pack){ const pk=PACKS.find(x=>x.id===r.pack), got=rollPack(pk,false); got.forEach(c=>{ P.inv[c.t][c.r]++; }); return {pk:pk,got:got}; }
+  if(r.cry){ const t=rollType(); cryAdd(t,r.cry); toast('+'+r.cry+' '+CT[t].name+' crystals'); return null; }
+  if(r.pack){ const pk=PACKS.find(x=>x.id===r.pack), m=spreadCry(pk.cry); cryAddMap(m); return {title:pk.name,got:m}; }
   return null;
 }
 function spClaim(t,prem){
@@ -4016,34 +4213,35 @@ function spClaim(t,prem){
   logEv('tier',s.n+':'+t+(prem?'p':'f')); save(); Music.up();
   if(r.gems) toast('+'+r.gems+' gems');
   if(!armoryEl.hidden) renderArmory();
-  if(pr) showPackReveal(pr.pk,pr.got);
+  if(pr) showGain(pr.title,pr.got);
   return true;
 }
+const welcomeCry=()=>(PACKS.find(x=>x.id===WELCOME.pack)||{cry:0}).cry;
 const welcomeReady=()=>!!P.tester&&!P.tw&&Object.keys(P.prog||{}).some(k=>((P.prog[k]||{}).best||0)>=WELCOME.lvl);
 function claimWelcome(){
   if(!welcomeReady()) return false;
   P.tw=1; P.gems=(P.gems||0)+WELCOME.gems; enTick(); P.en=Math.max(P.en,EN_MAX); P.enT=Date.now();
   const n=seasonNo(), prem=SEASON.free.indexOf(n)>=0; if(prem){ P.prem=P.prem||{}; P.prem[n]=1; }
-  const pk=PACKS.find(x=>x.id===WELCOME.pack), got=rollPack(pk,false); got.forEach(c=>{ P.inv[c.t][c.r]++; });
+  const got=spreadCry(welcomeCry()); cryAddMap(got);
   logEv('welcome',prem?'s'+n:''); save(); Music.up(); toast('Welcome aboard: +'+WELCOME.gems+' gems, full energy'+(prem?', Season '+n+' premium':''));
-  if(!armoryEl.hidden) renderArmory(); showPackReveal(pk,got);
+  if(!armoryEl.hidden) renderArmory(); showGain('Tester welcome package',got);
   return true;
 }
 function welcomeHtml(){
   if(!welcomeReady()) return '';
   const n=seasonNo(), prem=SEASON.free.indexOf(n)>=0;
   return '<div class="card" style="--c:#ffc400;margin-bottom:12px"><div class="ct"><span class="cn">Tester welcome package</span><span class="chip" style="--c:#ffc400">Free</span></div>'
-    +'<div class="cv">Thanks for testing Neon Defense. '+WELCOME.gems+' gems, a free Surge Pack, a full energy refill'+(prem?' and Season '+n+' premium':'')+'.</div>'
+    +'<div class="cv">Thanks for testing Neon Defense. '+WELCOME.gems+' gems, '+welcomeCry()+' crystals, a full energy refill'+(prem?' and Season '+n+' premium':'')+'.</div>'
     +'<button class="btn big" data-welcome="1" type="button" style="--c:#ffc400">Claim</button></div>';
 }
 function seasonHtml(){
   const s=ssCur(), n=s.n, tier=tierOf(s), pa=premActive(), old=!pa&&passActive(), left=Math.max(1,Math.ceil((seasonEnd(n)-Date.now())/864e5)), into=tier>=SEASON.tiers?SEASON.per:s.pts-tier*SEASON.per;
-  let h='<div class="card" style="--c:#9d4dff"><div class="ct"><span class="cn">Season '+n+' pass</span><span class="chip" style="--c:#9d4dff">'+left+' day'+(left===1?'':'s')+' left</span></div>'
-    +'<div class="cv">Earn season points by playing: '+SP.first+' per new clear, '+SP.replay+' per replay, '+SP.star+' per new star, '+SP.chest+' for the daily chest. Every '+SEASON.per+' points opens a tier.</div>'
+  let h='<div class="card" style="--c:var(--gemc)"><div class="ct"><span class="cn">Season '+n+' pass</span><span class="chip" style="--c:var(--gemc)">'+left+' day'+(left===1?'':'s')+' left</span></div>'
+    +'<div class="cv">Season XP comes from playing: '+SP.first+' per new clear, '+SP.replay+' per replay, '+SP.star+' per new star, '+SP.chest+' for the daily chest. Every '+SEASON.per+' XP opens a tier.</div>'
     +'<div class="note"><b style="color:var(--fg)">Tier '+tier+'/'+SEASON.tiers+'</b> · '+(tier>=SEASON.tiers?'season complete':into+'/'+SEASON.per+' to the next tier')+'</div>'
     +'<div class="spbar" role="progressbar" aria-label="Season progress" aria-valuemin="0" aria-valuemax="'+spMax()+'" aria-valuenow="'+s.pts+'"><i style="width:'+Math.round(100*s.pts/spMax())+'%"></i></div>'
     +'<div class="cv"><b>Premium</b>: '+(PLAY?'':'the only way to remove ads. Every reward ad is granted instantly, ')+'15 gems every day, double daily chest crystals, and the premium tier rewards.</div>';
-  if(pa||old) h+='<button class="btn" data-claim="pass" type="button" style="--c:#9d4dff" '+(P.passDay===today()?'disabled':'')+'>'+(P.passDay===today()?'Daily 15 gems claimed':'Claim 15 gems')+'</button>';
+  if(pa||old) h+='<button class="btn" data-claim="pass" type="button" style="--c:var(--gemc)" '+(P.passDay===today()?'disabled':'')+'>'+(P.passDay===today()?'Daily 15 gems claimed':'Claim 15 gems')+'</button>';
   if(!pa) h+=payBtns('pass',false);
   h+='<div class="sptiers"><div class="sprow sphd"><span>Tier</span><span>Free</span><span>Premium'+(pa?'':' '+ico('lock',12))+'</span></div>';
   for(let t=1;t<=SEASON.tiers;t++){
@@ -4054,120 +4252,89 @@ function seasonHtml(){
   return h+'</div></div>';
 }
 
-/* ================= card packs ================= */
-/* Packs replace buying fragments one-for-one. Odds are per card: [Common, Rare, Epic, Legendary] in percent.
-   gar = this many cards are at least that rarity (0 Common, 1 Rare, 2 Epic, 3 Legendary); pity = after this many packs without one, the next pack is forced to include one.
-   Each pull is fragments worth one card of that rarity (FORGE: 4/15/50/160). Price anchor: a pull is worth what it costs to forge (FORGE: 4/15/50/160 fragments), so Spark ~0.88x, Surge ~1.0x, Supernova ~1.1x of its gem price on average, with real spread either side. */
+/* ================= crystal crates ================= */
+/* Fixed bundles: you pick the crystal type and get exactly what the card says. No odds, no pity timers.
+   Priced at what the old random packs paid on average per gem (Spark 9, Surge 38, Supernova 125 crystals). */
 const PACKS=[
-  {id:'s',name:'Spark Pack',cost:40,n:5,odds:[82,15.5,2.3,0.2],color:'#3d8bff',gar:null,pity:null,blurb:'Five crystal pulls, mostly small, with a shot at something big.'},
-  {id:'m',name:'Surge Pack',cost:150,n:12,odds:[64,25,10.2,0.8],color:'#ff2bd6',gar:{min:1,cnt:1},pity:{min:2,every:3},blurb:'Twelve pulls. At least one Rare, and an Epic is guaranteed within 3 packs.'},
-  {id:'l',name:'Supernova Pack',cost:450,n:25,odds:[44,34,20,2],color:'#fff200',gar:{min:2,cnt:3},pity:{min:3,every:5},blurb:'Twenty-five pulls. At least three Epic or better, and a Legendary is guaranteed within 5 packs.'}
+  {id:'s',name:'Small crate',cost:40,cry:9},
+  {id:'m',name:'Supply crate',cost:150,cry:38},
+  {id:'l',name:'Heavy crate',cost:450,cry:125}
 ];
-const PACK_TW={pow:31,tmp:22,rch:16.5,cap:16.5,frt:14};   /* flatter than level drops (CW) so packs fill the gaps levels leave, especially Fortify */
-function rollPackType(){ let x=Math.random()*100; for(const t of CTYPES){ x-=PACK_TW[t]; if(x<=0) return t; } return 'pow'; }
-function rollPackRar(o){ let x=Math.random()*(o[0]+o[1]+o[2]+o[3]); for(let i=0;i<4;i++){ x-=o[i]; if(x<=0) return i; } return 0; }
-function rollPack(pk,free){
-  const pks=P.pk||(P.pk={s:0,m:0,l:0,f:0}), r=[]; for(let i=0;i<pk.n;i++) r.push(rollPackRar(pk.odds));
-  const lift=(min)=>{ let j=0; for(let i=1;i<r.length;i++) if(r[i]<r[j]) j=i; r[j]=min; };
-  const gar=pk.gar||(free?{min:1,cnt:1}:null);
-  if(gar) for(let c=r.filter(x=>x>=gar.min).length;c<gar.cnt;c++) lift(gar.min);
-  if(pk.pity){ if(r.some(x=>x>=pk.pity.min)) pks[pk.id]=0; else { pks[pk.id]=(pks[pk.id]|0)+1; if(pks[pk.id]>=pk.pity.every){ lift(pk.pity.min); pks[pk.id]=0; } } }
-  return r.map(x=>({t:rollKey(rollPackType(),'pack'),r:x,n:FORGE[x]}));
-}
-const packLeft=pk=>pk.pity?pk.pity.every-((P.pk||{})[pk.id]|0):0;
+const PACK_TW={pow:31,tmp:22,rch:16.5,cap:16.5,frt:14};   /* crates from rewards spread like this: flatter than level drops (CW), so they fill the gaps levels leave */
 function openPack(id){
   const pk=PACKS.find(x=>x.id===id); if(!pk) return; P.pk=P.pk||{s:0,m:0,l:0,f:0};
-  const free=id==='s'&&!P.pk.f, cost=free?0:pk.cost;
+  const t=CT[UI.pt]?UI.pt:'pow', free=id==='s'&&!P.pk.f, cost=free?0:pk.cost;
   if((P.gems||0)<cost){ toast('Not enough gems. Play levels and claim daily rewards to earn more.'); return; }
-  P.gems-=cost; if(free) P.pk.f=1;
-  const got=rollPack(pk,free); got.forEach(c=>{ P.inv[c.t][c.r]++; });
-  logEv('pack',id+(free?':free':'')); save(); showPackReveal(pk,got); renderArmory();
+  P.gems-=cost; if(free) P.pk.f=1; cryAdd(t,pk.cry);
+  logEv('pack',id+':'+t+(free?':free':'')); save(); Music.up(); toast(pk.name+': +'+pk.cry+' '+CT[t].name+' crystals'); renderArmory();
 }
-let pkT=null;
-function closePack(){ clearTimeout(pkT); const o=document.getElementById('packov'); if(o) o.remove(); renderArmory(); }
-function showPackReveal(pk,got){
-  clearTimeout(pkT); const old=document.getElementById('packov'); if(old) old.remove();
-  const s=got.slice().sort((a,b)=>a.r-b.r||PKEYS.indexOf(a.t)-PKEYS.indexOf(b.t)), best=s[s.length-1].r;
-  const o=document.createElement('div'); o.id='packov'; o.setAttribute('role','dialog'); o.setAttribute('aria-label',pk.name+' opening'); o.style.setProperty('--pc',pk.color);
-  o.innerHTML='<div class="pkh"><div class="pkn">'+pk.name+'</div><div class="pks" aria-live="polite" id="pkSub">Opening…</div></div>'
-    +'<div class="pkg c'+(pk.n===12?4:5)+'">'+s.map(c=>'<div class="pkc r'+c.r+'" style="--rc:'+RAR[c.r].color+';--tc:'+CT[kT(c.t)].color+'"><div class="bk">?</div><div class="fr">'+ico(kT(c.t),20)+'<em>'+PWN[kW(c.t)]+'</em><em>'+CT[kT(c.t)].name+'</em><b>+1</b><small>'+rarPips(c.r)+'</small></div></div>').join('')+'</div>'
-    +'<div class="pkx" id="pkx"><button type="button" class="btn" id="pkSkip">Skip</button></div>';
-  document.body.appendChild(o);
-  const tiles=[...o.querySelectorAll('.pkc')]; let i=0;
-  const finish=()=>{
-    clearTimeout(pkT); tiles.forEach(t=>t.classList.add('on'));
-    const tot={}; s.forEach(c=>{ tot[c.t]=(tot[c.t]||0)+c.n; });
-    const again=P.gems>=pk.cost;
-    document.getElementById('pkSub').textContent=best===3?'LEGENDARY!':best===2?'Epic pull':'Crystals added';
-    document.getElementById('pkx').innerHTML='<div class="pksum">'+PKEYS.filter(t=>tot[t]).sort((a,b)=>tot[b]-tot[a]).map(t=>'<span style="--c:'+CT[kT(t)].color+'">'+kName(t)+' +'+tot[t]+'</span>').join('')+'</div>'
-      +'<div class="pkbt"><button type="button" class="btn" id="pkDone">Collect</button><button type="button" class="btn big" id="pkAgain" '+(again?'':'disabled')+'>'+ico('gem',15)+' '+pk.cost+' again</button></div>';
-    document.getElementById('pkDone').onclick=closePack; document.getElementById('pkAgain').onclick=()=>openPack(pk.id);
-  };
-  const step=()=>{
-    if(i>=tiles.length){ finish(); return; }
-    const c=s[i]; tiles[i].classList.add('on'); try{ Music.reveal(c.r); }catch(e){}
-    if(c.r>=2){ o.classList.remove('flash'); void o.offsetWidth; o.classList.add('flash'); }
-    i++; const nx=s[i]; pkT=setTimeout(step,nx&&nx.r>=3?650:nx&&nx.r>=2?420:c.r>=1?170:85);
-  };
-  document.getElementById('pkSkip').onclick=finish; pkT=setTimeout(step,350);
+/* a calm summary of what a reward paid */
+function showGain(title,got){
+  const old=document.getElementById('gainov'); if(old) old.remove();
+  const o=document.createElement('div'); o.id='gainov'; o.setAttribute('role','dialog'); o.setAttribute('aria-label',title);
+  o.innerHTML='<div class="gnp"><div class="gnt">'+title+'</div>'+dropsHtml(got)+'<button type="button" class="btn">Continue</button></div>';
+  o.addEventListener('click',e=>{ if(e.target===o||e.target.closest('button')){ o.remove(); renderArmory(); } }); document.body.appendChild(o);
+  const b=o.querySelector('button'); if(b) b.focus({preventScroll:true});
 }
-function packCardHtml(pk){
-  const g=P.gems||0, free=pk.id==='s'&&!(P.pk||{}).f, cost=free?0:pk.cost, left=packLeft(pk), nm=['Common','Rare','Epic','Legendary'];
-  const odds='<div class="pkodds">'+pk.odds.map((p,r)=>'<span style="color:'+RAR[r].color+'"><b>'+p+'%</b> '+nm[r]+'</span>').join('')+'</div>';
-  const pity=pk.pity?'<div class="note" style="margin-top:4px">'+(left<=1?'Next pack: ':(pk.pity.min===3?'Legendary':'Epic')+' within '+left+' packs')+(left<=1?(pk.pity.min===3?'Legendary guaranteed':'Epic+ guaranteed'):'')+'</div>':'';
-  const art='<svg class="pkart" viewBox="0 0 48 48" aria-hidden="true" fill="none" stroke="'+pk.color+'" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" style="filter:drop-shadow(0 0 6px '+pk.color+')"><rect x="11" y="5" width="26" height="38" rx="5"/><path d="M24 15l3 6 6.500.900-4.700 4.500 1.200 6.500L24 29.800 18 33l1.200-6.500-4.700-4.500L21 21z"/>'+(pk.id!=='s'?'<path d="M4 14v20M44 14v20"/>':'')+(pk.id==='l'?'<path d="M-1 20v8M49 20v8"/>':'')+'</svg>';
-  return '<div class="card pkcard" style="--c:'+pk.color+'"><div class="pkrow">'+art+'<div style="flex:1;min-width:0"><div class="ct"><span class="cn">'+pk.name+'</span><span class="chip" style="--c:'+pk.color+'">'+pk.n+' pulls</span></div></div></div>'
-    +odds+pity
-    +'<button class="btn big" type="button" data-pack="'+pk.id+'" style="--c:'+pk.color+';width:100%;margin-top:8px" '+(g<cost?'disabled':'')+'>'+(free?'Open free welcome pack':ico('gem',15)+' '+cost+(g<cost?' <small>(need '+(cost-g)+' more)</small>':''))+'</button></div>';
+function crateHtml(){
+  const g=P.gems||0, t=CT[UI.pt]?UI.pt:'pow';
+  let h='<div class="card" style="--c:'+CT[t].color+'"><div class="ct"><span class="cn">Crystal crates</span><span class="chip" style="--c:'+CT[t].color+'">'+CT[t].name+'</span></div>'
+    +'<div class="cv">Pick a crystal type. Each crate holds exactly the crystals shown.</div>'
+    +'<div class="ptseg" role="group" aria-label="Crystal type">'+CTYPES.map(k=>'<button type="button" data-pt="'+k+'" style="--c:'+CT[k].color+'" aria-pressed="'+(k===t)+'">'+ico(k,14)+'<span>'+CT[k].name+'</span></button>').join('')+'</div>'
+    +'<div class="crates">';
+  PACKS.forEach(pk=>{ const free=pk.id==='s'&&!(P.pk||{}).f, cost=free?0:pk.cost;
+    h+='<button class="crate" type="button" data-pack="'+pk.id+'" style="--c:'+CT[t].color+'" '+(g<cost?'disabled':'')+' aria-label="'+pk.name+': '+pk.cry+' '+CT[t].name+' crystals for '+(free?'free':cost+' gems')+'">'
+      +'<span class="crn">'+pk.name+'</span><span class="crv">'+ico('crystal',20)+'<b>'+pk.cry+'</b></span>'
+      +'<span class="crp">'+(free?'Free once':'<span style="color:var(--gemc)">'+ico('gem',13)+cost+'</span>')+'</span></button>'; });
+  return h+'</div></div>';
 }
 function claim(k){
   if(k==='chest'){ if(P.chestDay===today()) return; if(!activeToday()){ toast('Clear a level to unlock your daily reward'); return; } rewardFlow('daily_chest',()=>{ if(P.chestDay===today()) return; P.chestDay=today(); logEv('chest',''); const m=passActive()?2:1, g=DAILY_GEMS*m; P.gems+=g; spAdd(SP.chest); let txt='';
-      for(let i=0;i<3*m;i++){ const t=rollCard(), r=Math.random()<0.7?0:1; P.inv[t][r]++; } save(); Music.up(); toast('Daily: +'+g+' gems, '+3*m+' crystals, +'+SP.chest+' season points'); renderArmory(); }); }
+      const got={}; for(let i=0;i<3*m;i++){ const t=rollType(); got[t]=(got[t]||0)+(Math.random()<0.7?1:4); } cryAddMap(got); save(); Music.up(); toast('Daily: +'+g+' gems, +'+Object.values(got).reduce((a,b)=>a+b,0)+' crystals, +'+SP.chest+' Season XP'); renderArmory(); }); }
   else if(k==='pass'){ if(!passActive()||P.passDay===today()) return; P.passDay=today(); P.gems+=15; logEv('passday',''); save(); Music.up(); toast('Pass bonus: +15 gems'); renderArmory(); }
 }
 function shopHtml(){
   const g=P.gems||0, can=P.chestDay!==today(), pa=passActive();
-  let h='<div class="wrap shop"><div class="ahead"><h1>Shop</h1><div class="cr"><span class="lbl">Gems</span><b style="color:#7df9ff">'+gemHtml(g,16)+'</b></div></div>'
-    +'<div class="note" style="margin:0 0 8px">'+['Common','Rare','Exquisite'].map((n,i)=>'<span class="gt" style="color:'+GEMC[i]+'">'+ico('gem',12)+n+' '+GEMV[i]+'</span>').join(' · ')+'</div>'+welcomeHtml();
+  let h='<div class="wrap shop"><div class="ahead"><h1>Shop</h1><div class="cr"><span class="lbl">Gems</span><b style="color:var(--gemc)">'+g+'</b></div></div>'+cryStrip()+welcomeHtml();
   h+='<div class="card" style="--c:#ffc400"><div class="ct"><span class="cn">Daily</span><span class="chip" style="--c:#ffc400">Free</span></div>'
-    +'<div class="cv">Clear a level, then claim gems, crystals and '+SP.chest+' season points.</div>'
-    +'<button class="btn big" data-claim="chest" type="button" style="--c:#ffc400;width:100%" '+(can&&activeToday()?'':'disabled')+'>'+(can&&!activeToday()?ico('aim',14)+' Clear a level to unlock':can?ico('gem',14)+DAILY_GEMS*(pa?2:1)+' '+ico('crystal',14)+3*(pa?2:1)+((pa||!Ads.enabled)?'':' <small>(ad)</small>'):'Come back tomorrow')+'</button></div>';
-  h+=marketHtml();
-  h+='<div class="note" style="margin:10px 0 4px"><b>Crystal packs</b></div>'+PACKS.map(packCardHtml).join('');
+    +'<div class="cv">Clear a level, then claim '+DAILY_GEMS*(pa?2:1)+' gems, '+(pa?'six':'three')+' crystal drops and '+SP.chest+' Season XP.</div>'
+    +'<button class="btn big" data-claim="chest" type="button" style="--c:#ffc400;width:100%" '+(can&&activeToday()?'':'disabled')+'>'+(can&&!activeToday()?ico('aim',14)+' Clear a level to unlock':can?'Claim daily reward'+((pa||!Ads.enabled)?'':' <small>(ad)</small>'):'Come back tomorrow')+'</button></div>';
+  h+=crateHtml();
   h+=seasonHtml();
   if(!PLAY){
   h+='<div class="note" style="margin:10px 0 4px"><b>Gem bundles.</b>'+(PAID_SOON?' Coming soon.':'')+'</div><div class="card'+(PAID_SOON?' soon':'')+'"><div class="pbs">'
-    +[['g100',100],['g550',550],['g1200',1200]].map(b=>PAID_SOON?'<button class="pbtn" type="button" disabled style="--g:#7df9ff"><span>'+b[1]+' gems</span><b>Soon</b></button>':'<button class="pbtn" type="button" data-sku="'+b[0]+'" style="--g:#7df9ff"><span>'+b[1]+' gems</span><b>'+PRICES[b[0]]+'</b></button>').join('')+'</div></div>'; }
+    +[['g100',100],['g550',550],['g1200',1200]].map(b=>PAID_SOON?'<button class="pbtn" type="button" disabled style="--g:var(--gemc)"><span>'+b[1]+' gems</span><b>Soon</b></button>':'<button class="pbtn" type="button" data-sku="'+b[0]+'" style="--g:var(--gemc)"><span>'+b[1]+' gems</span><b>'+PRICES[b[0]]+'</b></button>').join('')+'</div></div>'; }
   return h+'</div>';
 }
+/* level drops: each drop rolls a crystal type and a luck tier, and pays CVAL crystals of that type. Returns {type: crystals}. */
 function awardCards(count,n,bonus,el){
-  const got=[]; for(let i=0;i<count;i++) got.push({t:rollCard('run'),r:rollRar(n,el)});
-  for(let i=0;i<bonus;i++) got.push({t:rollCard('run'),r:topRar(n,el)});
-  /* starter support: the first five levels always drop extra cards of the types the turret upgrades with (damage, rate, pierce, barrels) */
-  if(n<=5&&!el){ const tw=[['pow',4],['tmp',3],['rch',1],['cap',1]]; for(let i=0;i<2;i++){ let x=Math.random()*9, t='pow'; for(const q of tw){ x-=q[1]; if(x<=0){ t=q[0]; break; } } got.push({t:'turret.'+t,r:0}); } }
-  got.forEach(c=>{ P.inv[c.t][c.r]++; }); return got;
+  const got={}, add=(t,v)=>{ got[t]=(got[t]||0)+v; };
+  for(let i=0;i<count;i++) add(rollType(),CVAL[rollRar(n,el)]);
+  for(let i=0;i<bonus;i++) add(rollType(),CVAL[topRar(n,el)]);
+  /* starter support: the first five levels always drop extra crystals of the types the turret upgrades with (damage, rate, pierce, barrels) */
+  if(n<=5&&!el){ const tw=[['pow',4],['tmp',3],['rch',1],['cap',1]]; for(let i=0;i<2;i++){ let x=Math.random()*9, t='pow'; for(const q of tw){ x-=q[1]; if(x<=0){ t=q[0]; break; } } add(t,1); } }
+  cryAddMap(got); return got;
 }
 const bandOf=(lv,max)=>Math.min(3,Math.floor(4*lv/max));
-const NEEDB=[3,5,8,12];
-const cardNeed=(u,lv)=>NEEDB[bandOf(lv,u.max)];
-function avail(t,b){ let n=0; for(let i=b;i<4;i++) n+=P.inv[t][i]; return n; }
-function spendCards(t,b,k){ for(let i=b;i<4&&k>0;i++){ const d=Math.min(k,P.inv[t][i]); P.inv[t][i]-=d; k-=d; } }
-function canBuy(id){ const u=UPS.find(x=>x.id===id); if(!u) return false; const lv=L(id); return lv<u.max&&avail(u.k,bandOf(lv,u.max))>=cardNeed(u,lv); }
+const upStage=()=>{ let b=0; const pr=P.prog||{}; for(const k in pr) b=Math.max(b,(pr[k]&&pr[k].best)|0); return Math.min(LEVELS,b+1); };
+const niceN=c=>c<20?Math.ceil(c):c<100?Math.round(c/5)*5:c<1000?Math.round(c/10)*10:Math.round(c/50)*50;
+const typeClear=(t,n)=>dropCount(n,1,false,false)*dropVal(n,false)*CW[t]/100;   /* crystals of type t from one first clear of level n */
+const upCost=(u,lv,n)=>{ n=n||upStage(); const c=(UPC0+(UPC1-UPC0)*(n-1)/(LEVELS-1))*Math.min(3,Math.sqrt(25/u.max))*Math.pow(UPG,lv/u.max)*typeClear(u.ty,n); return Math.max(3,niceN(c)); };   /* crystals of the upgrade's type for the next level */
+function canBuy(id){ const u=UPS.find(x=>x.id===id); if(!u) return false; const lv=L(id); return lv<u.max&&cry(u.ty)>=upCost(u,lv); }
 function buyUp(id){
   if(!canBuy(id)) return false;
-  const u=UPS.find(x=>x.id===id), lv=L(id); spendCards(u.k,bandOf(lv,u.max),cardNeed(u,lv)); P.lv[id]=lv+1; save(); return true;
+  const u=UPS.find(x=>x.id===id), lv=L(id); crySpend(u.ty,upCost(u,lv)); P.lv[id]=lv+1; save(); return true;
 }
-function cmBuy(id){ const c=CARDBY[id]; if(!c) return false; const r=cmRank(id), pk=c.w+'.'+CIC[id]; if(r>=3||!kOk(pk)) return false; if(avail(pk,r)<NEEDB[r]) return false; spendCards(pk,r,NEEDB[r]); P.cm=P.cm||{}; P.cm[id]=r+1; save(); return true; }
-function fuse(t,r){ if(r>=3||P.inv[t][r]<FUSE_N) return false; P.inv[t][r]-=FUSE_N; P.inv[t][r+1]++; save(); return true; }
 
 /* ================= home (armory) ================= */
-const UI={cm:'',cmm:'',cmw:'cmd',cmv:'info',cmf:'all',nav:'battle',elite:false,cx:'mobs',ac:'wpn',uc:'',a0:'',ag:{wpn:'turret',disc:'survey',odds:'rate'}};
+const UI={cm:'',cmm:'',cmw:'cmd',cmv:'info',cmf:'all',nav:'battle',elite:false,cx:'mobs',ac:'wpn',uc:'',a0:'',pt:'pow',ag:{wpn:'turret',disc:'survey',odds:'rate'}};
 let tab='turret', confirmReset=false;
 const worldOpen=i=>{ if(i===0) return true; if(PLAY) return false;   /* Play 01 ships World 1; the rest arrive in updates */ if((((P.prog[WORLDS[i].id])||{}).best||0)>0) return true; /* already played: stays open */ return (((P.prog[WORLDS[i-1].id]||{}).best||0)>=LEVELS)&&starsOfWorld(WORLDS[i-1].id)>=ECON.gate; };
 const curWorld=()=>WORLDS.find(w=>w.id===P.world)||WORLDS[0];
 const uwFor=wd=>(wd&&wd.uw)||UW;
 function levelMobs(n){ return profileFor(curWorld(),n,UI.elite).roster; }
-const totalCards=()=>{ let t=0; for(const k in P.inv) t+=P.inv[k].reduce((a,b)=>a+b,0); return t; };
+/* the five crystal balances, shown on the screens that spend them */
+const cryStrip=()=>'<div class="crys" aria-label="Crystals">'+CTYPES.map(t=>'<span class="cy" style="--c:'+CT[t].color+'" title="'+CT[t].name+' crystals">'+ico('crystal',15)+'<b>'+cry(t)+'</b><small>'+CT[t].name+'</small></span>').join('')+'</div>';
 const TABICO={command:'bolt',turret:'turret',base:'frt',mine:'mine',field:'field',chain:'chain',saw:'saw',mortar:'mortar'};
 const NAVS=[['arsenal','Arsenal','pow'],['codex','Codex','eye'],['battle','Battle','aim'],['shop','Shop','gem'],['worlds','Worlds','world']];
 function fillEnergy(){
@@ -4191,8 +4358,8 @@ function battleHtml(){
     +'<button class="chev r" data-act="next" type="button" aria-label="Next level" '+(n>=maxSel?'disabled':'')+'>'+ico('chev',30)+'</button></div>'
     +'<div class="brief">'+briefFor(wd,n,el)+'</div>'
     +(el?'':'<div class="goals">'+goalsFor(wd,n).map((t,k)=>'<span class="gl'+(((pr.stars||{})[n]|0)>>k&1?' on':'')+'">'+ico('pow',13)+t+'</span>').join('')+'</div>')
-    +'<div class="facts"><span title="Waves">'+ico('wave',18)+waveCount(n)+'</span><span title="Crystals per clear">'+ico('crystal',18)+'~'+cnt+'</span>'+(el?'<span style="color:var(--red)" title="Elite costs double energy">'+ico('bolt',18)+'x2</span>':'')+'</div>'
-    +(Ads.enabled&&P.en<(el?EN_COST*2:EN_COST)?'<button class="mini" data-act="ad" type="button">Watch ad: +'+EN_AD+' energy</button>':'')+'</div>';
+    +'<div class="facts"><span title="Waves">'+ico('wave',18)+waveCount(n)+'</span><span title="Crystals per clear">'+ico('crystal',18)+'~'+Math.round(cnt*dropVal(n,el))+'</span>'+(el?'<span style="color:var(--red)" title="Elite costs double energy">'+ico('bolt',18)+'x2</span>':'')+'</div>'
+    +(Ads.enabled&&P.en<(el?EN_COST*2:EN_COST)?'<button class="mini" data-act="ad" data-real="1" type="button">Watch ad: +'+EN_AD+' energy</button>':'')+'</div>';
   return h;
 }
 function accountHtml(){
@@ -4204,43 +4371,26 @@ function accountHtml(){
     +'</section>';
 }
 function arsenalHtml(){
-  /* Weapons across the top (wraps to more rows); tap one for its upgrade categories; tap a category to open its crystals, shards and Upgrade button. */
+  /* Weapons across the top (wraps to more rows), the five crystal balances, then each upgrade; tap one for its next level and Upgrade button. */
   let h='<div class="wpns" role="tablist" aria-label="Weapon">'+TABS.filter(t=>t.id!=='bestiary').map(t=>'<button class="wpn" role="tab" data-tab="'+t.id+'" style="--c:'+t.color+'" aria-selected="'+(tab===t.id)+'" type="button">'+ico(TABICO[t.id],18)+'<span>'+t.name+'</span></button>').join('')+'<button class="wpn'+(cmdUnlocked()?'':' lk')+'" role="tab" data-tab="command" style="--c:#ffc400" aria-selected="'+(tab==='command')+'" type="button">'+ico('bolt',18)+'<span>Command</span></button></div>';
   if(tab==='command') return h+commandHtml();
-  h+='<div class="ucats">';
+  h+=cryStrip()+'<div class="note">Upgrade prices grow with the furthest level you\'ve reached.</div><div class="ucats">';
   UPS.filter(u=>u.tab===tab).forEach(u=>{
-    const lv=L(u.id), maxed=lv>=u.max, ct=CT[u.ty], b=bandOf(lv,u.max), need=cardNeed(u,lv), have=avail(u.k,b), ok=!maxed&&have>=need, f=(P.frag||{})[u.k]||0, open=UI.uc===u.id;
+    const lv=L(u.id), maxed=lv>=u.max, ct=CT[u.ty], need=maxed?0:upCost(u,lv), have=cry(u.ty), ok=!maxed&&have>=need, open=UI.uc===u.id;
     h+='<div class="ucat'+(open?' open':'')+'" style="--c:'+ct.color+'">'
       +'<button class="uh" type="button" data-uc="'+u.id+'" aria-expanded="'+open+'"><span class="un">'+ico(u.ty,16)+ct.name+' <small>'+u.name+'</small></span>'
-      +'<span class="ur">'+(ok?'<i class="rdy" title="You can upgrade this now"></i>':'')+'<span class="ul">'+(maxed?'MAX':lv+'/'+u.max)+'</span><span class="uc" title="Crystals of this type">'+ico('crystal',12)+avail(u.k,0)+'</span><span class="uf" title="Shards of this type">'+ico('shard',12)+f+'</span><span class="chv">'+(open?'▴':'▾')+'</span></span></button>';
+      +'<span class="ur">'+(ok?'<i class="rdy" title="You can upgrade this now"></i>':'')+'<span class="ul">'+(maxed?'MAX':lv+'/'+u.max)+'</span><span class="chv">'+(open?'▴':'▾')+'</span></span></button>'
+      +'<div class="ulv" aria-hidden="true"><i style="width:'+Math.round(100*lv/u.max)+'%"></i></div>';
     if(open){
       h+='<div class="upanel"><div class="urow"><div class="uv">'+u.txt(lv)+(maxed?'':' <em>→</em> '+u.txt(lv+1))+'</div>'
-        +'<button class="btn sm ubuy" data-buy="'+u.id+'" type="button" style="--c:'+ct.color+'" title="'+(maxed?'Max level':'Needs '+need+' '+RAR[b].name+' or better '+ct.name+' crystals; you have '+have)+'" '+(ok?'':'disabled')+'>'+(maxed?'Max':'Upgrade <small>'+need+'\u00d7 '+rarPips(b)+'+</small>')+'</button></div>'
-        +'<div class="ubody"><div class="ucol"><div class="ulab">'+ico('crystal',24)+' <b>'+avail(u.k,0)+'</b></div><div class="ugems">'
-        +RAR.map((r,i)=>{ const n=P.inv[u.k][i], fz=n>=FUSE_N&&i<3, cur=!maxed&&i===b;
-          return (fz?'<button type="button" class="gem fuse'+(i===3?' leg':'')+(cur?' cur':'')+'" data-fuse="'+u.k+':'+i+'" title="Fuse '+FUSE_N+' '+r.name+' crystals into 1 '+RAR[i+1].name+'"':'<span class="gem'+(n?'':' zero')+(i===3?' leg':'')+(cur?' cur':'')+'" title="'+r.name+'"')+' style="--g:'+r.color+'">'+ico('crystal',30)+'<b>'+n+'</b><small>'+rarPips(i)+'</small>'+(fz?'</button>':'</span>'); }).join('')
-        +'</div></div><div class="ucol"><div class="ulab">'+ico('shard',24)+' <b>'+f+'</b></div><div class="ufrg">'
-        +FORGE.map((c,r)=>'<button class="pbtn" type="button" data-forge="'+u.k+':'+r+'" style="--g:'+RAR[r].color+'" title="Forge 1 '+RAR[r].name+' crystal" '+(f<c?'disabled':'')+'>'+vessel(f/c,46)+'<b>'+c+ico('shard',12)+'</b></button>').join('')
-        +'</div></div></div></div>';
+        +'<button class="btn sm ubuy" data-buy="'+u.id+'" type="button" style="--c:'+ct.color+'" title="'+(maxed?'Max level':'Needs '+need+' '+ct.name+' crystals; you have '+have)+'" '+(ok?'':'disabled')+'>'+(maxed?'Max':'Upgrade <small>'+ico('crystal',11)+need+'</small>')+'</button></div>'
+        +(maxed?'':'<div class="note">'+ct.name+' crystals: <b style="color:var(--fg)">'+have+'</b> of '+need+(ok?'':' &middot; '+(need-have)+' more')+'</div>')+'</div>';
     }
     h+='</div>';
   });
   h+='</div>';
-  const mc=CARDS.filter(c=>c.t===1&&!c.unlock&&c.id!=='repair'&&c.w===tab);
-  if(mc.length){
-    h+='<details class="mast"><summary>In-run card mastery <small>'+mc.length+'</small></summary><div class="note" style="margin:6px 0">'+(tab!=='turret'&&tab!=='base'?'Weapon mastery '+mastery(tab)+': evolutions unlock in-run at '+EVO_MST+', ultimates at '+ULT_MST+'. ':'')+'Cards you pick during a level start basic. Mastering one here makes every pick stronger and shows it more often in your level-ups.</div><div class="cards">';
-    mc.forEach(c=>{
-      const r=cmRank(c.id), ty=CIC[c.id], ct=CT[ty], pk=c.w+'.'+ty, maxed=r>=3, need=NEEDB[Math.min(r,3)], have=avail(pk,Math.min(r,2)), ok=!maxed&&have>=need;
-      const fmt=k=>COUNTC.has(c.id)?(()=>{const n=Math.min(c.max,1+k);return 'up to '+n+(n>1?' picks':' pick')+' per run'})():CONT.has(c.id)?c.txt(CMW[k]).replace(/\d+\.\d+(?!\d*s)/g,m=>Math.round(+m))+' per pick':c.txt(1);
-      let pips=''; for(let i=0;i<3;i++) pips+='<i'+(i<r?' class="on"':'')+'></i>';
-      h+='<div class="card" style="--c:'+ct.color+'"><div class="ct"><span class="cn">'+c.name+'</span><span class="chip" style="--c:'+ct.color+'">Card · '+ct.name+'</span></div>'
-        +'<div class="cv">'+fmt(r)+(maxed?'':' <em>→</em> '+fmt(r+1))+'</div><div class="pips">'+pips+'</div>'
-        +(maxed?'':'<div class="need'+(ok?'':' short')+'"><span>Needs '+need+'</span><span class="rtag" style="--g:'+RAR[r].color+'">'+RAR[r].name+'</span><span>'+ct.name+' · have '+have+'</span></div>')
-        +'<button class="btn sm" data-cm="'+c.id+'" type="button" style="--c:'+ct.color+'" '+(ok?'':'disabled')+'>'+(maxed?'Mastered':'Master')+'</button></div>';
-    });
-    h+='</div></details>';
-  }
-  h+='<div class="foot">'+(confirmReset?'<span class="note">Erase all upgrades, crystals and progress?</span><button class="btn sm" data-act="reset2" type="button" style="--c:var(--red)">Erase</button><button class="btn sm" data-act="cancel" type="button">Cancel</button>':'<button class="mini" data-act="reset" type="button">Reset progress</button><button class="mini" data-act="ad" type="button" title="Placeholder for a rewarded ad">Demo: ad +5 energy</button>')+'</div>'+accountHtml();
+  if(TEST_BUILD) h+='<div class="foot">'+(confirmReset?'<span class="note">Erase all upgrades, crystals and progress?</span><button class="btn sm" data-act="reset2" type="button" style="--c:var(--red)">Erase</button><button class="btn sm" data-act="cancel" type="button">Cancel</button>':'<button class="mini" data-act="reset" type="button">Reset progress</button><button class="mini" data-act="ad" type="button" title="Placeholder for a rewarded ad">Demo: ad +5 energy</button>')+'</div>';
+  h+=accountHtml();
   return h;
 }
 /* ---- Codex tabs: Bestiary / Awards / Record ---- */
@@ -4252,11 +4402,11 @@ function codexHtml(){
 }
 const AGRP={
   wpn:WLIST.map(w=>[w,null]),
-  disc:[['survey','Survey'],['class','Classes'],['sight','Sightings']],
+  disc:[['survey','Survey'],['class','Classes'],['sight','Sightings'],['conquest','Conquest']],
   odds:[['rate','Win rate'],['blows','Killing blows'],['types','Variety']]};
 function awTiles(list,st,a){
   return '<div class="awgrid">'+list.map(d=>{
-    const t=TIER[d.tier], got=st.ach[d.id], r=d.fn(a), frac=got?1:r.frac, rw=ico('gem',11)+ECON.achGems[d.tier]+(ECON.achFrag[d.tier]?' '+ico('shard',11)+ECON.achFrag[d.tier]:'');
+    const t=TIER[d.tier], got=st.ach[d.id], r=d.fn(a), frac=got?1:r.frac, rw=ico('gem',11)+ECON.achGems[d.tier]+(ECON.achCry[d.tier]?' '+ico('crystal',11)+ECON.achCry[d.tier]:'');
     return '<div class="atile'+(got?' got':'')+'" style="--c:'+t.c+'"><div class="ath"><span class="ai">'+ico(d.icon,16)+'</span><b class="an">'+d.name+'</b><span class="rtag" style="--g:'+t.c+'">'+t.n+'</span></div>'
       +'<div class="ad">'+d.desc+'</div><div class="abar"><i style="width:'+Math.round(frac*100)+'%"></i></div>'
       +'<div class="ap"><span>'+(got?'Unlocked '+new Date(got).toLocaleDateString():r.txt)+'</span><span class="rw">'+rw+'</span></div></div>';
@@ -4334,17 +4484,18 @@ function worldsHtml(){
   });
   return h+'</div>';
 }
+let lastNav='';
 function renderArmory(){
   enTick(); if(G.state!=='playing') applySkin(P.world);
   const wd=curWorld(), keepEl=armoryEl.querySelector('.content'), keep=keepEl?keepEl.scrollTop:0;
   P.sel=clamp(P.sel,1,Math.min(P.best+1,LEVELS));
   let body=UI.nav==='arsenal'?arsenalHtml():UI.nav==='codex'?codexHtml():UI.nav==='worlds'?worldsHtml():UI.nav==='shop'?shopHtml():battleHtml();
   const h='<div class="topbar"><button class="wchip" type="button" data-nav="worlds" style="--wc:'+wd.color+'" aria-label="Worlds"><span class="dot">'+ico('world',14)+'</span><span class="nm">'+wd.name+'</span></button><span class="sp"></span>'
-    +'<span class="pill" title="Gems: worth '+(P.gems||0)+' Common" style="color:#7df9ff">'+gemHtml(P.gems,16)+'</span><span class="pill" title="Crystals">'+ico('crystal',16)+totalCards()+'</span><span class="pill" id="enBox" title="Energy"></span><button class="gear" id="gearBtn" type="button" data-orb="1" aria-label="Settings" aria-haspopup="dialog" aria-expanded="'+(orbOpen?'true':'false')+'">'+ico('cog',18)+'</button></div>'
+    +'<span class="pill" title="Gems" style="color:var(--gemc)">'+ico('gem',16)+(P.gems||0)+'</span><span class="pill" id="enBox" title="Energy"></span><button class="gear" id="gearBtn" type="button" data-orb="1" aria-label="Settings" aria-haspopup="dialog" aria-expanded="'+(orbOpen?'true':'false')+'">'+ico('cog',18)+'</button></div>'
     +'<div class="content" id="content">'+body+'</div>'
     +'<nav class="nav" aria-label="Menu">'+NAVS.map(a=>'<button type="button" '+'data-nav="'+a[0]+'" '+(UI.nav===a[0]?'aria-current="page"':'')+'>'+ico(a[2],22)+'<span class="nl">'+a[1]+'</span>'+(a[0]==='shop'&&welcomeReady()?'<i class="ndot"></i>':'')+'</button>').join('')+'</nav>';
   armoryEl.innerHTML=h;
-  const c=$('content'); if(c) c.scrollTop=keep;
+  const c=$('content'); if(c){ c.scrollTop=keep; if(lastNav&&lastNav!==UI.nav) c.classList.add('cin'); } lastNav=UI.nav;
   fillEnergy();
   armoryEl.querySelectorAll('canvas[data-t]').forEach(drawIcon);
   if(UI.nav==='battle') pvInit();
@@ -4450,7 +4601,7 @@ armoryEl.addEventListener('contextmenu',e=>{ if(e.target.id==='pv'||e.target.clo
 armoryEl.addEventListener('click',e=>{
   if(e.target.closest('[data-orb]')){ if(orbOpen) closeOrb(); else openOrb(); return; }
   const ac=e.target.closest('[data-acct]'); if(ac&&window.RRcloud){ const a=ac.dataset.acct; if(a==='del'&&!confirm('Delete your account and cloud save? This cannot be undone.')) return; RRcloud.action(a); return; }
-  const t=e.target.closest('[data-act],[data-cmd],[data-buy],[data-cm],[data-pack],[data-sku],[data-claim],[data-tab],[data-uc],[data-a0],[data-ag],[data-fuse],[data-nav],[data-mode],[data-world],[data-cx],[data-ac],[data-forge],[data-gem],[data-adgems],[data-pack],[data-welcome],[data-tier]'); if(!t) return;
+  const t=e.target.closest('[data-act],[data-cmd],[data-buy],[data-pack],[data-sku],[data-claim],[data-tab],[data-uc],[data-a0],[data-ag],[data-pt],[data-nav],[data-mode],[data-world],[data-cx],[data-ac],[data-gem],[data-adgems],[data-pack],[data-welcome],[data-tier]'); if(!t) return;
   if(t.dataset.cmd){ cmdAct(t.dataset.cmd); return; }
   if(t.dataset.cx){ UI.cx=t.dataset.cx; renderArmory(); const c0=$('content'); if(c0) c0.scrollTop=0; return; }
   if(t.dataset.ac){ UI.ac=t.dataset.ac; renderArmory(); const c1=$('content'); if(c1) c1.scrollTop=0; return; }
@@ -4462,7 +4613,7 @@ armoryEl.addEventListener('click',e=>{
   if(t.dataset.a0){ UI.a0=t.dataset.a0; renderArmory(); return; }
   if(t.dataset.ag){ const q=t.dataset.ag.split(':'); UI.ag[q[0]]=q[1]; renderArmory(); return; }
   if(t.dataset.uc){ UI.uc=UI.uc===t.dataset.uc?'':t.dataset.uc; renderArmory(); return; }
-  if(t.dataset.forge){ const q=t.dataset.forge.split(':'); forge(q[0],+q[1]); return; }
+  if(t.dataset.pt){ UI.pt=t.dataset.pt; renderArmory(); return; }
   if(t.dataset.gem){ buyGems(t.dataset.gem); return; }
   if(t.dataset.adgems){ adGems(); return; }
   if(t.dataset.pack){ openPack(t.dataset.pack); return; }
@@ -4470,25 +4621,23 @@ armoryEl.addEventListener('click',e=>{
   if(t.dataset.claim){ claim(t.dataset.claim); return; }
   if(t.dataset.welcome){ claimWelcome(); return; }
   if(t.dataset.tier){ const q=t.dataset.tier.split(':'); spClaim(+q[0],q[1]==='p'); return; }
-  if(t.dataset.cm){ if(cmBuy(t.dataset.cm)){ Music.up(); renderArmory(); } return; }
   if(t.dataset.buy){ if(buyUp(t.dataset.buy)){ Music.up(); renderArmory(); } return; }
-  if(t.dataset.fuse){ const p=t.dataset.fuse.split(':'); if(fuse(p[0],+p[1])){ Music.up(); renderArmory(); } return; }
   const a=t.dataset.act;
   if(a==='prev'){ P.sel=Math.max(1,P.sel-1); renderArmory(); }
   else if(a==='next'){ P.sel=Math.min(Math.min(P.best+1,LEVELS),P.sel+1); renderArmory(); }
   else if(a==='deploy'){ save(); if(UI.elite&&!pw(P).perf[P.sel]) return; tryStart(P.sel,UI.elite); }
-  else if(a==='reset'){ confirmReset=true; renderArmory(); }
+  else if(a==='reset'){ if(TEST_BUILD){ confirmReset=true; renderArmory(); } }
   else if(a==='cancel'){ confirmReset=false; renderArmory(); }
-  else if(a==='reset2'){ P=newP(); P.epoch=Date.now(); UI.elite=false; confirmReset=false; save(); renderArmory(); }
-  else if(a==='ad'){ rewardFlow('energy_refill',grantAdEnergy); }
+  else if(a==='reset2'&&TEST_BUILD){ P=newP(); P.epoch=Date.now(); UI.elite=false; confirmReset=false; save(); renderArmory(); }
+  else if(a==='ad'){ if(TEST_BUILD||t.dataset.real) rewardFlow('energy_refill',grantAdEnergy); }
 });
 
 /* ================= upgrade cards (pick 1 of 3, reset every level) ================= */
 const shopEl=$('shop');
 const bst=id=>(G.boost&&G.boost[id])||0;
 /* Card mastery (menu): each stat card has a rank 0-3. Rank 0 is deliberately basic; ranks scale its in-run strength (continuous cards) or the number of picks allowed (count cards). */
-const CMW=[0.5,0.7,0.9,1.15], CONT=new Set(['mine','marea','mrech','field','fwidb','fdurc','cpow','crate','spow','sspeed','mortpow','mortarea','mortspd']), COUNTC=new Set(['barrel','pierce','mcount','fcount','cjump','scount','mortcap']);
-const cmRank=id=>(P.cm&&P.cm[id])||0, cmw=id=>CMW[cmRank(id)], bq=id=>bst(id)*cmw(id);
+const CONT=new Set([]);
+const cmRank=()=>0, cmw=()=>1, bq=id=>bst(id);   /* in-run cards are not upgraded: every pick is worth its full listed value */
 const wlv=w=>CARDS.reduce((a,c)=>a+(c.w===w&&c.t===1&&!c.unlock?bst(c.id):0),0);
 const mastery=w=>UPS.reduce((a,u)=>a+(u.tab===w?L(u.id):0),0);
 const EVO_LV=4, ULT_LV=8, EVO_MST=6, ULT_MST=14;
@@ -4502,9 +4651,10 @@ function specGap(w){ const o=ownedW().filter(x=>x!==w); return o.length?spec(w)-
 function specPen(c){ const g=specGap(c.w); if(g<=2) return 1; const p=1/(1+0.3*(g-2)); return Math.max(0.15,c.t>=2||c.evo||c.ult?p*p:p); }
 /* Finite deck: each card has a fixed number of copies for the level (its max, or fewer for count cards until you rank them up) and every copy you take is gone.
    A card's odds follow the copies it has left, so the weapon you keep drawing from thins out while untouched weapons' cards rise. Rare cards also thin out the deeper you go on their weapon. */
-const effMax=c=>COUNTC.has(c.id)?Math.min(c.max,1+cmRank(c.id)):c.max;
-const copiesLeft=c=>Math.max(0,effMax(c)-bst(c.id));
-const deckSize=w=>CARDS.reduce((a,c)=>a+(c.w===w&&c.t===1&&!c.unlock&&!c.cond&&c.w!=='base'?c.max:0),0);
+const effMax=c=>c.max;
+/* copies = a one-time card shuffled in several times so it still turns up; taking it pulls every copy */
+const copiesLeft=c=>c.copies?(bst(c.id)>=c.max?0:c.copies):Math.max(0,effMax(c)-bst(c.id));
+const deckSize=w=>CARDS.reduce((a,c)=>a+(c.w===w&&c.t===1&&!c.unlock&&!c.cond&&c.w!=='base'?(c.copies||c.max):0),0);
 const rareDecay=w=>{ const n=deckSize(w); return n?Math.max(RARE_FLOOR,Math.pow(Math.max(0,1-wlv(w)/n),1.5)):1; };
 let PICKM=1;
 const pickWave=w=>w>=2&&(w-2)%PICKM===0;
@@ -4515,7 +4665,7 @@ const CARDS=[
  {id:'dmg',w:'turret',t:1,max:6,name:'Heavy Rounds',txt:l=>'+'+Math.round((Math.pow(1.5,l)-1)*100)+'% damage'},
  {id:'barrel',w:'turret',t:1,max:5,name:'Extra Barrel',txt:l=>'+'+l+(l>1?' barrels':' barrel')},
  {id:'pierce',w:'turret',t:1,max:2,name:'Piercing Rounds',txt:l=>'+'+l+' pierce'},
- {id:'slide',w:'turret',t:1,max:4,name:'Servo Motors',txt:l=>'+'+Math.round((Math.pow(2.5,l)-1)*100)+'% turret speed'},
+ {id:'slide',w:'turret',t:1,max:1,copies:4,name:'Servo Motors',txt:l=>'+'+(Math.min(l,1)*100)+'% turret speed'},
  {id:'arc',w:'turret',t:2,max:3,name:'Arc Rounds',txt:l=>'shots add +'+(l*35)+'% energy damage and fork 3 mini lightning bolts at '+(l*15)+'% damage',lv:EVO_LV,ovl:1},
  {id:'frag',w:'turret',t:2,max:3,name:'Explosive Rounds',txt:l=>'shots splash +'+(l*30)+' % blast damage'.replace(' %','%'),lv:EVO_LV,ovl:1},
  {id:'deep',w:'turret',t:2,max:1,name:'Deep Pierce',txt:l=>'+2 more pierce',lv:EVO_LV},
@@ -4564,7 +4714,6 @@ const reqOk=c=>!c.req||Object.keys(c.req).every(k=>bst(k)>=c.req[k]);
 const reqText=r=>Object.keys(r).map(k=>CARDBY[k].name+(CARDBY[k].max>1?' '+r[k]:'')).join(' + ');
 function eligible(c){
   if(bst(c.id)>=c.max||!reqOk(c)) return false;
-  if(COUNTC.has(c.id)&&bst(c.id)>=1+cmRank(c.id)) return false;
   if(c.cond&&!c.cond()) return false;
   if(c.lv&&wlv(c.w)<c.lv) return false;
   if(c.mst&&mastery(c.w)<c.mst) return false;
@@ -4793,8 +4942,10 @@ function fit(){
   const s=Math.min(r.width/W,r.height/H);
   const w=Math.max(120,Math.floor(W*s)), h=Math.max(160,Math.floor(H*s)), d=Math.min(window.devicePixelRatio||1,2);
   play.style.width=w+'px'; play.style.height=h+'px';
-  const dk=$('dock'); if(dk) dk.style.transform=r.height>h+1?'translateY('+(-(r.height-h))+'px)':'';
+  /* tall phones: the field sits on the controls at the bottom (thumb reach) and the HUD slides down onto the field, so any spare height is one band at the very top */
+  const hd=$('hud'); if(hd) hd.style.transform=r.height>h+1?'translateY('+(r.height-h)+'px)':'';
   canvas.width=Math.round(w*d); canvas.height=Math.round(h*d);
+  if(bloomCv){ bloomCv.width=Math.max(1,Math.round(w/4)); bloomCv.height=Math.max(1,Math.round(h/4)); }
   sx=canvas.width/W; sy=canvas.height/H;
 }
 if(window.ResizeObserver) new ResizeObserver(fit).observe(stage);
@@ -4802,10 +4953,13 @@ window.addEventListener('resize',fit);
 
 let last=performance.now();
 function frame(now){
-  const dt=Math.min(0.033,(now-last)/1000); last=now;
+  const raw=(now-last)/1000, dt=Math.min(0.033,raw); last=now;
   if(!appEl.hidden&&!Ads.busy){
     for(let i=0;i<G.speed;i++) update(dt);
     render(dt); renderHud(); renderTools();
+    if(GLOW.on){ bctx.globalCompositeOperation='copy'; bctx.drawImage(canvas,0,0,bloomCv.width,bloomCv.height);
+      /* after 4 s of play, drop the glow if frames average slower than ~45 fps */
+      if(!GLOW.checked&&G.state==='playing'&&raw<0.25){ GLOW.n++; GLOW.sum+=raw; if(GLOW.n>=240){ GLOW.checked=true; if(GLOW.sum/GLOW.n>0.022) glowSet(false); } } }
   }
   requestAnimationFrame(frame);
 }
@@ -4816,20 +4970,20 @@ if(!P.intro){ const io=document.createElement('div'); io.id='introov'; io.innerH
 requestAnimationFrame(frame);
 
 /* test hook for headless checks */
-window.__rr={pickTarget:pickTarget,fire:fire,spawn:spawn,killEnemy:killEnemy,openPack:openPack,renderArmory:renderArmory,UI:UI,fuse:fuse,queueTeach:queueTeach,DEMO:DEMO,coach:coach,save:save,paintTurret:paintTurret,coachGrab:coachGrab,GR:GR,CTL:CTL,wReady:wReady,isManual:isManual,chainSnap:chainSnap,T:T,MOB:MOB,SKIN:SKIN,applySkin:applySkin,PKEYS:PKEYS,rollKey:rollKey,rollCard:rollCard,useCmd:useCmd,cmdBuy:cmdBuy,cmdNodeBuy:cmdNodeBuy,cmdP:cmdP,cmdLeft:cmdLeft,cmdEarned:cmdEarned,CMDS:CMDS,kName:kName,loadPools:loadPools,fireball:fireball,chip:chip,openTeach:openTeach,fireMortar:fireMortar,shape:shape,spawn:spawn,G:G,get P(){return P;},set P(v){P=v;},newP:newP,startLevel:startLevel,update:update,UPS:UPS,waveCount:waveCount,levelPool:levelPool,hpScale:hpScale,tune:(a,b,c,d,m,k,bk,wh,pm,lk,c0,cg)=>{if(lk!==undefined)LATEK=lk;if(pm!==undefined)PICKM=pm;if(wh!==undefined)WAVEHP=wh;if(k!==undefined)HPK=k;if(m!==undefined)MOBN=m;if(c0!==undefined)CDROP0=c0;if(cg!==undefined)CDROPG=cg;HPG=a;POOL0=b;POOLG=c;if(d!==undefined)HPA=d;},bst:bst,pickCard:pickCard,CARDS:CARDS,offerCards:offerCards,applyCard:applyCard,hasTool:hasTool,fireMortar:fireMortar,canMortar:canMortar,T:T,wcount:wcount,canBuy:canBuy,buyUp:buyUp,cardNeed:cardNeed,bandOf:bandOf,avail:avail,awardCards:awardCards,dropCount:dropCount,fuse:fuse,useEnergy:useEnergy,enTick:enTick,tryStart:tryStart,win:win,gameOver:gameOver,profileFor:profileFor,MOB:MOB,WORLDS:WORLDS,briefFor:briefFor,welcomeReady:welcomeReady,claimWelcome:claimWelcome,premActive:premActive,passActive:passActive,spAdd:spAdd,spClaim:spClaim,ssCur:ssCur,seasonNo:seasonNo,tierRw:tierRw,buyGems:buyGems,claim:claim,closePack:closePack,shopHtml:shopHtml};
+window.__rr={eligible:eligible,pickTarget:pickTarget,fire:fire,spawn:spawn,killEnemy:killEnemy,openPack:openPack,renderArmory:renderArmory,UI:UI,queueTeach:queueTeach,DEMO:DEMO,coach:coach,save:save,paintTurret:paintTurret,coachGrab:coachGrab,GR:GR,CTL:CTL,wReady:wReady,isManual:isManual,chainSnap:chainSnap,T:T,MOB:MOB,SKIN:SKIN,applySkin:applySkin,PKEYS:PKEYS,cry:cry,cryAdd:cryAdd,crySpend:crySpend,cryLegacy:cryLegacy,loadCry:loadCry,cmdPrice:cmdPrice,cmdMix:cmdMix,CRANK:CRANK,PACKS:PACKS,useCmd:useCmd,cmdBuy:cmdBuy,cmdNodeBuy:cmdNodeBuy,cmdP:cmdP,cmdLeft:cmdLeft,cmdEarned:cmdEarned,CMDS:CMDS,kName:kName,fireball:fireball,chip:chip,openTeach:openTeach,fireMortar:fireMortar,shape:shape,spawn:spawn,G:G,get P(){return P;},set P(v){P=v;},newP:newP,startLevel:startLevel,update:update,UPS:UPS,waveCount:waveCount,levelPool:levelPool,hpScale:hpScale,tune:(a,b,c,d,m,k,bk,wh,pm,lk,c0,cg)=>{if(lk!==undefined)LATEK=lk;if(pm!==undefined)PICKM=pm;if(wh!==undefined)WAVEHP=wh;if(k!==undefined)HPK=k;if(m!==undefined)MOBN=m;if(c0!==undefined)CDROP0=c0;if(cg!==undefined)CDROPG=cg;HPG=a;POOL0=b;POOLG=c;if(d!==undefined)HPA=d;},bst:bst,pickCard:pickCard,CARDS:CARDS,offerCards:offerCards,applyCard:applyCard,hasTool:hasTool,fireMortar:fireMortar,canMortar:canMortar,T:T,wcount:wcount,canBuy:canBuy,buyUp:buyUp,upCost:upCost,upStage:upStage,bandOf:bandOf,awardCards:awardCards,dropCount:dropCount,dropVal:dropVal,useEnergy:useEnergy,enTick:enTick,tryStart:tryStart,win:win,gameOver:gameOver,profileFor:profileFor,MOB:MOB,WORLDS:WORLDS,briefFor:briefFor,welcomeReady:welcomeReady,claimWelcome:claimWelcome,premActive:premActive,passActive:passActive,spAdd:spAdd,spClaim:spClaim,ssCur:ssCur,seasonNo:seasonNo,tierRw:tierRw,buyGems:buyGems,claim:claim,showGain:showGain,shopHtml:shopHtml,toArmory:toArmory};
 })();
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 99</div>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 108</div>
 <script>
 /* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
-(function(){ const BUILD=99; let busy=false, shown=false;
+(function(){ const BUILD=108; let busy=false, shown=false;
   const inRun=()=>{ try{ return typeof G!=='undefined'&&(G.state==='playing'||G.state==='cards'||G.state==='shop'||G.state==='paused'||G.state==='teach'||G.state==='ctl'); }catch(e){ return false; } };
   function wipeReload(){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
     if(n>=3) return;
     Promise.all([(navigator.serviceWorker?navigator.serviceWorker.getRegistrations().then(rs=>Promise.all(rs.map(r=>r.unregister()))):0),(window.caches?caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k)))):0)]).catch(()=>{}).then(()=>location.replace(location.pathname+'?u='+Date.now())); }
-  function banner(){ if(shown) return; shown=true; const d=document.createElement('button'); d.type='button'; d.textContent='Update ready \u2013 tap to reload'; d.style.cssText='position:fixed;left:50%;top:8px;transform:translateX(-50%);z-index:99999;background:#00f0ff;color:#000;font:700 13px system-ui;border:0;border-radius:999px;padding:9px 16px;box-shadow:0 0 16px #00f0ff'; d.onclick=wipeReload; document.body.appendChild(d); }
+  function banner(){ if(shown) return; shown=true; const d=document.createElement('button'); d.type='button'; d.textContent='Update ready \u2013 tap to reload'; d.style.cssText='position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 8px);transform:translateX(-50%);z-index:99999;background:#00f0ff;color:#000;font:700 13px system-ui;border:0;border-radius:999px;padding:9px 16px;box-shadow:0 0 16px #00f0ff'; d.onclick=wipeReload; document.body.appendChild(d); }
   function check(){ if(busy) return; busy=true; try{
     fetch('index.html?v='+Date.now(),{cache:'no-store'}).then(r=>r.text()).then(t=>{
       busy=false; const m=t.match(/const BUILD=(\d+);/); const live=m?+m[1]:BUILD;

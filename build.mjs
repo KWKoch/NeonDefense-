@@ -18,7 +18,7 @@ function portalHtml(target){
   s=must(s,'<link rel="manifest" href="manifest.webmanifest">','');
   s=must(s,'<link rel="apple-touch-icon" href="icon-180.png">','');
   s=must(s,/<link rel="preconnect" href="https:\/\/fonts\.googleapis\.com">\n<link rel="preconnect" href="https:\/\/fonts\.gstatic\.com" crossorigin>\n<link href="https:\/\/fonts\.googleapis\.com[^\n]*\n/,'<link rel="stylesheet" href="fonts/fonts.css">\n');
-  s=must(s,/#gate\{[^\n]*\n#gate\[hidden\][^\n]*\n#gate h1[^\n]*\n#gate \.gmsg[^\n]*\n#gate \.gerr[^\n]*\n/,'');
+  s=must(s,/#gate\{[^\n]*\n(?:#gate[^\n]*\n)+/,'');   /* every #gate rule, effects included */
   s=must(s,/<div id="gate"[^\n]*\n/,'');
   const a=s.indexOf('function accountHtml(){'), b=s.indexOf('\n}\n',a);
   if(a<0||b<0) throw new Error('build: accountHtml not found');

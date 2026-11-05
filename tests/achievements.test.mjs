@@ -13,18 +13,18 @@ const mod=cut(html,"/* ================= combat record + achievements","/* =====
 const ctx={console,Date,Math,Set,Object,Array,JSON,saves:0,toasts:[]};
 vm.createContext(ctx);
 vm.runInContext(`
-const LEVELS=50; const OZ_Y=439; const rollType=()=>'pow';
+const LEVELS=50; const OZ_Y=439; const rollType=()=>'pow'; const CPT=[1,1,2,3];
 ${tables}
 ${shape}
-let P={seen:{},prog:{},st:newSt(),gems:0,frag:{pow:0,tmp:0,rch:0,cap:0,frt:0}};
+let P={seen:{},prog:{},st:newSt(),gems:0,ce:{pow:0,tmp:0,rch:0,cap:0,frt:0}};
 const G={wd:{id:'belt'},run:null};
-const fragAdd=(k,n)=>{ P.frag[k]=(P.frag[k]||0)+n; };
+const cryAdd=(k,n)=>{ P.ce[k]=(P.ce[k]||0)+n; return n; };
 const ico=()=>'';  const Music={up(){}};  const save=()=>{ globalThis.saves++; };
 ${mod}
-globalThis.api={starBitsFor,starHold,starsOfWorld,ECON,popc,P:()=>P,setP:v=>{P=v},G,MOB,CLS,WORLDS,stSpawn,stHit,stResolve,agg,achList,achCheck,get achQ(){return achQ},stOf,newSt};
+globalThis.api={achRetier,NKT,starBitsFor,starHold,starsOfWorld,ECON,popc,P:()=>P,setP:v=>{P=v},G,MOB,CLS,WORLDS,stSpawn,stHit,stResolve,agg,achList,achCheck,get achQ(){return achQ},stOf,newSt};
 `,ctx);
 const A=ctx.api;
-const reset=()=>{ A.setP({seen:{},prog:{},st:A.newSt(),bf:0,gems:0,frag:{pow:0,tmp:0,rch:0,cap:0,frt:0}}); A.G.run=null; };
+const reset=()=>{ A.setP({seen:{},prog:{},st:A.newSt(),bf:0,gems:0,ce:{pow:0,tmp:0,rch:0,cap:0,frt:0}}); A.G.run=null; };
 const mob=(type)=>({type,res:{k:1,b:1,e:1}});
 const fight=(type,won,{weapons=['turret'],src='turret',resKind=null,m=1}={})=>{
   const e=mob(type); A.stSpawn(e);
@@ -54,16 +54,19 @@ const fight=(type,won,{weapons=['turret'],src='turret',resKind=null,m=1}={})=>{
 // 3. encounters: counts, per-world, class sets
 {
   reset(); const P=A.P();
-  for(let i=0;i<100;i++){ P.seen.rock=1; fight('rock',true); }
+  for(let i=0;i<1004;i++){ P.seen.rock=1; fight('rock',true); }   // a whole Meteor Belt level 1
   const st=A.stOf();
-  assert.equal(st.enc.rock,100); assert.equal(st.kill.rock,100); assert(st.world.belt.rock);
-  assert.equal(st.pw.belt.enc.rock,100,'per-world record');
+  assert.equal(st.enc.rock,1004); assert.equal(st.kill.rock,1004); assert(st.world.belt.rock);
+  assert.equal(st.pw.belt.enc.rock,1004,'per-world record');
   A.achCheck(true);
-  assert(A.stOf().ach['sight0@belt'],'50 sightings in Meteor Belt'); assert(!st.ach['sight1@belt']);
+  assert.deepEqual(Object.keys(st.ach),[],'clearing level 1 with the Turret alone unlocks nothing');
+  for(let i=0;i<4000;i++) fight('rock',true);
+  A.achCheck(true);
+  assert(A.stOf().ach['sight0@belt'],'5,000 sightings in Meteor Belt'); assert(!st.ach['sight1@belt']);
   assert(!st.ach['sight0@nebula'],'other worlds count their own sightings');
-  const w=A.G.wd; A.G.wd={id:'nebula'}; for(let i=0;i<60;i++) fight('dart',true); A.G.wd=w;
+  const w=A.G.wd; A.G.wd={id:'nebula'}; for(let i=0;i<5000;i++) fight('dart',true); A.G.wd=w;
   A.achCheck(true); assert(A.stOf().ach['sight0@nebula']); assert.equal(A.stOf().pw.belt.enc.dart,undefined,'nebula fights stay out of belt');
-  assert.equal(A.stOf().enc.dart,60,'global record still counts everything');
+  assert.equal(A.stOf().enc.dart,5000,'global record still counts everything');
   const roster=A.achList().find(d=>d.id==='world_belt'); assert(roster);
   Object.keys(A.MOB).forEach(k=>A.stOf().world.belt[k]=1); A.achCheck(true);
   assert(A.stOf().ach['cls_mineral@belt'],'meeting every mineral mob in the world'); assert(A.stOf().ach.world_belt);
@@ -81,31 +84,40 @@ const fight=(type,won,{weapons=['turret'],src='turret',resKind=null,m=1}={})=>{
 // 5. weapon success: a weapon is credited for mobs it hit, a miss that leaks counts against it
 {
   reset(); A.G.run={rz:{},hold:{},kw:{}};
-  for(let i=0;i<150;i++) fight('rock',true,{weapons:['mine','turret'],src:'mine'});
+  for(let i=0;i<750;i++) fight('rock',true,{weapons:['mine','turret'],src:'mine'});
   for(let i=0;i<50;i++) fight('rock',false,{weapons:['mine']});
   const g=A.agg('belt'); const mine=g.wt.mine, tur=g.wt.turret;
-  assert.deepEqual([mine[0],mine[1],mine[2]],[200,150,150],'mine engaged/defeated/killing blows');
-  assert.deepEqual([tur[0],tur[1],tur[2]],[150,150,0],'turret assisted but never landed the killing blow');
+  assert.deepEqual([mine[0],mine[1],mine[2]],[800,750,750],'mine engaged/defeated/killing blows');
+  assert.deepEqual([tur[0],tur[1],tur[2]],[750,750,0],'turret assisted but never landed the killing blow');
   A.achCheck(true);
   const ac=A.stOf().ach;
-  assert(ac['wl0_mine@belt'],'150 mine kills on rock meets the 150 mark'); assert(!ac['wl1_mine@belt'],'but not 1,000');
+  assert(ac['wl0_mine@belt'],'750 mine kills on rock meets the 500 mark'); assert(!ac['wl1_mine@belt'],'but not 2,500');
   assert(!ac['wl0_turret@belt'],'turret only assisted'); assert(!ac['wl0_mine@void'],'other worlds stay separate');
-  assert(ac['wm2_mine@belt'],'150 kills in one match clears all three match tiers'); assert(!ac['wm0_turret@belt']);
+  assert(ac['wm0_mine@belt']&&ac['wm1_mine@belt'],'750 kills in one match clears Bronze and Silver'); assert(!ac['wm2_mine@belt'],'Gold needs 1,200'); assert(!ac['wm0_turret@belt']);
+  const tiers=A.achList().filter(d=>d.id.endsWith('_mine@belt')&&d.cat==='wpn').map(d=>d.tier).sort();
+  assert.deepEqual(JSON.parse(JSON.stringify(tiers)),[0,0,1,1,2,2],'weapon awards are Bronze, Silver and Gold');
 }
 
 // 6. off-type weapons: only the weapon's own damage type, and only at <=0.65x
 {
   reset();
-  for(let i=0;i<30;i++) fight('brute',true,{weapons:['turret'],src:'turret',m:0.5});   // resisted kinetic
+  for(let i=0;i<300;i++) fight('brute',true,{weapons:['turret'],src:'turret',m:0.5});   // resisted kinetic
   for(let i=0;i<5;i++) fight('brute',true,{weapons:['mine'],src:'mine',m:1.5});         // mine is the right tool
   const g=A.agg('belt');
-  assert.equal(g.nk,30,'only resisted killing blows count'); assert.equal(g.wt.mine[3],0);
-  A.achCheck(true); assert(A.stOf().ach['nk10@belt'],'10 off-type killing blows'); assert(!A.stOf().ach['nk100@belt']);
+  assert.equal(g.nk,300,'only resisted killing blows count'); assert.equal(g.wt.mine[3],0);
+  A.achCheck(true); assert(A.stOf().ach['nk10@belt'],'250 off-type killing blows'); assert(!A.stOf().ach['nk100@belt']);
   // arc card: energy damage dealt by the turret is not "kinetic resisted"
   const e=mob('brute'); A.stSpawn(e); A.stHit(e,'turret','e',0.3); A.stResolve(e,true,'turret');
-  assert.equal(A.agg('belt').wt.turret[3],30,'turret arc card must not flag a resisted engagement');
-  // variety
+  assert.equal(A.agg('belt').wt.turret[3],300,'turret arc card must not flag a resisted engagement');
+  // the rate award needs its sample first
+  reset(); for(let i=0;i<400;i++) fight('brute',true,{weapons:['turret'],src:'turret',m:0.5});
+  A.achCheck(true); assert(!A.stOf().ach['ni50@belt'],'400 resisted fights is under the 500 sample');
+  for(let i=0;i<100;i++) fight('brute',true,{weapons:['turret'],src:'turret',m:0.5});
+  A.achCheck(true); assert(A.stOf().ach['ni50@belt'],'500 resisted fights at 100%'); assert(!A.stOf().ach['ni65@belt'],'Silver needs 2,500');
+  // variety: a type only counts once it has NKT resisted killing blows
   reset(); for(const t of ['brute','chunk','shield']) fight(t,true,{weapons:['turret'],src:'turret',m:0.5});
+  A.achCheck(true); assert(!A.stOf().ach['nt3@belt'],'one blow per type is not enough');
+  for(const t of ['brute','chunk','shield']) for(let i=1;i<A.NKT;i++) fight(t,true,{weapons:['turret'],src:'turret',m:0.5});
   A.achCheck(true); assert(A.stOf().ach['nt3@belt'],'3 different mob types'); assert(!A.stOf().ach['nt5@belt']);
 }
 
@@ -155,13 +167,38 @@ const fight=(type,won,{weapons=['turret'],src='turret',resKind=null,m=1}={})=>{
   reset(); const P=A.P(); P.prog={belt:{stars:{1:7,2:1,3:2}}}; assert.equal(A.starsOfWorld('belt'),3+1+1); assert.equal(A.popc(5),2);
 }
 
-// 9d. achievement rewards: gems by tier, fragments for tiers 1+
+// 9d. achievement rewards: gems and crystals by tier, paid once
 {
-  reset(); const P=A.P(); for(let i=0;i<50;i++) fight('rock',true); A.achCheck(true);   // Spotter: Bronze
-  assert(A.stOf().ach['sight0@belt']); assert.equal(P.gems,A.ECON.achGems[0]); assert.equal(Object.values(P.frag).reduce((a,b)=>a+b,0),A.ECON.achFrag[0]);
-  const before=P.gems; Object.keys(A.MOB).forEach(k=>A.stOf().world.belt[k]=1); A.achCheck(true);
-  assert(P.gems>before,'later unlocks pay more gems'); assert(Object.values(P.frag).reduce((a,b)=>a+b,0)>0,'higher tiers pay fragments');
+  reset(); const P=A.P(); const frag=()=>Object.values(P.ce).reduce((a,b)=>a+b,0);
+  for(let i=0;i<5000;i++) fight('rock',true,{weapons:['turret'],src:'turret'}); A.achCheck(true);
+  const ac=A.stOf().ach; assert(ac['sight0@belt']&&ac['wl0_turret@belt'],'5,000 Turret kills: Spotter and Marksman, both Bronze');
+  const n0=Object.keys(ac).length; assert.equal(P.gems,n0*A.ECON.achGems[0]); assert.equal(frag(),n0*A.ECON.achCry[0]);
+  const before=P.gems; Object.keys(A.MOB).forEach(k=>A.stOf().world.belt[k]=1); A.achCheck(true);   // world survey: Silver
+  assert.equal(P.gems-before,A.ECON.achGems[1]+3*A.ECON.achGems[0],'survey (Silver) + three class surveys (Bronze)');
   const g2=P.gems; A.achCheck(true); assert.equal(P.gems,g2,'no double payout');
+  assert(A.ECON.achGems.every((g,i)=>!i||g>A.ECON.achGems[i-1])&&A.ECON.achGems[3]<=60,'rewards climb by tier and stay small next to the 300-gem save cap');
+}
+
+// 9f. conquest: clearing levels and earning every star
+{
+  reset(); const P=A.P(); P.prog={belt:{best:9,stars:{}}}; A.achCheck(true); assert(!A.stOf().ach['lv10@belt']);
+  P.prog.belt.best=10; A.achCheck(true); assert(A.stOf().ach['lv10@belt'],'Beachhead at level 10'); assert(!A.stOf().ach['lv25@belt']);
+  P.prog.belt.best=50; for(let n=1;n<=49;n++) P.prog.belt.stars[n]=7; A.achCheck(true);
+  assert(A.stOf().ach['lv25@belt']&&A.stOf().ach['lv50@belt'],'Holdout and Conqueror'); assert(!A.stOf().ach['stars@belt'],'149 stars is not all of them');
+  P.prog.belt.stars[50]=7; A.achCheck(true); assert(A.stOf().ach['stars@belt'],'all 150 stars'); assert(!A.stOf().ach['lv10@nebula']);
+  const t=Object.fromEntries(A.achList().filter(d=>d.wid==='belt'&&d.grp==='conquest').map(d=>[d.id,d.tier]));
+  assert.deepEqual(t,{'lv10@belt':0,'lv25@belt':1,'lv50@belt':2,'stars@belt':3});
+}
+
+// 9g. retune: earned awards stay earned, and Command Points they were worth under the old tiers are kept
+{
+  reset(); const st=A.stOf(); st.am2=0;
+  st.ach={'wm0_turret@belt':1,'wm1_turret@belt':1,'wm2_turret@belt':1,'sight0@belt':1,'sight1@belt':1,'world_belt':1,'cls_mineral@belt':1,'nk100@belt':1};
+  // old CP: wm 1+2+3, sight 1+1, survey 2, class 1, nk100 1 = 12. New tiers: wm 1+1+2, sight 1+1, survey 1, class 1, nk100 1 = 9
+  A.achRetier(); assert.equal(st.cpb,3,'old tiers were worth 3 more points'); assert.equal(st.am2,1);
+  A.achRetier(); assert.equal(st.cpb,3,'runs once');
+  assert(st.ach['wm2_turret@belt'],'nothing is taken away');
+  const g=A.P().gems; A.achCheck(true); assert.equal(A.P().gems,g,'already-earned awards are not paid again');
 }
 
 // 9e. old saves: the global record and unlocks become Meteor Belt's, once
@@ -188,13 +225,14 @@ const fight=(type,won,{weapons=['turret'],src='turret',resKind=null,m=1}={})=>{
   assert.equal(r.rz.rock,12); assert.equal(r.rz.dart,1); assert.equal(r.hold.rock,7);
   const pa={pw:{belt:{enc:{rock:5},kill:{},leak:{},rz:{},hold:{},w:{turret:{rock:[5,5,5,0,0,0]}}}},pwm:1}, pb={pw:{belt:{enc:{rock:9},kill:{},leak:{},rz:{},hold:{},w:{}},void:{enc:{brute:2},kill:{},leak:{},rz:{},hold:{},w:{}}}};
   const pr=JSON.parse(JSON.stringify(m.mergeSt(pa,pb)));
+  assert.equal(JSON.parse(JSON.stringify(m.mergeSt({am2:1,cpb:4},{cpb:2}))).cpb,4,'retune bonus survives a merge'); assert.equal(m.mergeSt({},{am2:1}).am2,1);
   assert.equal(pr.pw.belt.enc.rock,9); assert.deepEqual(pr.pw.belt.w.turret.rock,[5,5,5,0,0,0]); assert.equal(pr.pw.void.enc.brute,2); assert.equal(pr.pwm,1);
-  // whole-save merge: star bitmasks are OR'd, fragments take the larger count
+  // whole-save merge: star bitmasks are OR'd, crystal ledgers take the larger count
   const full=cut(cloud,"  const maxObj=","  const code=");
   const m2={score:()=>0,JSON,Object,Math,Set,Array}; vm.runInNewContext("const score=j=>JSON.parse(j).sc||0;\n"+full+"\nglobalThis.merge=merge;",m2);
-  const L=JSON.stringify({sc:5,prog:{belt:{best:5,stars:{1:1,2:3}}},frag:{pow:5,tmp:1},lv:{},cm:{}}), C=JSON.stringify({sc:9,prog:{belt:{best:9,stars:{1:6,3:7}}},frag:{pow:2,tmp:8},lv:{},cm:{}});
+  const L=JSON.stringify({sc:5,prog:{belt:{best:5,stars:{1:1,2:3}}},ce:{pow:5,tmp:1},cs:{pow:1},lv:{},cm:{}}), C=JSON.stringify({sc:9,prog:{belt:{best:9,stars:{1:6,3:7}}},ce:{pow:2,tmp:8},cs:{pow:2},lv:{},cm:{}});
   const o=JSON.parse(m2.merge(L,C));
   assert.deepEqual(JSON.parse(JSON.stringify(o.prog.belt.stars)),{1:7,2:3,3:7},'stars union by bit'); assert.equal(o.prog.belt.best,9);
-  assert.equal(o.frag.pow,5); assert.equal(o.frag.tmp,8);
+  assert.equal(o.ce.pow,5); assert.equal(o.ce.tmp,8); assert.equal(o.cs.pow,2); assert.equal(o.frag,undefined);
 }
 console.log('achievements: all checks passed ('+A.achList().length+' achievements)');
