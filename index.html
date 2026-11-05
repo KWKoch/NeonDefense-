@@ -2577,16 +2577,16 @@ const COACH={
     {nav:'arsenal',tab:'command',sel:'.cmdv .card',t:'Warden Sol',x:'Yours free. Read the buff, the weakness and the abilities, then open Specialties.'},
     {nav:'shop',sel:'#cmarket',t:'Market',x:'Recruit with gems or open a pack. Higher rarity means a bigger buff, a smaller weakness and the second ability.'}
   ],
-  /* in battle the game keeps running: a prompt sits over the field and clears when you do the move */
+  /* in battle every card freezes the run (mobs, meteors, timers, waves) until it is dismissed */
   run:[
-    {live:1,fx:'ozone',dur:5,t:'Hold the line',x:'Kill mobs before they cross the glowing ozone line. Anything that crosses hits the city.'},
-    {live:1,done:()=>CF.hold>=1.2,max:30,t:'Hold to aim',x:'Press and hold anywhere on the field. The turret follows your finger. Let go and the AI takes over.'}
+    {fx:'ozone',demo:'ozone',t:'Hold the line',x:'Kill mobs before they cross the glowing ozone line. Anything that crosses hits the city.'},
+    {demo:'steer',t:'Hold to aim',x:'Press and hold anywhere on the field. The turret follows your finger. Let go and the AI takes over.'}
   ],
   grab:[
-    {live:1,sel:'#row0 .tool[data-w]:not([hidden])',done:()=>CF.fire>0,max:45,t:'Fire a weapon',x:'Hold the weapon icon, drag onto the field and let go to fire there. Aim sets weapons to Manual.'}
+    {sel:'#row0 .tool[data-w]:not([hidden])',demo:'drag',t:'Fire a weapon',x:'Hold the weapon icon, drag onto the field and let go to fire there. Aim sets weapons to Manual.'}
   ],
   cmdrun:[
-    {live:1,sel:'#cmdA1',done:()=>CF.cmd>0,max:40,t:'Commander ability',x:'Tap it when it glows. Cooldowns run long, so save it for bad moments. Keys: Q and E.'}
+    {sel:'#cmdA1',demo:'ability',t:'Commander ability',x:'Tap it when it glows. Cooldowns run long, so save it for bad moments. Keys: Q and E.'}
   ]
 };
 /* counters the live prompts watch */
@@ -2619,8 +2619,8 @@ function coachShow(){
   const s=coachSt; if(!s) return; const st=s.steps[s.i];
   if((st.nav&&UI.nav!==st.nav)||(st.tab&&tab!==st.tab)){ if(st.nav) UI.nav=st.nav; if(st.tab) tab=st.tab; renderArmory(); }
   const live=!!st.live;
-  /* a read-only card in battle pauses the run; prompts and menu cards do not */
-  if(!live&&G.state==='playing'){ s.pause=true; G.state='teach'; G.armed=null; G.ghost.show=false; G.placing=false; input.active=false; }
+  /* any card shown during a run freezes it; menu cards have nothing to pause */
+  if(G.state==='playing'){ s.pause=true; G.state='teach'; G.armed=null; G.ghost.show=false; G.placing=false; input.active=false; }
   let ov=document.getElementById('coach');
   if(!ov){ ov=document.createElement('div'); ov.id='coach'; ov.innerHTML='<div class="chole"></div><div class="ccard" role="dialog" aria-live="polite"></div>';
     ov.addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; if(b.dataset.c==='skip') coachEnd(); else if(b.dataset.c==='next') coachNext(); });
@@ -2676,6 +2676,8 @@ function coachEnd(){
   const s=coachSt; if(!s) return; coachMark(s.id); coachSt=null; CF.oz=0; if(demoIv){ clearInterval(demoIv); demoIv=0; }
   if(coachIv){ clearInterval(coachIv); coachIv=0; }
   const ov=document.getElementById('coach'); if(ov) ov.remove(); removeEventListener('resize',coachPlace);
+  /* another card waiting in battle: show it while the run is still frozen */
+  if(s.pause&&G.state==='teach'&&coachQ.length){ const n=coachQ.shift(); coach(n,true); if(coachSt){ coachSt.pause=true; return; } }
   if(s.pause&&G.state==='teach'){ G.state='playing'; toolKey=''; hudKey=''; if(G.teachQ&&G.teachQ.length) openTeach(); }
   if(coachQ.length){ const n=coachQ.shift(); setTimeout(()=>coach(n,true),250); }
 }
@@ -2690,8 +2692,8 @@ function coachArmory(){
 function coachWhenPlaying(id,delay){ let n=0; const tick=()=>{ if(G.state==='playing'&&!document.getElementById('teachov')) return coach(id); if(G.state!=='playing'&&G.state!=='teach'&&G.state!=='cards') return; if(++n<30) setTimeout(tick,500); }; setTimeout(tick,delay); }
 function coachRun(){
   if(!coachOn()) return;
-  if(!coachSeen('run')){ if(Object.keys(P.prog||{}).some(k=>((P.prog[k]||{}).best||0)>0)) coachMark('run'); else coachWhenPlaying('run',1200); }
-  if(G.cm&&!coachSeen('cmdrun')) coachWhenPlaying('cmdrun',1800);
+  if(!coachSeen('run')){ if(Object.keys(P.prog||{}).some(k=>((P.prog[k]||{}).best||0)>0)) coachMark('run'); else coachWhenPlaying('run',300); }
+  if(G.cm&&!coachSeen('cmdrun')) coachWhenPlaying('cmdrun',400);
   coachGrab();
 }
 function coachGrab(){
@@ -4962,10 +4964,10 @@ window.__rr={pickTarget:pickTarget,fire:fire,spawn:spawn,killEnemy:killEnemy,ope
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 102</div>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 103</div>
 <script>
 /* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
-(function(){ const BUILD=102; let busy=false, shown=false;
+(function(){ const BUILD=103; let busy=false, shown=false;
   const inRun=()=>{ try{ return typeof G!=='undefined'&&(G.state==='playing'||G.state==='cards'||G.state==='shop'||G.state==='paused'||G.state==='teach'||G.state==='ctl'); }catch(e){ return false; } };
   function wipeReload(){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
     if(n>=3) return;
