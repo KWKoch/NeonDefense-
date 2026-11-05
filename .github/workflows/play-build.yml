@@ -1,12 +1,12 @@
-name: Play build (01)
+name: Store build (production)
 
-# Builds the Google Play edition: web bundle (node build.mjs play) -> Capacitor Android project -> .aab
+# Production branch only: every change merged from testing builds the Google Play edition: web bundle (node build.mjs play) -> Capacitor Android project -> .aab
 # Signing secrets (repo Settings > Secrets and variables > Actions): ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD
 # Without them the bundle is built unsigned (good for checking the build, not uploadable to Play).
 on:
   workflow_dispatch:
   push:
-    branches: ['play/**']
+    branches: ['production']
     paths: ['index.html', 'build.mjs', 'portal/**', 'play/**', '.github/workflows/play-build.yml']
 
 permissions:
