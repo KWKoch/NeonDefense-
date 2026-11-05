@@ -27,14 +27,20 @@ t('an erase (newer epoch) is not resurrected by the old cloud copy',()=>{
   const old=base(); old.cmd.own.rook=2; const fresh=base(); fresh.epoch=Date.now(); const m=P(merge(J(fresh),J(old))); assert.strictEqual(m.cmd.own.rook,undefined); assert(m.epoch>0);
   const m2=P(merge(J(old),J(fresh))); assert.strictEqual(m2.cmd.own.rook,undefined);
 });
-t('spent shards stay spent: an older copy cannot refill them',()=>{
-  const old=base(); old.frag={'turret.pow':10}; old.fe={'turret.pow':10}; old.fs={};   /* cloud copy from before the forge */
-  const now=base(); now.frag={'turret.pow':6}; now.fe={'turret.pow':10}; now.fs={'turret.pow':4}; now.lv['turret.p']=4;
-  for(const [x,y] of [[now,old],[old,now]]){ const m=P(merge(J(x),J(y))); assert.strictEqual(m.frag['turret.pow'],6); assert.strictEqual(m.fs['turret.pow'],4); }
-  const legacy=base(); legacy.frag={'turret.pow':10};   /* build with no ledger at all */
-  assert.strictEqual(P(merge(J(now),J(legacy))).frag['turret.pow'],6);
-  const other=base(); other.frag={'turret.pow':13}; other.fe={'turret.pow':13}; other.fs={};   /* earned 3 more on another device */
-  assert.strictEqual(P(merge(J(now),J(other))).frag['turret.pow'],9);
+t('spent crystals stay spent: an older copy cannot refill them',()=>{
+  const old=base(); old.ce={pow:10}; old.cs={};   /* cloud copy from before an upgrade */
+  const now=base(); now.ce={pow:10}; now.cs={pow:4}; now.lv['turret.p']=4;
+  for(const [x,y] of [[now,old],[old,now]]){ const m=P(merge(J(x),J(y))); assert.strictEqual(m.ce.pow-m.cs.pow,6); assert.strictEqual(m.cs.pow,4); }
+  const other=base(); other.ce={pow:13}; other.cs={};   /* earned 3 more on another device */
+  const m=P(merge(J(now),J(other))); assert.strictEqual(m.ce.pow-m.cs.pow,9);
+});
+t('an old save (per-weapon crystals + shards) converts at forge value and drops the old fields',()=>{
+  const legacy=base(); legacy.inv={'turret.pow':[3,1,0,1],'chain.pow':[0,0,2,0],'base.frt':[5,0,0,0]}; legacy.frag={'turret.tmp':9}; legacy.fe={'turret.tmp':10}; legacy.fs={'turret.tmp':1};
+  const m=P(merge(J(legacy),J(base())));
+  assert.strictEqual(m.ce.pow,3+4+40+25); assert.strictEqual(m.ce.frt,5); assert.strictEqual(m.ce.tmp,3);   /* 9 shards / 4 = 2.25, rounded up */
+  assert.strictEqual(m.inv,undefined); assert.strictEqual(m.frag,undefined); assert.strictEqual(m.fe,undefined);
+  const now=base(); now.ce={pow:80,tmp:3,frt:5}; now.cs={pow:50};   /* converted earlier, spent 50 since: the old copy must not hand them back */
+  const m2=P(merge(J(now),J(legacy))); assert.strictEqual(m2.ce.pow,80); assert.strictEqual(m2.cs.pow,50);
 });
 t('commander ownership counts toward the progress score',()=>{ const a=base(), b=base(); b.cmd.own.rook=0; assert(score(J(b))>score(J(a))); });
 t('merge is stable: merging a save with itself changes nothing',()=>{ const A=base(); A.cmd.own.rook=2; A.vault.items['cmd:rook']=3; const m=P(merge(J(A),J(A))); assert.strictEqual(m.cmd.own.rook,2); assert.strictEqual(m.gems,100); });

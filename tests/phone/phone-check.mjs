@@ -174,6 +174,29 @@ async function runDevice(d, url, expectBuild) {
       await shot(page, '05-paused');
     }
   }
+  // currency screens: crystals (5 types), crates, upgrades and commander ranks, on a throwaway local save
+  const cur = await page.evaluate(() => { try {
+    const R = __rr, P = R.P, T = ['pow', 'tmp', 'rch', 'cap', 'frt'], sum = () => T.reduce((a, t) => a + R.cry(t), 0), o = {};
+    window.__forceTeach = false; P.tut = Object.assign({}, P.tut, { v2: 1, tour: 1, nav_arsenal: 1, nav_shop: 1, nav_codex: 1, nav_worlds: 1, nav_battle: 1, command: 1 });
+    const L = R.cryLegacy({ inv: { 'turret.pow': [3, 1, 0, 1] }, frag: { 'chain.tmp': 8 } }); o.legacy = L.pow === 47 && L.tmp === 2;
+    const s0 = sum(), got = R.awardCards(10, 20, 1, false), paid = Object.values(got).reduce((a, b) => a + b, 0); o.drops = paid >= 11 && sum() === s0 + paid;
+    R.cryAdd('pow', 600); const u = R.UPS.find(x => x.tab === 'turret' && x.ty === 'pow'), lv0 = P.lv[u.id] || 0, c0 = R.cry('pow'), need = R.upCost(u, lv0);
+    o.upgrade = R.buyUp(u.id) && R.cry('pow') === c0 - need && (P.lv[u.id] || 0) === lv0 + 1;
+    P.gems = Math.max(P.gems || 0, 200); R.UI.pt = 'frt'; const f0 = R.cry('frt'), g0 = P.gems; R.openPack('m'); o.crate = R.cry('frt') === f0 + 38 && P.gems === g0 - 150;
+    const c = R.CMDS.find(x => x.id === 'rook'), r0 = c.tier | 0, pr = R.cmdPrice(c, -1, r0); o.mix = Object.keys(pr).map(t => t + ' ' + pr[t]).join(', ');
+    o.short = !R.cmdBuy('rook', r0) || R.cmdP().own.rook !== undefined ? 'bought without crystals' : '';
+    for (const t in pr) R.cryAdd(t, pr[t]); o.cmd = R.cmdBuy('rook', r0) && R.cmdP().own.rook === r0 && !o.short;
+    P.prog.belt.best = Math.max(P.prog.belt.best || 0, 6); R.toArmory(); return o; } catch (e) { return { err: e.message }; } });
+  chk('crystals: old saves convert, drops, upgrades, crates and commanders pay the right amounts', cur.legacy && cur.drops && cur.upgrade && cur.crate && cur.cmd, cur.err || JSON.stringify(cur));
+  const scr = async (name, fn) => { await page.evaluate(fn); await page.waitForTimeout(350);
+    const sw = await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1); chk(name + ': no sideways scrolling', sw); await shot(page, name); };
+  if (!cur.err) {
+    await scr('06-shop', () => { __rr.UI.nav = 'shop'; __rr.renderArmory(); });
+    await scr('07-arsenal', () => { __rr.UI.nav = 'arsenal'; __rr.UI.uc = __rr.UPS.find(x => x.tab === 'turret' && x.ty === 'pow').id; __rr.renderArmory(); const b = document.querySelector('.wpn[data-tab="turret"]'); if (b) b.click(); const u = document.querySelector('.uh[data-uc]'); if (u && u.getAttribute('aria-expanded') !== 'true') u.click(); });
+    await scr('08-command', () => { const b = document.querySelector('.wpn[data-tab="command"]'); if (b) b.click(); });
+    await scr('09-commander', () => { Object.assign(__rr.UI, { cmm: 'vex', cmw: 'cmd', cmv: 'info' }); __rr.renderArmory(); });
+    await scr('10-reward', () => { Object.assign(__rr.UI, { cmm: '' }); __rr.showGain('Supply crate', { pow: 12, tmp: 8, rch: 7, cap: 6, frt: 5 }); });
+  }
   chk('no script errors', errors.length === 0, errors.slice(0, 3).join(' | '));
   await browser.close();
   return { id: d.id, label: d.label, build, checks, shots, errors };

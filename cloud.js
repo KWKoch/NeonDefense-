@@ -45,14 +45,23 @@ else (async()=>{
   /* Structured, queryable summary of the account (levels, accomplishments, wallet, entitlements) stored next to the full save blob. Client-reported: the blob stays the source of truth until purchases are verified server-side. */
   const summary=j=>{ try{ const o=JSON.parse(j||'{}'), best={}; let perfect=0, elite=0, cards=0;
       for(const k in (o.prog||{})){ const q=o.prog[k]||{}; best[k]=Math.max(0,Math.floor(+q.best||0)); perfect+=Object.keys(q.perf||{}).length; elite+=Object.keys(q.eclr||{}).length; }
-      for(const t in (o.inv||{})) for(const n of (o.inv[t]||[])) cards+=Math.max(0,Math.floor(+n||0));
+      cards=Math.floor(cryBal(o));
       return {best,perfect,elite,cards,gems:Math.max(0,Math.floor(+o.gems||0)),pass:Math.max(0,Math.floor(+o.pass||0)),starter:o.starter?1:0,
-        upgrades:Object.values(o.lv||{}).reduce((a,b)=>a+(+b||0),0),mastery:Object.values(o.cm||{}).reduce((a,b)=>a+(+b||0),0),worlds:Object.keys(o.own||{}).length,build:+o.build||0,ach:Object.keys((o.st||{}).ach||{}).length,stars:Object.values(o.prog||{}).reduce((t,q)=>t+Object.values((q||{}).stars||{}).reduce((u,m)=>u+[1,2,4].filter(b=>(+m||0)&b).length,0),0),frags:Object.values(o.frag||{}).reduce((a,b)=>a+(+b||0),0)}; }catch(e){ return {}; } };
+        upgrades:Object.values(o.lv||{}).reduce((a,b)=>a+(+b||0),0),mastery:Object.values(o.cm||{}).reduce((a,b)=>a+(+b||0),0),worlds:Object.keys(o.own||{}).length,build:+o.build||0,ach:Object.keys((o.st||{}).ach||{}).length,stars:Object.values(o.prog||{}).reduce((t,q)=>t+Object.values((q||{}).stars||{}).reduce((u,m)=>u+[1,2,4].filter(b=>(+m||0)&b).length,0),0),frags:0}; }catch(e){ return {}; } };
   const ledger=j=>{ try{ const l=JSON.parse(j||'{}').ledger; return Array.isArray(l)?l.slice(-100).map(x=>({t:Math.floor(+x.t||0),k:String(x.k||'').slice(0,24),d:String(x.d||'').slice(0,60)})):[]; }catch(e){ return []; } };
   const rec=j=>({data:j||'{}',score:Math.max(0,score(j||'{}')),updated:Date.now(),stats:summary(j),ledger:ledger(j)});
   /* Field-level merge for first sign-in on a device: take the save with more progress as the base, then keep anything the other one has that must never be lost. */
   /* Combat record: counters keep the larger value, mob sightings per world are a union, achievements are a union (earliest unlock time wins). */
   const maxObj=(x,y)=>{ const r=Object.assign({},x||{}); for(const k in (y||{})) r[k]=Math.max(+r[k]||0,+y[k]||0); return r; };
+  /* Crystals: five types, a ledger of earned (ce) and spent (cs). A save from before build 104 holds per-weapon piles (inv) and shards (frag/fe/fs);
+     it counts as earned crystals at forge value (Rare 4, Epic 12.5, Legendary 40, 4 shards = 1), the same conversion the game uses on load. */
+  const CRYT=['pow','tmp','rch','cap','frt'], CVM=[1,4,12.5,40];
+  const cryLegacy=x=>{ const r={pow:0,tmp:0,rch:0,cap:0,frt:0}, ty=k=>{ k=String(k); return k.indexOf('.')>=0?k.split('.')[1]:k; }, add=(k,v)=>{ const t=ty(k); if(t in r&&v>0) r[t]+=v; };
+    const inv=(x&&x.inv)||{}; for(const k in inv) if(Array.isArray(inv[k])) for(let i=0;i<4;i++) add(k,Math.max(0,+inv[k][i]||0)*CVM[i]);
+    const fe=x&&x.fe&&typeof x.fe==='object'?x.fe:null, fs=(x&&x.fs)||{}, fr=(x&&x.frag)||{};
+    new Set(Object.keys(fe||{}).concat(Object.keys(fr))).forEach(k=>{ add(k,(fe?Math.max(0,(+fe[k]||0)-(+fs[k]||0)):Math.max(0,+fr[k]||0))/4); });
+    CRYT.forEach(t=>{ r[t]=Math.ceil(r[t]-1e-9); }); return r; };
+  const cryBal=x=>{ if(x&&x.ce){ let n=0; for(const t of CRYT) n+=Math.max(0,(+x.ce[t]||0)-(+((x.cs||{})[t])||0)); return n; } const r=cryLegacy(x); return CRYT.reduce((a,t)=>a+r[t],0); };
   const mergeSt=(x,y)=>{ x=x||{}; y=y||{}; const r={v:1,bf:(x.bf||y.bf)?1:0,enc:maxObj(x.enc,y.enc),kill:maxObj(x.kill,y.kill),leak:maxObj(x.leak,y.leak),rz:maxObj(x.rz,y.rz),hold:maxObj(x.hold,y.hold),w:{},world:{},ach:{}};
     for(const w of new Set([...Object.keys(x.w||{}),...Object.keys(y.w||{})])){ r.w[w]={}; const p=(x.w||{})[w]||{}, q=(y.w||{})[w]||{};
       for(const m of new Set([...Object.keys(p),...Object.keys(q)])){ const a=p[m]||[], b=q[m]||[]; r.w[w][m]=[0,1,2,3,4,5].map(i=>Math.max(+a[i]||0,+b[i]||0)); } }
@@ -74,9 +83,9 @@ else (async()=>{
       const l=JSON.parse(lj||'{}'), c=JSON.parse(cj||'{}'); { const ea=+l.epoch||0, eb=+c.epoch||0; if(ea!==eb) return ea>eb?lj:cj; } const cloudWins=score(cj)>score(lj||'{}'), a=cloudWins?c:l, b=cloudWins?l:c, o=JSON.parse(JSON.stringify(a));
       const maxMap=(k)=>{ o[k]=Object.assign({},b[k]||{},a[k]||{}); for(const i in (b[k]||{})) o[k][i]=Math.max(+(a[k]||{})[i]||0,+(b[k]||{})[i]||0); };
       maxMap('lv'); maxMap('cm'); o.seen=Object.assign({},b.seen||{},a.seen||{}); o.seenW=Object.assign({},b.seenW||{},a.seenW||{}); o.own=Object.assign({},b.own||{},a.own||{});
-      o.st=mergeSt(a.st,b.st); mergeStars(o,a,b); { const side=x=>{ const f=x.frag||{}; return x.fe?{e:x.fe,s:x.fs||{}}:{e:f,s:{}}; }, sa=side(a), sb=side(b); o.fe=maxObj(sa.e,sb.e); o.fs=maxObj(sa.s,sb.s); o.frag={}; for(const k of new Set([...Object.keys(o.fe),...Object.keys(o.fs)])) o.frag[k]=Math.max(0,(+o.fe[k]||0)-(+o.fs[k]||0)); }
+      o.st=mergeSt(a.st,b.st); mergeStars(o,a,b); { const side=x=>x.ce?{e:x.ce,s:x.cs||{}}:{e:cryLegacy(x),s:{}}, sa=side(a), sb=side(b); o.ce=maxObj(sa.e,sb.e); o.cs=maxObj(sa.s,sb.s); }
       { const ca=a.cmd||{}, cb=b.cmd||{}, tl={}; const rs=maxObj(ca.rs,cb.rs); for(const id of new Set([...Object.keys(ca.tl||{}),...Object.keys(cb.tl||{})])){ const ra=+(ca.rs||{})[id]||0, rb=+(cb.rs||{})[id]||0; tl[id]=ra>rb?Object.assign({},(ca.tl||{})[id]):rb>ra?Object.assign({},(cb.tl||{})[id]):maxObj((ca.tl||{})[id],(cb.tl||{})[id]); } const own=Object.assign({},cb.own||{},ca.own||{}); for(const id in (cb.own||{})) own[id]=Math.max(+(ca.own||{})[id]||0,+cb.own[id]||0); o.tut=Object.assign({},b.tut||{},a.tut||{}); o.cmd={eq:ca.eq||cb.eq||'warden',own:own,tl:tl,rs:rs}; }
-      o.vault={v:1,items:maxObj((a.vault||{}).items,(b.vault||{}).items)}; o.epoch=+a.epoch||0; for(const k in b) if(!(k in o)) o[k]=b[k];
+      o.vault={v:1,items:maxObj((a.vault||{}).items,(b.vault||{}).items)}; o.epoch=+a.epoch||0; for(const k in b) if(!(k in o)) o[k]=b[k]; delete o.inv; delete o.frag; delete o.fe; delete o.fs;
       o.pass=Math.max(+a.pass||0,+b.pass||0); o.starter=(a.starter||b.starter)?1:0; o.tester=(a.tester||b.tester)?1:0; o.tw=(a.tw||b.tw)?1:0; o.prem=Object.assign({},b.prem||{},a.prem||{}); { const sa=a.ss||null, sb=b.ss||null; o.ss=sa&&sb&&sa.n===sb.n?{n:sa.n,pts:Math.max(+sa.pts||0,+sb.pts||0),cf:(+sa.cf||0)|(+sb.cf||0),cp:(+sa.cp||0)|(+sb.cp||0)}:((sa&&sb)?((+sa.n||0)>(+sb.n||0)?sa:sb):(sa||sb)); } o.chestDay=[a.chestDay||'',b.chestDay||''].sort().pop(); { const da=a.adDay||'', db=b.adDay||''; o.adDay=da===db?da:(+da.split('-').join('')>+db.split('-').join('')?da:db)||''; o.adN=da===db?Math.max(+a.adN||0,+b.adN||0):(o.adDay===da?(+a.adN||0):(+b.adN||0)); } o.passDay=[a.passDay||'',b.passDay||''].sort().pop();
       o.ledger=[].concat(a.ledger||[],(b.ledger||[]).filter(x=>!(a.ledger||[]).some(y=>y.t===x.t&&y.k===x.k))).sort((x,y)=>x.t-y.t).slice(-100);
       return JSON.stringify(o); }catch(e){ return score(cj)>score(lj||'{}')?cj:lj; } };

@@ -16,15 +16,15 @@ vm.runInContext(`
 const LEVELS=50; const OZ_Y=439; const rollType=()=>'pow'; const CPT=[1,1,2,3];
 ${tables}
 ${shape}
-let P={seen:{},prog:{},st:newSt(),gems:0,frag:{pow:0,tmp:0,rch:0,cap:0,frt:0}};
+let P={seen:{},prog:{},st:newSt(),gems:0,ce:{pow:0,tmp:0,rch:0,cap:0,frt:0}};
 const G={wd:{id:'belt'},run:null};
-const fragAdd=(k,n)=>{ P.frag[k]=(P.frag[k]||0)+n; };
+const cryAdd=(k,n)=>{ P.ce[k]=(P.ce[k]||0)+n; return n; };
 const ico=()=>'';  const Music={up(){}};  const save=()=>{ globalThis.saves++; };
 ${mod}
 globalThis.api={achRetier,NKT,starBitsFor,starHold,starsOfWorld,ECON,popc,P:()=>P,setP:v=>{P=v},G,MOB,CLS,WORLDS,stSpawn,stHit,stResolve,agg,achList,achCheck,get achQ(){return achQ},stOf,newSt};
 `,ctx);
 const A=ctx.api;
-const reset=()=>{ A.setP({seen:{},prog:{},st:A.newSt(),bf:0,gems:0,frag:{pow:0,tmp:0,rch:0,cap:0,frt:0}}); A.G.run=null; };
+const reset=()=>{ A.setP({seen:{},prog:{},st:A.newSt(),bf:0,gems:0,ce:{pow:0,tmp:0,rch:0,cap:0,frt:0}}); A.G.run=null; };
 const mob=(type)=>({type,res:{k:1,b:1,e:1}});
 const fight=(type,won,{weapons=['turret'],src='turret',resKind=null,m=1}={})=>{
   const e=mob(type); A.stSpawn(e);
@@ -167,12 +167,12 @@ const fight=(type,won,{weapons=['turret'],src='turret',resKind=null,m=1}={})=>{
   reset(); const P=A.P(); P.prog={belt:{stars:{1:7,2:1,3:2}}}; assert.equal(A.starsOfWorld('belt'),3+1+1); assert.equal(A.popc(5),2);
 }
 
-// 9d. achievement rewards: gems and fragments by tier, paid once
+// 9d. achievement rewards: gems and crystals by tier, paid once
 {
-  reset(); const P=A.P(); const frag=()=>Object.values(P.frag).reduce((a,b)=>a+b,0);
+  reset(); const P=A.P(); const frag=()=>Object.values(P.ce).reduce((a,b)=>a+b,0);
   for(let i=0;i<5000;i++) fight('rock',true,{weapons:['turret'],src:'turret'}); A.achCheck(true);
   const ac=A.stOf().ach; assert(ac['sight0@belt']&&ac['wl0_turret@belt'],'5,000 Turret kills: Spotter and Marksman, both Bronze');
-  const n0=Object.keys(ac).length; assert.equal(P.gems,n0*A.ECON.achGems[0]); assert.equal(frag(),n0*A.ECON.achFrag[0]);
+  const n0=Object.keys(ac).length; assert.equal(P.gems,n0*A.ECON.achGems[0]); assert.equal(frag(),n0*A.ECON.achCry[0]);
   const before=P.gems; Object.keys(A.MOB).forEach(k=>A.stOf().world.belt[k]=1); A.achCheck(true);   // world survey: Silver
   assert.equal(P.gems-before,A.ECON.achGems[1]+3*A.ECON.achGems[0],'survey (Silver) + three class surveys (Bronze)');
   const g2=P.gems; A.achCheck(true); assert.equal(P.gems,g2,'no double payout');
@@ -227,12 +227,12 @@ const fight=(type,won,{weapons=['turret'],src='turret',resKind=null,m=1}={})=>{
   const pr=JSON.parse(JSON.stringify(m.mergeSt(pa,pb)));
   assert.equal(JSON.parse(JSON.stringify(m.mergeSt({am2:1,cpb:4},{cpb:2}))).cpb,4,'retune bonus survives a merge'); assert.equal(m.mergeSt({},{am2:1}).am2,1);
   assert.equal(pr.pw.belt.enc.rock,9); assert.deepEqual(pr.pw.belt.w.turret.rock,[5,5,5,0,0,0]); assert.equal(pr.pw.void.enc.brute,2); assert.equal(pr.pwm,1);
-  // whole-save merge: star bitmasks are OR'd, fragments take the larger count
+  // whole-save merge: star bitmasks are OR'd, crystal ledgers take the larger count
   const full=cut(cloud,"  const maxObj=","  const code=");
   const m2={score:()=>0,JSON,Object,Math,Set,Array}; vm.runInNewContext("const score=j=>JSON.parse(j).sc||0;\n"+full+"\nglobalThis.merge=merge;",m2);
-  const L=JSON.stringify({sc:5,prog:{belt:{best:5,stars:{1:1,2:3}}},frag:{pow:5,tmp:1},lv:{},cm:{}}), C=JSON.stringify({sc:9,prog:{belt:{best:9,stars:{1:6,3:7}}},frag:{pow:2,tmp:8},lv:{},cm:{}});
+  const L=JSON.stringify({sc:5,prog:{belt:{best:5,stars:{1:1,2:3}}},ce:{pow:5,tmp:1},cs:{pow:1},lv:{},cm:{}}), C=JSON.stringify({sc:9,prog:{belt:{best:9,stars:{1:6,3:7}}},ce:{pow:2,tmp:8},cs:{pow:2},lv:{},cm:{}});
   const o=JSON.parse(m2.merge(L,C));
   assert.deepEqual(JSON.parse(JSON.stringify(o.prog.belt.stars)),{1:7,2:3,3:7},'stars union by bit'); assert.equal(o.prog.belt.best,9);
-  assert.equal(o.frag.pow,5); assert.equal(o.frag.tmp,8);
+  assert.equal(o.ce.pow,5); assert.equal(o.ce.tmp,8); assert.equal(o.cs.pow,2); assert.equal(o.frag,undefined);
 }
 console.log('achievements: all checks passed ('+A.achList().length+' achievements)');
