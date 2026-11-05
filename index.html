@@ -1705,6 +1705,7 @@ const newPwb=()=>({enc:{},kill:{},leak:{},rz:{},hold:{},w:{},mk:{}});
 const stWid=()=>(G.wd&&G.wd.id)||'belt';
 function pwOf(wid){ const s=stOf(); s.pw=s.pw||{}; return s.pw[wid]||(s.pw[wid]=newPwb()); }
 const fmtN=n=>Math.round(n).toLocaleString('en-US');
+const NKT=50;   /* resisted killing blows a mob type needs before it counts toward the variety awards */
 let achDirty=false, achLast=0, achQ=[], achEl=null, achBusy=false, ACHS=null;
 
 function stSpawn(e){
@@ -1771,11 +1772,11 @@ function agg(wid){
     for(const k in row){
       if(!MOB[k]) continue; const r=row[k]; if((r[2]|0)>a.bm[w].n) a.bm[w]={n:r[2]|0,k:k};
       for(let i=0;i<6;i++){ const v=r[i]||0; a.wt[w][i]+=v; a.wc[w][MOB[k].cls][i]+=v; }
-      if((r[5]||0)>0) types[k]=1;
+      if((r[5]||0)>0) types[k]=(types[k]||0)+(r[5]|0);
     }
     a.ne+=a.wt[w][3]; a.nd+=a.wt[w][4]; a.nk+=a.wt[w][5];
   }
-  a.nkTypes=Object.keys(types).length;
+  a.nkTypes=Object.keys(types).filter(k=>types[k]>=NKT).length;
   return a;
 }
 
@@ -1790,7 +1791,7 @@ function pRate(num,den,min,goal){
 }
 
 /* ---- economy knobs (one place) ---- */
-const ECON={achGems:[3,6,12,25],achFrag:[0,3,6,12],      /* free reward per achievement tier */
+const ECON={achGems:[5,10,20,40],achFrag:[2,5,10,20],    /* free reward per achievement tier (awards take real effort, so they pay a little more) */
   starGems:[0,1,1],starFrag:[2,3,5],fullGems:3,fullFrag:10, /* per newly earned level star (clear, hold, featured mob) and the all-three bonus */
   gate:100};                                               /* stars needed in a world to open the next one */
 const FUSE_N=4;   /* crystals of one kind and rarity that fuse into one of the next rarity. Upward only: nothing converts down. */
@@ -1813,49 +1814,56 @@ function achList(){
   if(ACHS) return ACHS;
   const A=[], keys=Object.keys(MOB);
   const CLSN={mineral:'Geologist',mech:'Signals Analyst',bio:'Biologist'};
-  /* Weapons: six awards per weapon, all counts. Three for kills with that weapon in one match, three for lifetime kills of a single mob type. */
+  /* Weapons: six awards per weapon, Bronze / Silver / Gold. Three for kills with that weapon in one match, three for lifetime kills of a single mob type in this world.
+     A level holds roughly 400 to 3,000 mobs (boss and elite levels more), so a match award means carrying a big level with that one weapon; Gold needs one of the world's biggest levels. */
   const WAW={
-    turret:{m:["Hot Barrel","Score 25 kills with the Turret in a single match."],m1:["Gunnery Sergeant","Score 60 kills with the Turret in a single match."],m2:["Bullet Storm","Score 120 kills with the Turret in a single match."],l:["Marksman","Land 250 Turret kills on one mob type."],l1:["Sharpshooter","Land 2,000 Turret kills on one mob type."],l2:["Ace Gunner","Land 10,000 Turret kills on one mob type."]},
-    mine:{m:["Trap Setter","Score 15 kills with Mines in a single match."],m1:["Minefield","Score 40 kills with Mines in a single match."],m2:["Boom Architect","Score 80 kills with Mines in a single match."],l:["Tripwire Pro","Land 150 Mine kills on one mob type."],l1:["Demolition Crew","Land 1,000 Mine kills on one mob type."],l2:["Blast Legend","Land 5,000 Mine kills on one mob type."]},
-    field:{m:["Slow Burn","Score 15 kills with the Field in a single match."],m1:["Time Dilator","Score 40 kills with the Field in a single match."],m2:["Stasis Sovereign","Score 80 kills with the Field in a single match."],l:["Cold Snap","Land 150 Field kills on one mob type."],l1:["Deep Freeze","Land 1,000 Field kills on one mob type."],l2:["Absolute Zero","Land 5,000 Field kills on one mob type."]},
-    chain:{m:["Spark Gap","Score 15 kills with Chain Lightning in a single match."],m1:["Storm Caller","Score 40 kills with Chain Lightning in a single match."],m2:["Thunder God","Score 80 kills with Chain Lightning in a single match."],l:["Bug Zapper","Land 150 Chain kills on one mob type."],l1:["Circuit Breaker","Land 1,000 Chain kills on one mob type."],l2:["Live Wire","Land 5,000 Chain kills on one mob type."]},
-    saw:{m:["Sharp Edge","Score 15 kills with the Saw in a single match."],m1:["Razor's Edge","Score 40 kills with the Saw in a single match."],m2:["Whirling Death","Score 80 kills with the Saw in a single match."],l:["Gravel Grinder","Land 150 Saw kills on one mob type."],l1:["Chop Shop","Land 1,000 Saw kills on one mob type."],l2:["Blade Master","Land 5,000 Saw kills on one mob type."]},
-    mortar:{m:["Lobber","Score 15 kills with the Mortar in a single match."],m1:["Artillery Ace","Score 40 kills with the Mortar in a single match."],m2:["Rain of Fire","Score 80 kills with the Mortar in a single match."],l:["Crater Maker","Land 150 Mortar kills on one mob type."],l1:["Siege Breaker","Land 1,000 Mortar kills on one mob type."],l2:["Hive Hammer","Land 5,000 Mortar kills on one mob type."]}
+    turret:{m:["Hot Barrel","Gunnery Sergeant","Bullet Storm"],l:["Marksman","Sharpshooter","Ace Gunner"],mn:'the Turret'},
+    mine:{m:["Trap Setter","Minefield","Boom Architect"],l:["Tripwire Pro","Demolition Crew","Blast Legend"],mn:'Mines'},
+    field:{m:["Slow Burn","Time Dilator","Stasis Sovereign"],l:["Cold Snap","Deep Freeze","Absolute Zero"],mn:'the Field'},
+    chain:{m:["Spark Gap","Storm Caller","Thunder God"],l:["Bug Zapper","Circuit Breaker","Live Wire"],mn:'Chain Lightning'},
+    saw:{m:["Sharp Edge","Razor's Edge","Whirling Death"],l:["Gravel Grinder","Chop Shop","Blade Master"],mn:'the Saw'},
+    mortar:{m:["Lobber","Artillery Ace","Rain of Fire"],l:["Crater Maker","Siege Breaker","Hive Hammer"],mn:'the Mortar'}
   };
-  const WMK={turret:[25,60,120],mine:[15,40,80],field:[15,40,80],chain:[15,40,80],saw:[15,40,80],mortar:[15,40,80]}, WLK={turret:[250,2000,10000],mine:[150,1000,5000],field:[150,1000,5000],chain:[150,1000,5000],saw:[150,1000,5000],mortar:[150,1000,5000]};
+  const WMK={turret:[1200,2000,2800],mine:[300,700,1200],field:[300,700,1200],chain:[300,700,1200],saw:[300,700,1200],mortar:[300,700,1200]},
+        WLK={turret:[2000,8000,20000],mine:[500,2500,7500],field:[500,2500,7500],chain:[500,2500,7500],saw:[500,2500,7500],mortar:[500,2500,7500]};
+  const WSH={turret:'Turret',mine:'Mine',field:'Field',chain:'Chain',saw:'Saw',mortar:'Mortar'};
   /* Every award exists once per world: id 'base@world', counted from that world's own record only. */
   WORLDS.forEach(wd=>{
     const wid=wd.id, wn=wd.name;
     const add=(cat,id,name,desc,tier,fn,icon,grp)=>A.push({cat:cat,id:id+'@'+wid,wid:wid,wname:wn,name:name,desc:desc,tier:tier,fn:fn,icon:icon||'eye',grp:grp||''});
     const set=new Set(Object.keys(wd.uw||UW).filter(k=>MOB[k])); if(set.has('chunk')) set.add('small'); if(set.has('egg')) set.add('hatch'); set.add('orb'); set.add('boss');
     const ks=[...set], seen=()=>stOf().world[wid]||{};
+    const best=()=>(((P.prog||{})[wid]||{}).best)|0;
 
-    /* Discovery: this world's roster, its mob classes, sightings here */
-    A.push({cat:'disc',id:'world_'+wid,wid:wid,wname:wn,name:wn+' Survey',desc:'Meet all '+ks.length+' mobs that appear in '+wn+'.',tier:2,fn:()=>pCount(ks.filter(k=>seen()[k]).length,ks.length),icon:'world',grp:'survey'});
+    /* Discovery: this world's roster, its mob classes, sightings here, and how far you have pushed */
+    A.push({cat:'disc',id:'world_'+wid,wid:wid,wname:wn,name:wn+' Survey',desc:'Meet all '+ks.length+' mobs that appear in '+wn+'. The last ones only show up deep in the world.',tier:1,fn:()=>pCount(ks.filter(k=>seen()[k]).length,ks.length),icon:'world',grp:'survey'});
     for(const c in CLS){
       const kc=ks.filter(k=>MOB[k].cls===c); if(!kc.length) continue;
-      add('disc','cls_'+c,CLSN[c]||CLS[c].name+' Survey','Meet every '+CLS[c].name+' mob in '+wn+': '+kc.map(k=>skinName(wid,k)).join(', ')+'.',1,()=>pCount(kc.filter(k=>seen()[k]).length,kc.length),'eye','class');
+      add('disc','cls_'+c,CLSN[c]||CLS[c].name+' Survey','Meet every '+CLS[c].name+' mob in '+wn+': '+kc.map(k=>skinName(wid,k)).join(', ')+'.',0,()=>pCount(kc.filter(k=>seen()[k]).length,kc.length),'eye','class');
     }
-    [[50,'Spotter'],[500,'Lookout'],[2500,'Watchtower'],[10000,'All-Seeing Rampart']].forEach((x,i)=>
+    [[5000,'Spotter'],[25000,'Lookout'],[100000,'Watchtower'],[250000,'All-Seeing Rampart']].forEach((x,i)=>
       add('disc','sight'+i,x[1],'Encounter '+fmtN(x[0])+' mobs in '+wn+'.',i,a=>pCount(a.sight,x[0]),'eye','sight'));
+    [[10,'Beachhead','Clear level 10 in '+wn+'.'],[25,'Holdout','Clear level 25 in '+wn+'.'],[LEVELS,'Conqueror','Clear level '+LEVELS+' in '+wn+'.']].forEach((x,i)=>
+      add('disc','lv'+x[0],x[1],x[2],i,()=>pCount(best(),x[0]),'world','conquest'));
+    add('disc','stars',wn+' Perfected','Earn all '+(LEVELS*3)+' stars in '+wn+'.',3,()=>pCount(starsOfWorld(wid),LEVELS*3),'world','conquest');
 
     /* Weapons */
     WLIST.forEach(w=>{
       const T=WAW[w];
       [0,1,2].forEach(t=>{
-        const mk=WMK[w][t], lk=WLK[w][t], sf=t?String(t):'';
-        add('wpn','wm'+t+'_'+w,T['m'+sf][0],T['m'+sf][1],t+1,a=>pCount(a.mk[w],mk),w,w);
-        add('wpn','wl'+t+'_'+w,T['l'+sf][0],T['l'+sf][1],t+1,a=>{ const r=pCount(a.bm[w].n,lk); if(a.bm[w].k&&!r.done) r.txt+=' ('+skinName(wid,a.bm[w].k)+')'; return r; },w,w);
+        const mk=WMK[w][t], lk=WLK[w][t];
+        add('wpn','wm'+t+'_'+w,T.m[t],'Score '+fmtN(mk)+' kills with '+T.mn+' in a single match.',t,a=>pCount(a.mk[w],mk),w,w);
+        add('wpn','wl'+t+'_'+w,T.l[t],'Land '+fmtN(lk)+' '+WSH[w]+' kills on one mob type.',t,a=>{ const r=pCount(a.bm[w].n,lk); if(a.bm[w].k&&!r.done) r.txt+=' ('+skinName(wid,a.bm[w].k)+')'; return r; },w,w);
       });
     });
 
-    /* Underdog: weapons used against mobs that resist them */
-    [[50,'Against the Odds'],[65,'Stubborn'],[80,'Defying Physics'],[90,'Rule Breaker']].forEach((x,i)=>
-      add('odds','ni'+x[0],x[1],'Win '+x[0]+'% of fights where your weapon is resisted by the mob.',i,a=>pRate(a.nd,a.ne,100,x[0]),'bolt','rate'));
-    [[10,'Off-Label Use'],[100,'Square Peg'],[400,'Duct Tape Engineer']].forEach((x,i)=>
-      add('odds','nk'+x[0],x[1],'Land '+fmtN(x[0])+' killing blows with a weapon the mob resists.',i,a=>pCount(a.nk,x[0]),'bolt','blows'));
+    /* Underdog: weapons used against mobs that resist them. Rate goals need a big sample first, so a lucky stretch cannot unlock them. */
+    [[50,500,'Against the Odds'],[65,2500,'Stubborn'],[80,10000,'Defying Physics'],[90,25000,'Rule Breaker']].forEach((x,i)=>
+      add('odds','ni'+x[0],x[2],'Win '+x[0]+'% of fights where your weapon is resisted by the mob, over at least '+fmtN(x[1])+' such fights.',i,a=>pRate(a.nd,a.ne,x[1],x[0]),'bolt','rate'));
+    [[250,'Off-Label Use'],[2000,'Square Peg'],[8000,'Duct Tape Engineer']].forEach((x,i)=>   /* ids keep the old numbers so unlocks earned before the retune stay put */
+      add('odds','nk'+[10,100,400][i],x[1],'Land '+fmtN(x[0])+' killing blows with a weapon the mob resists.',i,a=>pCount(a.nk,x[0]),'bolt','blows'));
     [[3,'Improviser'],[5,'Wild Card'],[8,'Anything Goes']].forEach((x,i)=>
-      add('odds','nt'+x[0],x[1],'Land a killing blow with a resisted weapon on '+x[0]+' different mob types.',i,a=>pCount(a.nkTypes,x[0]),'bolt','types'));
+      add('odds','nt'+x[0],x[1],'Land '+NKT+' killing blows with a resisted weapon on each of '+x[0]+' different mob types.',i,a=>pCount(a.nkTypes,x[0]),'bolt','types'));
   });
   return ACHS=A;
 }
@@ -1864,7 +1872,7 @@ let achPend=false;
 function achCheck(force){
   const now=Date.now();
   if(!force){ if(!achDirty) return; if(now-achLast<500){ if(!achPend&&typeof setTimeout!=='undefined'){ achPend=true; setTimeout(()=>{ achPend=false; achCheck(true); },600); } return; } }
-  achDirty=false; achLast=now;
+  achDirty=false; achLast=now; achRetier();
   const st=stOf(), AG={}, ag=w=>AG[w]||(AG[w]=agg(w)); let got=false;
   for(const d of achList()){ if(st.ach[d.id]) continue; let r; try{ r=d.fn(ag(d.wid)); }catch(e){ continue; } if(r&&r.done){ st.ach[d.id]=now; achReward(d); achQ.push(d); got=true; } }
   if(achQ.length>3){ const n=achQ.length, tier=Math.max.apply(null,achQ.map(x=>x.tier)), g=achQ.reduce((q,x)=>q+((x.rw||{}).g||0),0), f=achQ.reduce((q,x)=>q+((x.rw||{}).f||0),0); achQ=[{icon:'eye',tier:tier,name:n+' achievements unlocked',rw:{g:g,f:f}}]; }
@@ -1878,6 +1886,18 @@ function achShow(){
   achEl.innerHTML='<span class="ai">'+ico(d.icon,18)+'</span><span><small>'+t.n+' achievement'+(d.rw&&d.rw.g?' · +'+d.rw.g+' gems':'')+(d.rw&&d.rw.f?' · +'+d.rw.f+' '+ico('shard',11):'')+'</small><b>'+d.name+(d.wname?' &middot; '+d.wname:'')+'</b></span>';
   achEl.classList.add('on'); try{ Music.up(); }catch(e){}
   setTimeout(()=>{ achEl.classList.remove('on'); setTimeout(()=>{ achBusy=false; achShow(); },350); },2800);
+}
+/* One-time (build 100): awards were made much harder and weapon awards moved down a tier (Silver/Gold/Platinum became Bronze/Silver/Gold).
+   Everything already unlocked stays unlocked and is never paid again. Command Points come from unlocked tiers, so the points those
+   unlocks were worth under the old tiers are kept as a bonus (st.cpb) and nobody loses points they may already have spent.
+   Runs lazily (first award check or Command Point read), so it also covers a save that arrives from the cloud. */
+function achRetier(){
+  const s=stOf(); if(s.am2) return; s.am2=1;
+  const old=id=>{ const b=id.split('@')[0], m=/^w[ml](\d)_/.exec(b); if(m) return +m[1]+1; if(b.indexOf('world_')===0) return 2; if(b.indexOf('cls_')===0) return 1;
+    const sg=/^sight(\d)$/.exec(b); if(sg) return +sg[1]; const r={ni50:0,ni65:1,ni80:2,ni90:3,nk10:0,nk100:1,nk400:2,nt3:0,nt5:1,nt8:2}; return b in r?r[b]:-1; };
+  const cur={}; for(const d of achList()) cur[d.id]=d.tier;
+  let was=0, now=0; for(const id in (s.ach||{})){ const t=old(id); if(t<0||!(id in cur)) continue; was+=CPT[t]||1; now+=CPT[cur[id]]||1; }
+  s.cpb=Math.max(s.cpb|0,was-now);
 }
 stBackfill(); stPwMigrate();
 
@@ -2193,7 +2213,7 @@ CMDS.forEach(c=>{ if(!(c.tier>0)) c.tier=0; });
 CMDS.forEach(c=>CMDBY[c.id]=c);
 function cmdP(){ const q=P.cmd||(P.cmd={eq:'warden',own:{warden:0},tl:{}}); if(!q.own) q.own={warden:0}; if(!q.tl) q.tl={}; if(!q.eq||q.own[q.eq]===undefined) q.eq='warden'; if(q.own.warden===undefined) q.own.warden=0; return q; }
 const cmdTL=id=>cmdP().tl[id]||(cmdP().tl[id]={});
-function cmdEarned(){ const a=(stOf().ach)||{}; let n=0; for(const d of achList()) if(a[d.id]) n+=CPT[d.tier]||1; return n; }
+function cmdEarned(){ achRetier(); const s=stOf(), a=s.ach||{}; let n=s.cpb|0; for(const d of achList()) if(a[d.id]) n+=CPT[d.tier]||1; return n; }
 const cmdCost=(nd,l)=>nd.cap?CCAP:CNODE[l];
 function cmdBranchSpent(c,b){ const tl=cmdTL(c.id); let s=0; for(const nd of b.nodes){ if(nd.cap) continue; for(let i=0;i<(tl[nd.id]|0);i++) s+=CNODE[i]; } return s; }
 function cmdSpent(){ let s=0; for(const c of CMDS){ const tl=(cmdP().tl[c.id])||{}; for(const b of c.br) for(const nd of b.nodes) for(let i=0;i<(tl[nd.id]|0);i++) s+=cmdCost(nd,i); } return s; }
@@ -3795,6 +3815,7 @@ function win(){
   if(el) pr.eclr[G.n]=true;
   else { pr.best=Math.max(pr.best,G.n); pr.sel=Math.min(G.n+1,LEVELS); if(perfect) pr.perf[G.n]=true; }
   save();
+  achCheck(true);   /* Conquest awards read the level just cleared and the stars just earned */
   const last=G.n>=LEVELS, nx=G.n+1, canNext=!last&&(!el||!!pr.perf[nx]);
   const tx=(!el&&G.wd.id==='belt'&&STORY.win[G.n])||'';
   let h='<div class="ovb"><h1>'+(last?'Installment clear':(el?'Elite ':'Level ')+(el?G.n+' ':G.n+' ')+'clear')+'</h1>'
@@ -4230,7 +4251,7 @@ function codexHtml(){
 }
 const AGRP={
   wpn:WLIST.map(w=>[w,null]),
-  disc:[['survey','Survey'],['class','Classes'],['sight','Sightings']],
+  disc:[['survey','Survey'],['class','Classes'],['sight','Sightings'],['conquest','Conquest']],
   odds:[['rate','Win rate'],['blows','Killing blows'],['types','Variety']]};
 function awTiles(list,st,a){
   return '<div class="awgrid">'+list.map(d=>{
@@ -4798,10 +4819,10 @@ window.__rr={pickTarget:pickTarget,fire:fire,spawn:spawn,killEnemy:killEnemy,ope
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 99</div>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 100</div>
 <script>
 /* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
-(function(){ const BUILD=99; let busy=false, shown=false;
+(function(){ const BUILD=100; let busy=false, shown=false;
   const inRun=()=>{ try{ return typeof G!=='undefined'&&(G.state==='playing'||G.state==='cards'||G.state==='shop'||G.state==='paused'||G.state==='teach'||G.state==='ctl'); }catch(e){ return false; } };
   function wipeReload(){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
     if(n>=3) return;

@@ -57,7 +57,7 @@ else (async()=>{
     for(const w of new Set([...Object.keys(x.w||{}),...Object.keys(y.w||{})])){ r.w[w]={}; const p=(x.w||{})[w]||{}, q=(y.w||{})[w]||{};
       for(const m of new Set([...Object.keys(p),...Object.keys(q)])){ const a=p[m]||[], b=q[m]||[]; r.w[w][m]=[0,1,2,3,4,5].map(i=>Math.max(+a[i]||0,+b[i]||0)); } }
     for(const w of new Set([...Object.keys(x.world||{}),...Object.keys(y.world||{})])) r.world[w]=Object.assign({},(x.world||{})[w],(y.world||{})[w]);
-    r.pwm=(x.pwm||y.pwm)?1:0; r.pw={};
+    r.pwm=(x.pwm||y.pwm)?1:0; r.am2=(x.am2||y.am2)?1:0; r.cpb=Math.max(+x.cpb||0,+y.cpb||0); r.pw={};
     for(const wd of new Set([...Object.keys(x.pw||{}),...Object.keys(y.pw||{})])){ const p=(x.pw||{})[wd]||{}, q=(y.pw||{})[wd]||{}, o={enc:maxObj(p.enc,q.enc),kill:maxObj(p.kill,q.kill),leak:maxObj(p.leak,q.leak),rz:maxObj(p.rz,q.rz),hold:maxObj(p.hold,q.hold),mk:maxObj(p.mk,q.mk),w:{}};
       for(const w of new Set([...Object.keys(p.w||{}),...Object.keys(q.w||{})])){ o.w[w]={}; const pa=(p.w||{})[w]||{}, qa=(q.w||{})[w]||{};
         for(const m of new Set([...Object.keys(pa),...Object.keys(qa)])){ const a=pa[m]||[], b=qa[m]||[]; o.w[w][m]=[0,1,2,3,4,5].map(i=>Math.max(+a[i]||0,+b[i]||0)); } }
