@@ -25,11 +25,15 @@ npm run check        # tests this folder's game files on a local server
 npm run check:live   # tests https://neon.squatchsquad.games/
 ```
 
+From a Claude session that can't download browsers or artifacts: `gh workflow run phone-check.yml -R KWKoch/neondefense- --ref testing -f target=local -f log_shots=true`, then `gh run view <id> --log`. Lines starting `SHOT <device>/<step>` carry a small base64 JPEG of each step.
+
 `node phone-check.mjs --only=pixel-7` runs one device. Exit code 1 means a check failed; the failures are listed at the end.
 
 ## How it gets past sign-in
 
 The test browser blocks Firebase, so `cloud.js` takes its existing offline path for returning players and the game runs on a local save. No account is used and nothing reaches Firestore. Ad scripts are blocked too, so test runs never request real ads. Nothing in the game was changed for this.
+
+Tips are normally hidden from automated browsers (`coachOn()` in `index.html`); the test sets the game's own `window.__forceTeach` switch so they show.
 
 ## What it can't catch
 
