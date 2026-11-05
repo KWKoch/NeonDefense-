@@ -45,7 +45,7 @@ button{font-family:inherit}
 .bar.low{border-color:var(--red); box-shadow:0 0 8px rgba(255,56,96,.4)}
 .bar.low #hpFill{background:var(--red); box-shadow:0 0 8px var(--red)}
 
-#stage{flex:1 1 0; min-height:0; display:flex; align-items:flex-start; justify-content:center; overflow:hidden}
+#stage{flex:1 1 0; min-height:0; display:flex; align-items:flex-end; justify-content:center; overflow:hidden}
 #play{position:relative; container-type:size; width:300px; height:400px; box-shadow:0 0 0 1px var(--line),0 0 28px rgba(157,77,255,.12); background:#000}
 #c{display:block; width:100%; height:100%; touch-action:none}
 /* glow pass: a quarter-size copy of the field, blurred and screened back over it */
@@ -4925,7 +4925,8 @@ function fit(){
   const s=Math.min(r.width/W,r.height/H);
   const w=Math.max(120,Math.floor(W*s)), h=Math.max(160,Math.floor(H*s)), d=Math.min(window.devicePixelRatio||1,2);
   play.style.width=w+'px'; play.style.height=h+'px';
-  const dk=$('dock'); if(dk) dk.style.transform=r.height>h+1?'translateY('+(-(r.height-h))+'px)':'';
+  /* tall phones: the field sits on the controls at the bottom (thumb reach) and the HUD slides down onto the field, so any spare height is one band at the very top */
+  const hd=$('hud'); if(hd) hd.style.transform=r.height>h+1?'translateY('+(r.height-h)+'px)':'';
   canvas.width=Math.round(w*d); canvas.height=Math.round(h*d);
   if(bloomCv){ bloomCv.width=Math.max(1,Math.round(w/4)); bloomCv.height=Math.max(1,Math.round(h/4)); }
   sx=canvas.width/W; sy=canvas.height/H;
@@ -4957,10 +4958,10 @@ window.__rr={eligible:eligible,pickTarget:pickTarget,fire:fire,spawn:spawn,killE
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 107</div>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 108</div>
 <script>
 /* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
-(function(){ const BUILD=107; let busy=false, shown=false;
+(function(){ const BUILD=108; let busy=false, shown=false;
   const inRun=()=>{ try{ return typeof G!=='undefined'&&(G.state==='playing'||G.state==='cards'||G.state==='shop'||G.state==='paused'||G.state==='teach'||G.state==='ctl'); }catch(e){ return false; } };
   function wipeReload(){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
     if(n>=3) return;

@@ -96,10 +96,22 @@ else (async()=>{
   /* gems + gt sit next to the blob so the security rules can cap how fast the balance grows (see firestore.rules).
      gt is the server time of the last gem increase: kept as-is when gems did not rise, set to server time when they did. */
   const gemsOf=j=>{ try{ return Math.max(0,Math.floor(+JSON.parse(j||'{}').gems||0)); }catch(e){ return 0; } };
-  const withGems=(r,prev)=>Object.assign({},r,{gems:gemsOf(r.data),gt:(prev&&typeof prev.gems==='number'&&prev.gt&&gemsOf(r.data)<=prev.gems)?prev.gt:F.serverTimestamp()});
-  /* the cloud's gem balance is the gems field, not the copy inside the blob */
-  const cloudData=d=>{ try{ if(typeof d.gems!=='number') return d.data; const o=JSON.parse(d.data); o.gems=d.gems; return JSON.stringify(o); }catch(e){ return d.data; } };
-  const put=async(u,r,prev)=>{ r=withGems(r,prev); const lean=()=>{ const {stats,ledger,...rest}=r; return rest; }; if(slim) return F.setDoc(mine(u),lean()); try{ return await F.setDoc(mine(u),r); }catch(e){ if(code(e)!=='permission-denied') throw e; await F.setDoc(mine(u),lean()); slim=true; } };
+  /* cb + ct do the same for crystals: cb is the balance of each of the five types, ct the server time of the last rise (any type). */
+  const cbOf=j=>{ const r={pow:0,tmp:0,rch:0,cap:0,frt:0}; try{ const x=JSON.parse(j||'{}'); if(x&&x.ce){ for(const t of CRYT) r[t]=Math.max(0,Math.floor((+x.ce[t]||0)-(+((x.cs||{})[t])||0))); } else { const l=cryLegacy(x); for(const t of CRYT) r[t]=Math.max(0,Math.floor(l[t])); } }catch(e){} return r; };
+  const cbRose=(n,o)=>!o||CRYT.some(t=>n[t]>(+o[t]||0));
+  const withGems=(r,prev)=>{ const cb=cbOf(r.data);
+    return Object.assign({},r,{gems:gemsOf(r.data),gt:(prev&&typeof prev.gems==='number'&&prev.gt&&gemsOf(r.data)<=prev.gems)?prev.gt:F.serverTimestamp(),
+      cb:cb,ct:(prev&&prev.cb&&prev.ct&&!cbRose(cb,prev.cb))?prev.ct:F.serverTimestamp()}); };
+  /* the cloud's gem and crystal balances are the gems and cb fields, not the copies inside the blob (spent counts are kept; earned is set to spent + balance) */
+  const cloudData=d=>{ try{ if(typeof d.gems!=='number'&&!d.cb) return d.data; const o=JSON.parse(d.data); if(typeof d.gems==='number') o.gems=d.gems;
+    if(d.cb&&typeof d.cb==='object'){ const cs=(o.ce&&o.cs)||{}; o.cs={}; o.ce={}; for(const t of CRYT){ o.cs[t]=Math.max(0,Math.floor(+cs[t]||0)); o.ce[t]=o.cs[t]+Math.max(0,Math.floor(+d.cb[t]||0)); } }
+    return JSON.stringify(o); }catch(e){ return d.data; } };
+  /* Tries the full record first. Fallbacks: without stats/ledger (older rules), and, while the cloud copy has no crystal fields yet,
+     without cb/ct (rules from before crystals moved next to the blob). Once a save carries cb, the rules require it on every write. */
+  const put=async(u,r,prev)=>{ r=withGems(r,prev); const strip=ks=>{ const x=Object.assign({},r); ks.forEach(k=>{ delete x[k]; }); return x; }, noCb=!(prev&&prev.cb);
+    const tries=[[r,false]]; if(noCb) tries.push([strip(['cb','ct']),false]); tries.push([strip(['stats','ledger']),true]); if(noCb) tries.push([strip(['cb','ct','stats','ledger']),true]);
+    let err=null; for(const [doc,lean] of tries){ if(slim&&!lean) continue; try{ const v=await F.setDoc(mine(u),doc); if(lean) slim=true; return v; }catch(e){ if(code(e)!=='permission-denied') throw e; err=e; } }
+    throw err; };
   let timer=null;
   R.enabled=true;
   /* Every write first reads the cloud copy and merges it in, so a stale device can never overwrite what another device earned. Anything new from the cloud is handed to the live game; failures retry until they land. */
