@@ -27,6 +27,8 @@ test browser, not a device.
 
 ## Founder's Path (retention rewards)
 
+**Removed Nov 2026.** The store version now uses the tester welcome package and the Season pass instead. Kept here as a record.
+
 Calendar days since first launch, install day = day 1. Nothing costs money or needs an ad.
 
 | Day | Reward | Why it shortens the game |

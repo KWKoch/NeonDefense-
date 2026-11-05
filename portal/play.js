@@ -1,6 +1,6 @@
 /* Google Play edition bridge (play 01). Inlined into the play build only; every call is a no-op outside the Capacitor app.
    - Android back button: pauses a run, closes menus, goes back to Battle, and only then minimizes the app.
-   - window.NDPlay.remind(list): optional local reminders for the Founder's Path (no server, no account, asked only when the player opts in). */
+   - window.NDPlay.remind(list): optional local reminders (no server, no account, asked only when the player opts in). */
 (function(){
   const C=window.Capacitor, plug=n=>C&&C.Plugins&&C.Plugins[n];
   const native=!!(C&&C.isNativePlatform&&C.isNativePlatform());

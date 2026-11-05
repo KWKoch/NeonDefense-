@@ -3,21 +3,62 @@ service cloud.firestore {
   match /databases/{database}/documents {
     function me(uid) { return request.auth != null && request.auth.uid == uid; }
 
-    // Player profile + cloud save. Written by cloud.js as {data, score, updated}.
+    // Player profile + cloud save. Written by cloud.js as {data, score, updated, gems, gt, stats?, ledger?, ...}.
+    // gems is the account's authoritative gem balance (the game takes it over the copy inside the data blob).
+    // gt is the server time of the last gem increase. Gems may fall freely, but may only rise by
+    // 1 gem per second elapsed since the last increase, at most 300 in one write, and a new account starts at <= 50.
+    // cb is the account's crystal balance per type (Power, Tempo, Reach, Capacity, Fortify), ct the server time of the last rise.
+    // Like gems: balances may fall freely; the total of all rises may grow by at most 2 crystals per second since the last rise
+    // and 5000 in one write; a new account starts at <= 300. A save made before crystals moved here may set cb once.
+    function cbShape(c) {
+      return c is map && c.keys().hasOnly(['pow', 'tmp', 'rch', 'cap', 'frt']) && c.keys().hasAll(['pow', 'tmp', 'rch', 'cap', 'frt'])
+        && c.pow is int && c.tmp is int && c.rch is int && c.cap is int && c.frt is int
+        && c.pow >= 0 && c.tmp >= 0 && c.rch >= 0 && c.cap >= 0 && c.frt >= 0
+        && c.pow < 10000000 && c.tmp < 10000000 && c.rch < 10000000 && c.cap < 10000000 && c.frt < 10000000;
+    }
+    function rise(n, o, k) { return n[k] > o[k] ? n[k] - o[k] : 0; }
+    function cryRise(n, o) { return rise(n, o, 'pow') + rise(n, o, 'tmp') + rise(n, o, 'rch') + rise(n, o, 'cap') + rise(n, o, 'frt'); }
+    function cbTotal(c) { return c.pow + c.tmp + c.rch + c.cap + c.frt; }
+    function cryOk(n, o) {
+      return !('cb' in o)
+        ? (!('cb' in n) || (cbShape(n.cb) && n.ct is timestamp))
+        : ('cb' in n && 'ct' in n && cbShape(n.cb) && n.ct is timestamp && (
+            (cryRise(n.cb, o.cb) == 0 && n.ct == o.ct)
+            || (cryRise(n.cb, o.cb) > 0 && n.ct == request.time
+                && cryRise(n.cb, o.cb) <= 5000
+                && cryRise(n.cb, o.cb) <= 2 * (request.time - o.ct).seconds())));
+    }
+    function saveShape(d) {
+      return d.keys().hasOnly(['data', 'score', 'updated', 'gems', 'gt', 'cb', 'ct', 'displayName', 'createdAt', 'stats', 'ledger'])
+        && d.keys().hasAll(['data', 'score', 'updated', 'gems', 'gt'])
+        && d.data is string
+        && d.data.size() < 200000
+        && d.score is int
+        && d.score >= 0
+        && d.updated is int
+        && d.gems is int
+        && d.gems >= 0
+        && d.gt is timestamp
+        && (!('stats' in d) || (d.stats is map && d.stats.size() <= 30))
+        && (!('ledger' in d) || (d.ledger is list && d.ledger.size() <= 100))
+        && (!('displayName' in d) || (d.displayName is string && d.displayName.size() <= 40))
+        && (!('createdAt' in d) || d.createdAt is int);
+    }
+    function gemsOk(n, o) {
+      return (n.gems <= o.gems && n.gt == o.gt)
+        || (n.gems > o.gems && n.gt == request.time
+            && n.gems - o.gems <= 300
+            && n.gems - o.gems <= (request.time - o.gt).seconds());
+    }
     match /users/{uid} {
       allow read, delete: if me(uid);
-      allow create, update: if me(uid)
-        && request.resource.data.keys().hasOnly(['data', 'score', 'updated', 'displayName', 'createdAt', 'stats', 'ledger'])
-        && request.resource.data.keys().hasAll(['data', 'score', 'updated'])
-        && request.resource.data.data is string
-        && request.resource.data.data.size() < 200000
-        && request.resource.data.score is int
-        && request.resource.data.score >= 0
-        && request.resource.data.updated is int
-        && (!('stats' in request.resource.data) || (request.resource.data.stats is map && request.resource.data.stats.size() <= 30))
-        && (!('ledger' in request.resource.data) || (request.resource.data.ledger is list && request.resource.data.ledger.size() <= 100))
-        && (!('displayName' in request.resource.data) || (request.resource.data.displayName is string && request.resource.data.displayName.size() <= 40))
-        && (!('createdAt' in request.resource.data) || request.resource.data.createdAt is int);
+      allow create: if me(uid) && saveShape(request.resource.data)
+        && request.resource.data.gems <= 50 && request.resource.data.gt == request.time
+        && (!('cb' in request.resource.data) || (cbShape(request.resource.data.cb) && cbTotal(request.resource.data.cb) <= 300
+            && request.resource.data.ct == request.time));
+      allow update: if me(uid) && saveShape(request.resource.data)
+        && resource.data.keys().hasAll(['gems', 'gt']) && gemsOk(request.resource.data, resource.data)
+        && cryOk(request.resource.data, resource.data);
 
       // Wallet / entitlements: client read-only, written only by Cloud Functions (Admin SDK).
       match /private/{doc} {

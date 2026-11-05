@@ -1,0 +1,13 @@
+{
+  "name": "neon-defense-phone-check",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "setup": "playwright install chromium webkit",
+    "check": "node phone-check.mjs",
+    "check:live": "node phone-check.mjs --live"
+  },
+  "devDependencies": {
+    "playwright": "1.63.0"
+  }
+}
