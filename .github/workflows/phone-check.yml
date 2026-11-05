@@ -1,0 +1,41 @@
+# Plays the opening of Level 1 on emulated iPhone and Android phones after every push to testing.
+# Free GitHub-hosted runner, no secrets. Screenshots are kept as the "phone-screenshots" artifact for 14 days.
+name: Phone check
+on:
+  push:
+    branches: [testing]
+    paths-ignore: ['**.md', 'docs/**']
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'local = this commit, live = neon.squatchsquad.games'
+        default: local
+        type: choice
+        options: [local, live]
+permissions:
+  contents: read
+concurrency:
+  group: phone-check-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  phones:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install test library and phone browsers
+        working-directory: tests/phone
+        run: npm install --no-audit --no-fund && npx playwright install --with-deps chromium webkit
+      - name: Run phone check
+        working-directory: tests/phone
+        run: node phone-check.mjs ${{ inputs.target == 'live' && '--live' || '' }}
+      - name: Keep screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phone-screenshots
+          path: tests/phone/out/
+          retention-days: 14
