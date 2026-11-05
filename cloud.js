@@ -84,7 +84,13 @@ else (async()=>{
   const nice=e=>code(e).replace('auth/','').replace(/-/g,' ');
   /* Until the new rules (stats + ledger fields) are published, fall back to the plain save so cloud sync never breaks. */
   let slim=false;
-  const put=async(u,r)=>{ if(slim){ const {stats,ledger,...rest}=r; return F.setDoc(mine(u),rest); } try{ return await F.setDoc(mine(u),r); }catch(e){ if(code(e)==='permission-denied'){ slim=true; const {stats,ledger,...rest}=r; return F.setDoc(mine(u),rest); } throw e; } };
+  /* gems + gt sit next to the blob so the security rules can cap how fast the balance grows (see firestore.rules).
+     gt is the server time of the last gem increase: kept as-is when gems did not rise, set to server time when they did. */
+  const gemsOf=j=>{ try{ return Math.max(0,Math.floor(+JSON.parse(j||'{}').gems||0)); }catch(e){ return 0; } };
+  const withGems=(r,prev)=>Object.assign({},r,{gems:gemsOf(r.data),gt:(prev&&typeof prev.gems==='number'&&prev.gt&&gemsOf(r.data)<=prev.gems)?prev.gt:F.serverTimestamp()});
+  /* the cloud's gem balance is the gems field, not the copy inside the blob */
+  const cloudData=d=>{ try{ if(typeof d.gems!=='number') return d.data; const o=JSON.parse(d.data); o.gems=d.gems; return JSON.stringify(o); }catch(e){ return d.data; } };
+  const put=async(u,r,prev)=>{ r=withGems(r,prev); const lean=()=>{ const {stats,ledger,...rest}=r; return rest; }; if(slim) return F.setDoc(mine(u),lean()); try{ return await F.setDoc(mine(u),r); }catch(e){ if(code(e)!=='permission-denied') throw e; await F.setDoc(mine(u),lean()); slim=true; } };
   let timer=null;
   R.enabled=true;
   /* Every write first reads the cloud copy and merges it in, so a stale device can never overwrite what another device earned. Anything new from the cloud is handed to the live game; failures retry until they land. */
@@ -96,8 +102,8 @@ else (async()=>{
       let local=localStorage.getItem(SKEY); const snap=await F.getDoc(mine(u));
       /* the cloud save was deleted on the server while this tab was open: drop this device's copy instead of re-uploading it */
       if(!snap.exists()){ wipeLocal(); try{ sessionStorage.removeItem('nd-synced'); }catch(e){} location.reload(); return false; }
-      if(snap.exists()&&snap.data().data&&local){ const m=merge(local,snap.data().data); if(!same(m,local)){ localStorage.setItem(SKEY,m); local=m; if(window.NDAdopt) window.NDAdopt(m); } }
-      await put(u,rec(local)); R.status='saved'; ok=true; clearTimeout(retry);
+      if(snap.exists()&&snap.data().data&&local){ const m=merge(local,cloudData(snap.data())); if(!same(m,local)){ localStorage.setItem(SKEY,m); local=m; if(window.NDAdopt) window.NDAdopt(m); } }
+      await put(u,rec(local),snap.data()); R.status='saved'; ok=true; clearTimeout(retry);
     }catch(e){ R.status='offline'; clearTimeout(retry); retry=setTimeout(flushNow,15000); }
     busy=false; ping(); if(again){ again=false; setTimeout(flushNow,200); } return ok; };
   R.flush=()=>{ clearTimeout(timer); return flushNow(); };
@@ -115,13 +121,13 @@ else (async()=>{
       let did=false; try{ did=sessionStorage.getItem('nd-synced')===u.uid; }catch(e){}
       const mark=()=>{ try{ sessionStorage.setItem('nd-synced',u.uid); }catch(e){} };
       if(snap.exists()&&snap.data().data){
-        const cloud=snap.data().data;
+        const cloud=cloudData(snap.data());
         if(!local||!same(cloud,local)){ localStorage.setItem(SKEY,cloud); localStorage.setItem('nd-backup-v1',cloud); if(!did){ mark(); location.reload(); return; } if(window.NDAdopt) window.NDAdopt(cloud); }
         mark(); synced=true; R.status='saved';
       } else {
         if(!did&&LOCAL_KEYS.some(k=>localStorage.getItem(k)!==null)){ wipeLocal(); mark(); location.reload(); return; }
         mark();
-        await put(u,rec(localStorage.getItem(SKEY))); synced=true; R.status='saved';
+        await put(u,rec(localStorage.getItem(SKEY)),null); synced=true; R.status='saved';
       }
     }catch(e){ R.status='offline'; }
     ping();
