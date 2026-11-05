@@ -1,5 +1,7 @@
 # Phone check
 
+**iPhone runs are paused** (Nov 5 2026). Only the Pixel 7 runs. To bring the iPhones back, set `IPHONE_TESTS: 'on'` at the top of `.github/workflows/phone-check.yml` (or run locally with `IPHONE_TESTS=on` or `--iphone`).
+
 Plays the opening of Level 1 on three emulated phones and checks the basics before a build goes out.
 
 | Device | Browser engine | Screen |

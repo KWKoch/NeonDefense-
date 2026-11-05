@@ -203,7 +203,11 @@ if (!url) { if (live) url = LIVE; else { server = await serve(); url = server.ur
 const expectBuild = arg('build') ? +arg('build') : repoBuild();
 console.log(`Neon Defense phone check: ${url}${expectBuild ? ' (expecting build ' + expectBuild + ')' : ''}`);
 const results = [];
-for (const d of DEVICES.filter(x => !only || x.id === only)) {
+// iPhone runs are paused (Keith, Nov 5 2026: not developing for iPhone for at least a month).
+// Turn them back on with IPHONE_TESTS=on (the switch at the top of .github/workflows/phone-check.yml) or --iphone.
+const iphoneOn = process.env.IPHONE_TESTS === 'on' || !!arg('iphone') || (only && only.startsWith('iphone'));
+if (!iphoneOn) console.log('iPhone runs are paused; set IPHONE_TESTS=on or pass --iphone to include them.');
+for (const d of DEVICES.filter(x => (!only || x.id === only) && (iphoneOn || x.browser !== webkit))) {
   console.log(`\n${d.label}`);
   try { results.push(await runDevice(d, url, expectBuild)); }
   catch (e) { console.log('  FAIL crashed: ' + e.message.split('\n')[0]); results.push({ id: d.id, label: d.label, checks: [{ name: 'run finished', pass: false, info: e.message.split('\n')[0] }], shots: [], errors: [] }); }

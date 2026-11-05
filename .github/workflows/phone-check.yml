@@ -16,6 +16,9 @@ on:
         description: 'Also print small screenshots into the log'
         default: false
         type: boolean
+# iPhone runs paused Nov 5 2026 (Keith). Change 'off' to 'on' to bring back iPhone 15 and iPhone SE.
+env:
+  IPHONE_TESTS: 'off'
 permissions:
   contents: read
 concurrency:
@@ -32,7 +35,7 @@ jobs:
           node-version: 22
       - name: Install test library and phone browsers
         working-directory: tests/phone
-        run: npm install --no-audit --no-fund && npx playwright install --with-deps chromium webkit
+        run: npm install --no-audit --no-fund && npx playwright install --with-deps chromium ${{ env.IPHONE_TESTS == 'on' && 'webkit' || '' }}
       - name: Run phone check
         working-directory: tests/phone
         env:
