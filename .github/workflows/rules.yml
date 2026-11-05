@@ -1,0 +1,16 @@
+name: Firestore rules test
+on:
+  workflow_dispatch:
+  push:
+    paths: ['firestore.rules','tests/firestore.rules.test.mjs','.github/workflows/rules.yml']
+jobs:
+  rules:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 21 }
+      - run: npm i --no-save @firebase/rules-unit-testing firebase firebase-tools
+      - run: npx firebase emulators:exec --only firestore --project demo-nd "node tests/firestore.rules.test.mjs"
