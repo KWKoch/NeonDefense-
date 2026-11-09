@@ -1096,6 +1096,10 @@ const UPS=[
 const CT={pow:{name:'Power',color:'#ff3860'},tmp:{name:'Tempo',color:'#00f0ff'},rch:{name:'Reach',color:'#b6ff00'},cap:{name:'Capacity',color:'#ffc400'},frt:{name:'Fortify',color:'#6dffb0'}};
 const CTYPES=['pow','tmp','rch','cap','frt'], CW={pow:42,tmp:24,rch:13,cap:13,frt:8};
 const RAR=[{name:'Mk I',ab:'I',color:'#9fb2be'},{name:'Mk II',ab:'II',color:'#4fa3ff'},{name:'Mk III',ab:'III',color:'#ff8a3d'},{name:'Mk IV',ab:'IV',color:'#f5d36b'}];
+/* Shelved weapons: fully coded with the same behaviour, but out of play. They are not offered as cards and have no HUD button, armory tab, control toggle, shard drops or awards.
+   To bring one back, delete its id from this list (empty it to restore both); nothing else needs to change. */
+const SHELVED=['mine','saw'];
+const shelved=k=>SHELVED.indexOf(k)>=0;
 const TOOLS={
   mine:{name:'Mine layer',color:'#aeb8bf',cost:150,kind:'b',desc:'Drop proximity mines on the field. They detonate when an enemy gets close and hurt everything in the blast.'},
   field:{name:'Slow field',color:C.violet,cost:300,kind:'e',desc:'Lay a horizontal energy bar. Anything inside it slows down and takes energy damage over time.'}
@@ -1159,11 +1163,11 @@ function profileFor(wd,n,elite){
   const p={roster:roster,feat:feat,mut:mut,debut:debut,name:isBoss(n)?(n%50===0?'Mega boss':skinName(wd.id,'boss')):(themeFor(wd.id,feat)||'Skirmish')+(mut?' \u00b7 '+MUTS[mut].name:'')};
   return PROF[key]=p;
 }
-const TABS=[{id:'turret',name:'Turret',color:C.cyan},{id:'base',name:'Base',color:C.mint},{id:'mine',name:'Mines',color:C.orange},{id:'field',name:'Field',color:C.violet},{id:'chain',name:'Chain',color:C.yellow},{id:'saw',name:'Saw',color:C.lime},{id:'mortar',name:'Mortar',color:C.amber},{id:'bestiary',name:'Bestiary',color:C.lime}];
+const TABS=[{id:'turret',name:'Turret',color:C.cyan},{id:'base',name:'Base',color:C.mint},{id:'mine',name:'Mines',color:C.orange},{id:'field',name:'Field',color:C.violet},{id:'chain',name:'Chain',color:C.yellow},{id:'saw',name:'Saw',color:C.lime},{id:'mortar',name:'Mortar',color:C.amber},{id:'bestiary',name:'Bestiary',color:C.lime}].filter(t=>!shelved(t.id));
 
 /* ================= save ================= */
 const SKEY='rave-rampart-v5';
-const hasTool=k=>!!(G.tools&&G.tools[k]);
+const hasTool=k=>!!(G.tools&&G.tools[k])&&!shelved(k);
 /* ---- card pools: every card and fragment belongs to ONE weapon and ONE specialty, e.g. 'turret.pow' or 'chain.tmp'. Chain Power can never eat Turret Power. ---- */
 UPS.forEach(u=>{ u.k=u.tab+'.'+u.ty; });
 const PKEYS=[...new Set(UPS.map(u=>u.k))], PWN={}; TABS.forEach(t=>{ PWN[t.id]=t.name; });
@@ -1679,7 +1683,7 @@ const input={x:W/2,active:false};
    Every weapon is AI-driven. Press and hold a weapon icon to freeze its AI, drag onto the field, release to fire there.
    A weapon that is still recharging keeps your aim pinned and fires the moment it is ready, then the AI takes over again.
    Any weapon, or all of them, can be set to Manual (settings gear or the Aim button in battle): then the AI never fires it. */
-const CTLK='nd_ctl_v1', WCTL=['turret','mine','field','chain','saw','mortar'];
+const CTLK='nd_ctl_v1', WCTL=['turret','mine','field','chain','saw','mortar'].filter(w=>!shelved(w));
 const WCOL={turret:C.cyan,mine:C.orange,field:C.violet,chain:C.yellow,saw:C.lime,mortar:C.amber};
 const CTL={all:false,w:{}};
 try{ const j=JSON.parse(NDStore.get(CTLK)||'null'); if(j){ CTL.all=!!j.all; for(const k of WCTL) if(j.w&&j.w[k]) CTL.w[k]=1; } }catch(e){}
@@ -1985,7 +1989,7 @@ function achList(){
     add('disc','stars',wn+' Perfected','Earn all '+(LEVELS*3)+' stars in '+wn+'.',3,()=>pCount(starsOfWorld(wid),LEVELS*3),'world','conquest');
 
     /* Weapons */
-    WLIST.forEach(w=>{
+    WLIST.filter(w=>!shelved(w)).forEach(w=>{
       const T=WAW[w];
       [0,1,2].forEach(t=>{
         const mk=WMK[w][t], lk=WLK[w][t];
@@ -4106,11 +4110,11 @@ const rarW=(n,e)=>{ const w=[100,n<3?0:20+1.5*n,n<10?0:8+1.6*(n-10),n<20?0:3+1.0
 function rollRar(n,e){ const w=rarW(n,e); let x=Math.random()*(w[0]+w[1]+w[2]+w[3]); for(let i=0;i<4;i++){ x-=w[i]; if(x<=0&&w[i]>0) return i; } return 0; }
 function rollType(){ let x=Math.random()*100; for(const t of CTYPES){ x-=CW[t]; if(x<=0) return t; } return 'pow'; }
 /* does anything still want this pool? (an upgrade below max, or an in-run card not yet mastered) */
-function keyNeed(k){ if(UPS.some(u=>u.k===k&&L(u.id)<u.max)) return true; return false; }
+function keyNeed(k){ if(UPS.some(u=>u.k===k&&!shelved(u.tab)&&L(u.id)<u.max)) return true; return false; }
 /* The specialty is rolled first (so each specialty's overall supply is unchanged), then the weapon: only weapons the player has met or levelled,
    favouring the weapons used in the run that paid out, and ignoring pools whose upgrades are all finished. */
 function rollKey(t,ctx){
-  const ks=PKEYS.filter(k=>kT(k)===t); if(!ks.length) return 'turret.pow';
+  const ks=PKEYS.filter(k=>kT(k)===t&&!shelved(kW(k))); if(!ks.length) return 'turret.pow';
   const used=ctx==='run'&&typeof ownedW==='function'?ownedW():[], seen=w=>w==='turret'||w==='base'||!!(P.seenW&&P.seenW[w])||UPS.some(u=>u.tab===w&&L(u.id)>0);
   let ws=ks.map(k=>{ const w=kW(k); let x=seen(w)?1:0; if(w==='turret') x*=1.4; if(used.indexOf(w)>=0) x*=2.5; if(x&&!keyNeed(k)) x*=0.15; return x; });
   let sum=ws.reduce((a,b)=>a+b,0); if(!sum){ ws=ks.map(()=>1); sum=ks.length; }
@@ -4420,7 +4424,7 @@ function codexHtml(){
     +(UI.cx==='awards'?awardsHtml():UI.cx==='record'?recordHtml():bestiaryHtml());
 }
 const AGRP={
-  wpn:WLIST.map(w=>[w,null]),
+  wpn:WLIST.filter(w=>!shelved(w)).map(w=>[w,null]),
   disc:[['survey','Survey'],['class','Classes'],['sight','Sightings'],['conquest','Conquest']],
   odds:[['rate','Win rate'],['blows','Killing blows'],['types','Variety']]};
 function awTiles(list,st,a){
@@ -4464,7 +4468,7 @@ function recordHtml(){
     +'<div class="rgrid">'+stat('Mobs met',fmtN(a.sight))+stat('Held at ozone',fmtN(a.hold))+stat('Breached',fmtN(a.rz-a.hold))+stat('Defense',R(a.hold,a.rz))+'</div>';
   h+='<div class="cn rh">By class</div><div class="wtab">'+Object.keys(CLS).map(c=>{ const k=a.cls[c]; return '<div class="wr c3"><span class="wn" style="color:'+CLS[c].color+'">'+CLS[c].name+'</span><span>'+RC(k.hold,k.rz)+'<small>held</small></span><span>'+fmtN(k.enc)+'<small>met</small></span></div>'; }).join('')+'</div>';
   h+='<div class="cn rh">Weapon success</div><div class="wtab"><div class="wr hd"><span></span>'+Object.keys(CLS).map(c=>'<span style="color:'+CLS[c].color+'">'+CLS[c].name+'</span>').join('')+'<span title="Mobs that resist this weapon">Resisted</span></div>'
-    +WLIST.map(w=>{
+    +WLIST.filter(w=>!shelved(w)).map(w=>{
       const cell=r=>r[0]?Math.round(r[1]/r[0]*100)+'%<small>'+fmtN(r[0])+'</small>':'<small>--</small>';
       return '<div class="wr"><span class="wn">'+ico(w,14)+WNAME[w]+'</span>'+Object.keys(CLS).map(c=>'<span>'+cell(a.wc[w][c])+'</span>').join('')+'<span>'+(a.wt[w][3]?Math.round(a.wt[w][4]/a.wt[w][3]*100)+'%<small>'+fmtN(a.wt[w][3])+'</small>':'<small>--</small>')+'</span></div>';
     }).join('')+'</div>';
@@ -4472,7 +4476,7 @@ function recordHtml(){
   h+='<div class="cn rh">By mob</div>'+(met.length?'<div class="cards">':'<div class="note">Play a level and your record starts here.</div>');
   met.forEach(k=>{
     const m=MOB[k], x=a.mob[k], r=x.rz, p=r?x.hold/r:0, col=p>=0.9?'#6dffb0':p>=0.75?'#ffc400':'#ff3860';
-    const ws=WLIST.map(w=>{ const q=(s.w[w]||{})[k]; return q&&q[0]?'<span title="'+WNAME[w]+': hit '+q[0]+', destroyed '+q[1]+'">'+ico(w,12)+Math.round(q[1]/q[0]*100)+'%</span>':''; }).join('');
+    const ws=WLIST.filter(w=>!shelved(w)).map(w=>{ const q=(s.w[w]||{})[k]; return q&&q[0]?'<span title="'+WNAME[w]+': hit '+q[0]+', destroyed '+q[1]+'">'+ico(w,12)+Math.round(q[1]/q[0]*100)+'%</span>':''; }).join('');
     h+='<div class="card" style="--c:'+m.color+'"><div class="mob"><canvas width="120" height="120" data-t="'+k+'"></canvas><div><div class="cn">'+m.name+'</div>'
       +'<div class="note">Met '+fmtN(x.enc)+' · held '+fmtN(x.hold)+' · breached '+fmtN(x.rz-x.hold)+'</div></div></div>'
       +'<div class="abar" style="--c:'+col+'"><i style="width:'+Math.round(p*100)+'%"></i></div><div class="note">'+(r?'Held '+R(x.hold,r):'No fights since the ozone line was added')+'</div>'+(ws?'<div class="wch">'+ws+'</div>':'')+'</div>';
@@ -4675,8 +4679,9 @@ const effMax=c=>c.max;
 const copiesLeft=c=>c.copies?(bst(c.id)>=c.max?0:c.copies):Math.max(0,effMax(c)-bst(c.id));
 const deckSize=w=>CARDS.reduce((a,c)=>a+(c.w===w&&c.t===1&&!c.unlock&&!c.cond&&c.w!=='base'?(c.copies||c.max):0),0);
 const rareDecay=w=>{ const n=deckSize(w); return n?Math.max(RARE_FLOOR,Math.pow(Math.max(0,1-wlv(w)/n),1.5)):1; };
-let PICKM=1;
-const pickWave=w=>w>=2&&(w-2)%PICKM===0;
+/* Card level-ups: one on each of the first four waves that offer one (waves 2-5), then only every other wave (7, 9, 11...). */
+const PICKEARLY=4; let PICKM=2;
+const pickWave=w=>w>=2&&(w<=1+PICKEARLY||(w-1-PICKEARLY)%PICKM===0);
 const wcount=()=>['mine','field','chain','saw','mortar'].filter(hasTool).length;
 const WEAPN={turret:{name:'Turret',color:C.cyan},base:{name:'Base',color:C.lime},mine:{name:'Mine layer',color:'#aeb8bf'},field:{name:'Slow field',color:C.violet},chain:{name:'Chain lightning',color:C.yellow},saw:{name:'Buzz saw',color:C.lime},mortar:{name:'Mortar',color:C.amber}};
 const CARDS=[
@@ -4732,6 +4737,7 @@ const CARDBY={}; CARDS.forEach(c=>CARDBY[c.id]=c);
 const reqOk=c=>!c.req||Object.keys(c.req).every(k=>bst(k)>=c.req[k]);
 const reqText=r=>Object.keys(r).map(k=>CARDBY[k].name+(CARDBY[k].max>1?' '+r[k]:'')).join(' + ');
 function eligible(c){
+  if(shelved(c.w)) return false;
   if(bst(c.id)>=c.max||!reqOk(c)) return false;
   if(c.cond&&!c.cond()) return false;
   if(c.lv&&wlv(c.w)<c.lv) return false;
@@ -4988,15 +4994,15 @@ if(!P.intro){ const io=document.createElement('div'); io.id='introov'; io.innerH
 requestAnimationFrame(frame);
 
 /* test hook for headless checks */
-window.__rr={eligible:eligible,pickTarget:pickTarget,fire:fire,spawn:spawn,killEnemy:killEnemy,openPack:openPack,renderArmory:renderArmory,UI:UI,queueTeach:queueTeach,DEMO:DEMO,coach:coach,save:save,paintTurret:paintTurret,coachGrab:coachGrab,GR:GR,CTL:CTL,wReady:wReady,isManual:isManual,chainSnap:chainSnap,T:T,MOB:MOB,SKIN:SKIN,applySkin:applySkin,PKEYS:PKEYS,cry:cry,cryAdd:cryAdd,crySpend:crySpend,cryLegacy:cryLegacy,loadCry:loadCry,cmdPrice:cmdPrice,cmdMix:cmdMix,CRANK:CRANK,PACKS:PACKS,useCmd:useCmd,cmdBuy:cmdBuy,cmdNodeBuy:cmdNodeBuy,cmdP:cmdP,cmdLeft:cmdLeft,cmdEarned:cmdEarned,CMDS:CMDS,kName:kName,fireball:fireball,chip:chip,openTeach:openTeach,fireMortar:fireMortar,shape:shape,spawn:spawn,G:G,get P(){return P;},set P(v){P=v;},newP:newP,startLevel:startLevel,update:update,UPS:UPS,waveCount:waveCount,levelPool:levelPool,hpScale:hpScale,tune:(a,b,c,d,m,k,bk,wh,pm,lk,c0,cg)=>{if(lk!==undefined)LATEK=lk;if(pm!==undefined)PICKM=pm;if(wh!==undefined)WAVEHP=wh;if(k!==undefined)HPK=k;if(m!==undefined)MOBN=m;if(c0!==undefined)CDROP0=c0;if(cg!==undefined)CDROPG=cg;HPG=a;POOL0=b;POOLG=c;if(d!==undefined)HPA=d;},bst:bst,pickCard:pickCard,CARDS:CARDS,offerCards:offerCards,applyCard:applyCard,hasTool:hasTool,fireMortar:fireMortar,canMortar:canMortar,T:T,wcount:wcount,canBuy:canBuy,buyUp:buyUp,upCost:upCost,upStage:upStage,bandOf:bandOf,awardCards:awardCards,dropCount:dropCount,dropVal:dropVal,useEnergy:useEnergy,enTick:enTick,tryStart:tryStart,win:win,gameOver:gameOver,profileFor:profileFor,MOB:MOB,WORLDS:WORLDS,briefFor:briefFor,welcomeReady:welcomeReady,claimWelcome:claimWelcome,premActive:premActive,passActive:passActive,spAdd:spAdd,spClaim:spClaim,ssCur:ssCur,seasonNo:seasonNo,tierRw:tierRw,buyGems:buyGems,claim:claim,showGain:showGain,shopHtml:shopHtml,toArmory:toArmory};
+window.__rr={startWave:startWave,pickWave:pickWave,SHELVED:SHELVED,TABS:TABS,WCTL:WCTL,eligible:eligible,pickTarget:pickTarget,fire:fire,spawn:spawn,killEnemy:killEnemy,openPack:openPack,renderArmory:renderArmory,UI:UI,queueTeach:queueTeach,DEMO:DEMO,coach:coach,save:save,paintTurret:paintTurret,coachGrab:coachGrab,GR:GR,CTL:CTL,wReady:wReady,isManual:isManual,chainSnap:chainSnap,T:T,MOB:MOB,SKIN:SKIN,applySkin:applySkin,PKEYS:PKEYS,cry:cry,cryAdd:cryAdd,crySpend:crySpend,cryLegacy:cryLegacy,loadCry:loadCry,cmdPrice:cmdPrice,cmdMix:cmdMix,CRANK:CRANK,PACKS:PACKS,useCmd:useCmd,cmdBuy:cmdBuy,cmdNodeBuy:cmdNodeBuy,cmdP:cmdP,cmdLeft:cmdLeft,cmdEarned:cmdEarned,CMDS:CMDS,kName:kName,fireball:fireball,chip:chip,openTeach:openTeach,fireMortar:fireMortar,shape:shape,spawn:spawn,G:G,get P(){return P;},set P(v){P=v;},newP:newP,startLevel:startLevel,update:update,UPS:UPS,waveCount:waveCount,levelPool:levelPool,hpScale:hpScale,tune:(a,b,c,d,m,k,bk,wh,pm,lk,c0,cg)=>{if(lk!==undefined)LATEK=lk;if(pm!==undefined)PICKM=pm;if(wh!==undefined)WAVEHP=wh;if(k!==undefined)HPK=k;if(m!==undefined)MOBN=m;if(c0!==undefined)CDROP0=c0;if(cg!==undefined)CDROPG=cg;HPG=a;POOL0=b;POOLG=c;if(d!==undefined)HPA=d;},bst:bst,pickCard:pickCard,CARDS:CARDS,offerCards:offerCards,applyCard:applyCard,hasTool:hasTool,fireMortar:fireMortar,canMortar:canMortar,T:T,wcount:wcount,canBuy:canBuy,buyUp:buyUp,upCost:upCost,upStage:upStage,bandOf:bandOf,awardCards:awardCards,dropCount:dropCount,dropVal:dropVal,useEnergy:useEnergy,enTick:enTick,tryStart:tryStart,win:win,gameOver:gameOver,profileFor:profileFor,MOB:MOB,WORLDS:WORLDS,briefFor:briefFor,welcomeReady:welcomeReady,claimWelcome:claimWelcome,premActive:premActive,passActive:passActive,spAdd:spAdd,spClaim:spClaim,ssCur:ssCur,seasonNo:seasonNo,tierRw:tierRw,buyGems:buyGems,claim:claim,showGain:showGain,shopHtml:shopHtml,toArmory:toArmory};
 })();
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 111</div>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 112</div>
 <script>
 /* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
-(function(){ const BUILD=111; let busy=false, shown=false;
+(function(){ const BUILD=112; let busy=false, shown=false;
   const inRun=()=>{ try{ return typeof G!=='undefined'&&(G.state==='playing'||G.state==='cards'||G.state==='shop'||G.state==='paused'||G.state==='teach'||G.state==='ctl'); }catch(e){ return false; } };
   function wipeReload(){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
     if(n>=3) return;

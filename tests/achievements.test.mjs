@@ -10,6 +10,7 @@ const cut=(s,a,b)=>{ const i=s.indexOf(a), j=s.indexOf(b,i); assert(i>=0&&j>i,'m
 const tables=cut(html,"const C={cyan:","const MUTS=");
 const shape=cut(html,"const newPW=","const newP=");
 const mod=cut(html,"/* ================= combat record + achievements","/* ================= enemies");
+const loadApi=(shelf)=>{
 const ctx={console,Date,Math,Set,Object,Array,JSON,saves:0,toasts:[]};
 vm.createContext(ctx);
 vm.runInContext(`
@@ -21,9 +22,16 @@ const G={wd:{id:'belt'},run:null};
 const cryAdd=(k,n)=>{ P.ce[k]=(P.ce[k]||0)+n; return n; };
 const ico=()=>'';  const Music={up(){}};  const save=()=>{ globalThis.saves++; };
 ${mod}
-globalThis.api={achRetier,NKT,starBitsFor,starHold,starsOfWorld,ECON,popc,P:()=>P,setP:v=>{P=v},G,MOB,CLS,WORLDS,stSpawn,stHit,stResolve,agg,achList,achCheck,get achQ(){return achQ},stOf,newSt};
+globalThis.api={SHELVED,achRetier,NKT,starBitsFor,starHold,starsOfWorld,ECON,popc,P:()=>P,setP:v=>{P=v},G,MOB,CLS,WORLDS,stSpawn,stHit,stResolve,agg,achList,achCheck,get achQ(){return achQ},stOf,newSt};
 `,ctx);
-const A=ctx.api;
+if(shelf===false) ctx.api.SHELVED.length=0;
+return ctx; };
+/* Shelved weapons (mine, saw) are out of play by default; these tests exercise them with the shelf emptied, which is how they come back. */
+const ctx=loadApi(false), A=ctx.api;
+{ const D=loadApi(true).api; const ids=D.achList().map(d=>d.id);
+  assert.deepEqual([...D.SHELVED],['mine','saw'],'mine and saw are shelved by default');
+  assert(!ids.some(i=>/_(mine|saw)@/.test(i)),'no awards for shelved weapons'); assert(ids.some(i=>i==='wm0_turret@belt')&&ids.some(i=>i==='wm0_mortar@belt'),'other weapons keep theirs');
+  assert(A.achList().some(i=>i.id==='wm0_mine@belt')&&A.achList().some(i=>i.id==='wl2_saw@belt'),'emptying the shelf restores them'); }
 const reset=()=>{ A.setP({seen:{},prog:{},st:A.newSt(),bf:0,gems:0,ce:{pow:0,tmp:0,rch:0,cap:0,frt:0}}); A.G.run=null; };
 const mob=(type)=>({type,res:{k:1,b:1,e:1}});
 const fight=(type,won,{weapons=['turret'],src='turret',resKind=null,m=1}={})=>{
