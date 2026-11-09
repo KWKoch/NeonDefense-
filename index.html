@@ -2147,20 +2147,20 @@ function leak(e){
   if(G.hp<=0) gameOver();
 }
 function fire(target){
-  const sup=G.superOn>0, n=1+L('barrels')+bst('barrel'), pierce=L('pierce')+bst('pierce')+2*bst('deep')+(G.cm?G.cm.M.pierce+(G.cm.pierceT>0?G.cm.pierceN:0):0);
-  const base=ST.dmg(L('dmg'))*Math.pow(1.5,bst('dmg'))*(sup?1.5:1)*cmDmg(), cc=(G.cm?G.cm.M.crit:0);
+  const sup=G.superOn>0, n=barrelN(), pierce=L('pierce')+bst('pierce')+2*bst('deep')+(G.cm?G.cm.M.pierce+(G.cm.pierceT>0?G.cm.pierceN:0):0);
+  const base=ST.dmg(L('dmg'))*(bst('dmg')?CARD_PWR:1)*(sup?1.5:1)*cmDmg(), cc=(G.cm?G.cm.M.crit:0);
   for(let i=0;i<n;i++){
     const a=(i-(n-1)/2)*BARREL_SPREAD, dmg=Math.random()<cc?base*2.5:base;
     G.bullets.push({x:T.x+Math.sin(a)*24,y:TURRET_Y-24,vx:Math.sin(a)*BS,vy:-Math.cos(a)*BS,dmg:dmg,pierce:pierce,hits:[],target:target});
   }
-  T.cool=ST.rate(L('rate'))*Math.pow(1/1.35,bst('rate'))*(sup?0.5:1)/cmRate(); T.recoil=1; Music.shot();
+  T.cool=ST.rate(L('rate'))*(bst('rate')?1/CARD_SPD:1)*(sup?0.5:1)/cmRate(); T.recoil=1; Music.shot();
   if(!G.blobs) G.blobs=[]; if(G.blobs.length<40) G.blobs.push({x:T.x,y:TURRET_Y-34,r:3,max:9+2.5*n+1.2*L('dmg')+2*bq('dmg'),t:0,life:0.12,color:'#00f0ff'});
 }
 /* Would a shot fired from the turret's current x hit e? Checks every barrel's straight line against e's predicted position. */
 const inRange=e=>Math.hypot(e.x-T.x,TURRET_Y-24-e.y)-e.r<=TUR_RANGE;
 /* Where should the turret stand so the best-placed barrel's lane meets e? Solves each barrel's flight time against e's own motion, then takes the barrel that needs the least slewing. */
 function aimFor(e){
-  const n=1+L('barrels')+bst('barrel'), sy=TURRET_Y-24; let best=null;
+  const n=barrelN(), sy=TURRET_Y-24; let best=null;
   for(let i=0;i<n;i++){
     const a=(i-(n-1)/2)*BARREL_SPREAD, sn=Math.sin(a), cs=Math.cos(a), cl=cs*BS+(e.vy||0); if(cl<=1) continue;
     let t=Math.max(0,(sy-e.y)/cl); const ex=e.x+(e.vx||0)*t, nx=ex-sn*24-sn*BS*t;
@@ -2169,7 +2169,7 @@ function aimFor(e){
   return clamp(best===null?e.x:best,24,W-24);
 }
 function hitsFrom(e,loose){
-  const n=1+L('barrels')+bst('barrel'), sy=TURRET_Y-24, tol=(e.r*0.85+2)*(loose||1);
+  const n=barrelN(), sy=TURRET_Y-24, tol=(e.r*0.85+2)*(loose||1);
   if(e.y>=sy||e.y<-e.r*0.3) return false;
   for(let i=0;i<n;i++){
     const a=(i-(n-1)/2)*BARREL_SPREAD, sn=Math.sin(a), cs=Math.cos(a), t=(sy-e.y)/(cs*BS+(e.vy||0)); if(t<=0) continue;
@@ -2181,7 +2181,7 @@ function hitsFrom(e,loose){
 function pickTarget(){
   const pend=new Map();
   for(const b of G.bullets) if(b.target&&!b.target.dead) pend.set(b.target,(pend.get(b.target)||0)+b.dmg*b.target.res.k);
-  const sup=G.superOn>0, shot=ST.dmg(L('dmg'))*Math.pow(1.5,bst('dmg'))*(sup?1.5:1), slide=ST.slide(L('rate'))*(bst('slide')?2:1);
+  const sup=G.superOn>0, shot=ST.dmg(L('dmg'))*(bst('dmg')?CARD_PWR:1)*(sup?1.5:1), slide=ST.slide(L('rate'))*(bst('slide')?CARD_SLIDE:1);
   let best=null,bs=-1e9;
   for(const e of G.enemies){
     if(e.dead||e.y<-e.r*0.3||!inRange(e)) continue;
@@ -2216,7 +2216,7 @@ function inLine(tg,pend){
   return hit;
 }
 function updateTurret(dt){
-  const slide=ST.slide(L('rate'))*(bst('slide')?2:1);
+  const slide=ST.slide(L('rate'))*(bst('slide')?CARD_SLIDE:1);
   T.cool-=dt; T.recoil=Math.max(0,T.recoil-dt*6);
   if(bst('super')>0){ if(G.superOn>0) G.superOn-=dt; else { G.superCd-=dt; if(G.superCd<=0){ G.superOn=4; G.superCd=22-3*bst('super'); float(T.x,TURRET_Y-60,'SUPERCHARGE',C.yellow); G.rings.push({x:T.x,y:TURRET_Y-14,r:10,max:90,life:0.5,t:0,color:C.yellow}); } } }
   if(input.active){
@@ -3719,11 +3719,11 @@ function drawTurret(){
   const q=G.cm;
   if(q){
     ctx.save(); ctx.translate(T.x,TURRET_Y);
-    paintTurret(ctx,{id:q.c.id,rgb:hexRgb(q.c.color),look:q.c.look,r:q.r,t:G.time,hot:T.recoil,recoil:T.recoil,over:(q.over>0||q.dmgT>0)?1:0,n:1+L('barrels')+bst('barrel'),
+    paintTurret(ctx,{id:q.c.id,rgb:hexRgb(q.c.color),look:q.c.look,r:q.r,t:G.time,hot:T.recoil,recoil:T.recoil,over:(q.over>0||q.dmgT>0)?1:0,n:barrelN(),
       sh:G.shMax?Math.max(0,G.sh)/G.shMax:0,flash:G.shFlash,a1:q.t1<=0,a2:q.M.unlock2&&q.t2<=0,c1:1-q.t1/Math.max(1,q.c.ab[0].cd*q.M.cd1)});
     ctx.restore(); return;
   }
-  const n=1+L('barrels')+bst('barrel'), col=C.cyan, rc='0,240,255', t=G.time, hot=Math.min(1,T.recoil);
+  const n=barrelN(), col=C.cyan, rc='0,240,255', t=G.time, hot=Math.min(1,T.recoil);
   ctx.save(); ctx.translate(T.x,TURRET_Y);
   /* thruster glow under the hull */
   ctx.globalCompositeOperation='lighter'; const tg=ctx.createRadialGradient(0,16,0,0,16,26); tg.addColorStop(0,'rgba('+rc+','+(0.35+0.1*Math.sin(t*12)).toFixed(2)+')'); tg.addColorStop(1,'rgba('+rc+',0)'); ctx.fillStyle=tg; ctx.fillRect(-28,0,56,34); ctx.globalCompositeOperation='source-over';
@@ -4681,15 +4681,18 @@ const deckSize=w=>CARDS.reduce((a,c)=>a+(c.w===w&&c.t===1&&!c.unlock&&!c.cond&&c
 const rareDecay=w=>{ const n=deckSize(w); return n?Math.max(RARE_FLOOR,Math.pow(Math.max(0,1-wlv(w)/n),1.5)):1; };
 /* Card level-ups: one on each of the first four waves that offer one (waves 2-5), then only every other wave (7, 9, 11...). */
 const PICKEARLY=4; let PICKM=2;
+/* Turret cards: damage, fire rate and turret speed are one pick each at +75%; extra barrels are +1 each, five barrels in total (armory barrels count toward it). */
+const CARD_PWR=1.75, CARD_SPD=1.75, CARD_SLIDE=1.75, MAXBARRELS=5;
+const barrelN=()=>Math.min(MAXBARRELS,1+L('barrels')+bst('barrel'));
 const pickWave=w=>w>=2&&(w<=1+PICKEARLY||(w-1-PICKEARLY)%PICKM===0);
 const wcount=()=>['mine','field','chain','saw','mortar'].filter(hasTool).length;
 const WEAPN={turret:{name:'Turret',color:C.cyan},base:{name:'Base',color:C.lime},mine:{name:'Mine layer',color:'#aeb8bf'},field:{name:'Slow field',color:C.violet},chain:{name:'Chain lightning',color:C.yellow},saw:{name:'Buzz saw',color:C.lime},mortar:{name:'Mortar',color:C.amber}};
 const CARDS=[
- {id:'rate',w:'turret',t:1,max:6,name:'Rapid Fire',txt:l=>'+'+Math.round((Math.pow(1.35,l)-1)*100)+'% fire rate'},
- {id:'dmg',w:'turret',t:1,max:6,name:'Heavy Rounds',txt:l=>'+'+Math.round((Math.pow(1.5,l)-1)*100)+'% damage'},
- {id:'barrel',w:'turret',t:1,max:5,name:'Extra Barrel',txt:l=>'+'+l+(l>1?' barrels':' barrel')},
+ {id:'rate',w:'turret',t:1,max:1,name:'Rapid Fire',txt:l=>'+'+Math.round((CARD_SPD-1)*100)+'% fire rate'},
+ {id:'dmg',w:'turret',t:1,max:1,name:'Heavy Rounds',txt:l=>'+'+Math.round((CARD_PWR-1)*100)+'% damage'},
+ {id:'barrel',w:'turret',t:1,max:MAXBARRELS-1,name:'Extra Barrel',txt:l=>'+1 barrel'},
  {id:'pierce',w:'turret',t:1,max:2,name:'Piercing Rounds',txt:l=>'+'+l+' pierce'},
- {id:'slide',w:'turret',t:1,max:1,copies:4,name:'Servo Motors',txt:l=>'+'+(Math.min(l,1)*100)+'% turret speed'},
+ {id:'slide',w:'turret',t:1,max:1,copies:4,name:'Servo Motors',txt:l=>'+'+Math.round((CARD_SLIDE-1)*100)+'% turret speed'},
  {id:'arc',w:'turret',t:2,max:3,name:'Arc Rounds',txt:l=>'shots add +'+(l*35)+'% energy damage and fork 3 mini lightning bolts at '+(l*15)+'% damage',lv:EVO_LV,ovl:1},
  {id:'frag',w:'turret',t:2,max:3,name:'Explosive Rounds',txt:l=>'shots splash +'+(l*30)+' % blast damage'.replace(' %','%'),lv:EVO_LV,ovl:1},
  {id:'deep',w:'turret',t:2,max:1,name:'Deep Pierce',txt:l=>'+2 more pierce',lv:EVO_LV},
@@ -4738,6 +4741,7 @@ const reqOk=c=>!c.req||Object.keys(c.req).every(k=>bst(k)>=c.req[k]);
 const reqText=r=>Object.keys(r).map(k=>CARDBY[k].name+(CARDBY[k].max>1?' '+r[k]:'')).join(' + ');
 function eligible(c){
   if(shelved(c.w)) return false;
+  if(c.id==='barrel'&&barrelN()>=MAXBARRELS) return false;
   if(bst(c.id)>=c.max||!reqOk(c)) return false;
   if(c.cond&&!c.cond()) return false;
   if(c.lv&&wlv(c.w)<c.lv) return false;
@@ -4999,10 +5003,10 @@ window.__rr={startWave:startWave,pickWave:pickWave,SHELVED:SHELVED,TABS:TABS,WCT
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 112</div>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 113</div>
 <script>
 /* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
-(function(){ const BUILD=112; let busy=false, shown=false;
+(function(){ const BUILD=113; let busy=false, shown=false;
   const inRun=()=>{ try{ return typeof G!=='undefined'&&(G.state==='playing'||G.state==='cards'||G.state==='shop'||G.state==='paused'||G.state==='teach'||G.state==='ctl'); }catch(e){ return false; } };
   function wipeReload(){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
     if(n>=3) return;
