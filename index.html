@@ -2430,8 +2430,9 @@ function cmdMix(c){
   ts.forEach((t,i)=>{ m[t]=sh[i]*CW[t]/20; }); return (c._mix=m);
 }
 /* crystals to go from rank `from` (-1 = not recruited) to rank `to` */
-function cmdPrice(c,from,to){ const d=CRANK[to]-(from>=0?CRANK[from]:0), m=cmdMix(c), o={}; for(const t in m) o[t]=Math.max(10,Math.round(d*m[t]/10)*10); return o; }
-const priceHtml=(o,sz)=>Object.keys(o).map(t=>'<span class="cost" style="color:'+CT[t].color+'" title="'+CT[t].name+' crystals">'+ico('crystal',sz||12)+o[t]+'</span>').join('');
+function cmdPrice(c,from,to){ if(TEST_BUILD) return {};   /* testing site and local dev only: commanders and ranks are free so each one can be tried. The store app still charges. */
+  const d=CRANK[to]-(from>=0?CRANK[from]:0), m=cmdMix(c), o={}; for(const t in m) o[t]=Math.max(10,Math.round(d*m[t]/10)*10); return o; }
+const priceHtml=(o,sz)=>!Object.keys(o).length?'<span class="cost">Free</span>':Object.keys(o).map(t=>'<span class="cost" style="color:'+CT[t].color+'" title="'+CT[t].name+' crystals">'+ico('crystal',sz||12)+o[t]+'</span>').join('');
 function cmdBuy(cid,r){
   const c=CMDBY[cid], p=cmdP(); if(!c||!(r>=0&&r<4)||r<(c.tier|0)) return false; const cur=p.own[cid];
   if(cur!==undefined&&r<=cur) return false; const price=cmdPrice(c,cur!==undefined?cur:-1,r);
@@ -5047,10 +5048,10 @@ window.__rr={profileFor:profileFor,buildWave:buildWave,DOCS:DOCS,startWave:start
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 115</div>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 116</div>
 <script>
 /* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
-(function(){ const BUILD=115; let busy=false, shown=false;
+(function(){ const BUILD=116; let busy=false, shown=false;
   const inRun=()=>{ try{ return typeof G!=='undefined'&&(G.state==='playing'||G.state==='cards'||G.state==='shop'||G.state==='paused'||G.state==='teach'||G.state==='ctl'); }catch(e){ return false; } };
   function wipeReload(){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
     if(n>=3) return;
