@@ -1116,6 +1116,16 @@ const WORLDS=[
 const MUTS={warp:{name:'Warp storm',note:'Enemies warp in without warning.'},swift:{name:'Swift',note:'Enemies move faster but have less health.'},armored:{name:'Armored',note:'There are fewer enemies, but each one has more health.'},dense:{name:'Dense',note:'There are more enemies, but each one has less health.'},ionized:{name:'Ionized',note:'The air is full of static, which weakens energy damage.'},hardened:{name:'Hardened',note:'The plating on these enemies is thicker than it looks.'},bunkered:{name:'Bunkered',note:'These hulls were built to survive a lot of hits.'}};
 const MUTRES={ionized:{k:1,b:1,e:0.4},hardened:{k:0.45,b:1,e:1},bunkered:{k:1,b:0.45,e:1}};
 const MUTK=['warp','swift','armored','dense','ionized','hardened','bunkered'];
+/* Elite doctrines: tactics that only Elite runs use, so replaying a level means answering a different problem and not only taking more damage. */
+const DOCS={
+  veterans:{name:'Veterans',note:'Some enemies are veterans, marked with a gold ring. They have extra health and heavy armor against one kind of damage.'},
+  pincer:{name:'Pincer',note:'Squads rush in from both edges of the field at the same time.'},
+  surge:{name:'Surge',note:'Enemies arrive in two heavy pulses instead of a steady stream.'},
+  ambush:{name:'Ambush',note:'Squads warp in close to the ozone line, so you get very little warning.'},
+  convoy:{name:'Convoy',note:'Armored transports carry reinforcements. They release them in the middle of the field, or when destroyed.'}
+};
+const CARGO=['swarm','dart','phantom','leech'], CARRIER=['brute','shield','chunk'];
+const CARGON={swarm:5,dart:3,phantom:2,leech:2};
 const THEME={rock:'Rock Field',dart:'Dart Run',swarm:'Swarm Tide',invader:'Fleet Advance',shield:'Shield Wall',phantom:'Phantom Raid',chunk:'Splitter Storm',brute:'Heavy Siege',leech:'Latcher Hunt',tender:'Hive Rising',egg:'Brood Nest',regen:'Hydra Pit'};
 const BRIEF={rock:'These are plain rocks with no tricks, so use them to get a feel for the rhythm.',dart:'These contacts are fast and weave from side to side, which makes them hard to hit.',swarm:'Packs of tiny ships will arrive in numbers too large to count.',invader:'A fleet is marching toward the city in tight formation.',shield:'Shield drones are protecting the fleet, and bullets seem to bounce off them.',phantom:'These ships warp in and blink from place to place, so they rarely appear where you expect.',chunk:'This level has dense rock that splits into smaller pieces when it breaks.',brute:'Heavily plated ships are coming. They are slow but they keep advancing, so stop them before they reach the city.',leech:'Latchers dive onto the turret and cling to it, so kill them quickly.',tender:'Tenders heal everything near them, so kill them first.',egg:'Brood sacs hover over the field and hatch swarmlings, so break them early.',regen:'Hydra cells regrow quickly, so use burst damage instead of chipping away at them.'};
 const WORLD_INTRO={nebula:'Welcome to the Swarm Nebula. The Brood has built its nest here, around the Hive Bloom, and it will attack anything that comes near its young.',armada:'Welcome to the Iron Armada. The Ironclad fleets gather here and build their hulls from stolen steel. They are preparing for a larger attack.',rift:'Welcome to the Plasma Rift. The Wraiths live in a tear in space and feed on raw light, and they attack anything that crosses it.',void:'Welcome to the Void Gate. The Hollow guard the way through, and they were here long before anyone else. They do not want visitors.'};
@@ -1139,7 +1149,7 @@ function briefFor(wd,n,elite){
   if(!elite&&wd.id==='belt'&&STORY.belt[n]) return STORY.belt[n];
   if(!elite&&n===1&&WORLD_INTRO[wd.id]) return WORLD_INTRO[wd.id];
   if(isBoss(n)) return n%50===0?'This is a mega boss, and the whole raiding fleet is behind it.':'This is a boss level. A '+skinName(wd.id,'boss')+' will arrive on the final wave.';
-  return (((skinOf(wd.id,p.feat)||{}).br)||BRIEF[p.feat]||'')+(p.mut?' '+MUTS[p.mut].note:'');
+  return (((skinOf(wd.id,p.feat)||{}).br)||BRIEF[p.feat]||'')+(p.mut?' '+MUTS[p.mut].note:'')+(p.mut2?' '+MUTS[p.mut2].note:'')+(p.doc&&p.doc.length?' '+p.doc.map(k=>DOCS[k].note).join(' '):'');
 }
 const PROF={};
 /* A level is not just "everything unlocked so far": it gets a roster of a few mobs, a featured one, and sometimes a mutator. */
@@ -1160,7 +1170,19 @@ function profileFor(wd,n,elite){
   let mut=null;
   if(!isBoss(n)&&n>=5&&(elite||rng()<0.55)){ const ks=MUTK.filter(k=>n>=10||!MUTRES[k]).filter(k=>n>=14||k!=='hardened'); mut=ks[Math.floor(rng()*ks.length)]; }
   if(mut==='armored'&&roster.some(k=>k==='tender'||k==='regen'||k==='egg')) mut='swift';   /* never stack armor on top of healers */
-  const p={roster:roster,feat:feat,mut:mut,debut:debut,name:isBoss(n)?(n%50===0?'Mega boss':skinName(wd.id,'boss')):(themeFor(wd.id,feat)||'Skirmish')+(mut?' \u00b7 '+MUTS[mut].name:'')};
+  let mut2=null, doc=[];
+  if(elite){
+    const r2=mulberry(n*5381+(wi+1)*131+7);
+    if(mut&&n>=20) mut2=['warp','swift'].filter(k=>k!==mut)[Math.floor(r2()*(mut==='warp'||mut==='swift'?1:2))]||null;
+    const cargo=CARGO.filter(k=>roster.indexOf(k)>=0), carrier=CARRIER.filter(k=>roster.indexOf(k)>=0);
+    const dp=['veterans','pincer','surge'];
+    if(n>=8) dp.push('ambush');
+    if(n>=12&&cargo.length&&carrier.length) dp.push('convoy');
+    const want=n>=20?2:1;
+    while(doc.length<want&&dp.length) doc.push(dp.splice(Math.floor(r2()*dp.length),1)[0]);
+    var cargoT=cargo.length?cargo[Math.floor(r2()*cargo.length)]:null, carrierT=carrier.length?carrier[Math.floor(r2()*carrier.length)]:null;
+  }
+  const p={roster:roster,feat:feat,mut:mut,mut2:mut2,doc:doc,cargo:cargoT||null,carrier:carrierT||null,debut:debut,name:isBoss(n)?(n%50===0?'Mega boss':skinName(wd.id,'boss')):(themeFor(wd.id,feat)||'Skirmish')+(mut?' \u00b7 '+MUTS[mut].name:'')+(doc.length?' \u00b7 '+doc.map(k=>DOCS[k].name).join(' + '):'')};
   return PROF[key]=p;
 }
 const TABS=[{id:'turret',name:'Turret',color:C.cyan},{id:'base',name:'Base',color:C.mint},{id:'mine',name:'Mines',color:C.orange},{id:'field',name:'Field',color:C.violet},{id:'chain',name:'Chain',color:C.yellow},{id:'saw',name:'Saw',color:C.lime},{id:'mortar',name:'Mortar',color:C.amber},{id:'bestiary',name:'Bestiary',color:C.lime}].filter(t=>!shelved(t.id));
@@ -1796,7 +1818,13 @@ function buildWave(n,w){
   const UWc=curUW(), sigs=(G.wd&&G.wd.sig)||[];
   let pool=prof.roster.filter(k=>UWc[k]!==undefined&&UWc[k]<=gpOf(n,w));
   if(!pool.length) pool=['rock'];
-  const warpP=mut==='warp'?0.5:0;
+  const docs=G.elite?(prof.doc||[]):[], hasD=k=>docs.indexOf(k)>=0;
+  const warpP=(mut==='warp'||prof.mut2==='warp'?0.5:0)+(hasD('ambush')?0.4:0), wyLo=hasD('ambush')?OZ_Y-200:90, wyHi=hasD('ambush')?OZ_Y-80:330;
+  const vetO=type=>(hasD('veterans')&&type!=='swarm'&&type!=='invader'&&rng()<0.2)?{vet:1,vr:Math.floor(rng()*3)}:{};
+  if(hasD('convoy')&&prof.cargo&&prof.carrier&&w>=2&&(w%2===0||elite)){
+    const nc=1+Math.floor(n/20); budget-=14*nc;
+    for(let i=0;i<nc;i++){ const t=1+span*0.5*rng(), x=R(90,W-90), ct=prof.carrier, cg=prof.cargo; add(t,()=>spawn(ct,x,-30,{vx:R(-8,8),carry:cg,vet:1,vr:Math.floor(Math.random()*3)})); }
+  }
   const cost={rock:2,dart:3,chunk:6,swarm:5,shield:5,brute:12,phantom:5,leech:5,tender:7,egg:10,regen:7};
   let forms=0; const maxForms=Math.ceil((1+Math.floor(n/25))*mobn(n)/1.2);
   let guard=0;
@@ -1815,16 +1843,22 @@ function buildWave(n,w){
     if(cost[type]>budget&&type!=='rock') type='rock';
     const pts=cost[type]; budget-=pts;
     const x=R(34,W-34), vx=R(-14,14);
-    const warp=type==='phantom'||(warpP&&rng()<warpP), wy=R(90,330);
+    const warp=type==='phantom'||(warpP&&rng()<warpP), wy=R(wyLo,wyHi);
     if(type==='swarm'){
       const cnt=Math.min(5,2+Math.floor(n/12));
       if(warp) add(t,()=>{ for(let i=0;i<cnt;i++) warpIn('swarm',clamp(x+(i%3-1)*22,20,W-20),wy+Math.floor(i/3)*16,{}); });
       else add(t,()=>{ for(let i=0;i<cnt;i++) spawn('swarm',clamp(x+(i%3-1)*22,20,W-20),-14-i*13,{}); });
-    } else if(warp) add(t,()=>warpIn(type,clamp(x,40,W-40),wy,{vx:type==='dart'||type==='shield'?0:vx}));
+    } else if(warp){ const vo=vetO(type); add(t,()=>warpIn(type,clamp(x,40,W-40),wy,Object.assign({vx:type==='dart'||type==='shield'?0:vx},vo))); }
     else if(type==='egg') add(t,()=>spawn('egg',clamp(x,60,W-60),-30,{}));
-    else add(t,()=>spawn(type,x,-30,{vx:type==='dart'||type==='shield'||type==='leech'?0:vx}));
+    else if(hasD('pincer')&&type!=='dart'&&type!=='shield'&&type!=='leech'&&rng()<0.5){
+      const side=rng()<0.5?-1:1, ex=side<0?30:W-30, pv=-side*R(55,85), vo=vetO(type);
+      add(t,()=>spawn(type,ex,-30,Object.assign({vx:pv},vo)));
+      if(budget>cost[type]){ budget-=cost[type]; const vo2=vetO(type); add(t,()=>spawn(type,W-ex,-30,Object.assign({vx:-pv},vo2))); }
+    }
+    else { const vo=vetO(type); add(t,()=>spawn(type,x,-30,Object.assign({vx:type==='dart'||type==='shield'||type==='leech'?0:vx},vo))); }
   }
   ev.sort((a,b)=>a.t-b.t);
+  if(hasD('surge')){ const half=Math.floor(ev.length/2); ev.forEach((q,i)=>{ q.t=(i<half?0.8:span*0.55)+(q.t-0.5)*0.15; }); }
   return {ev:ev,span:span,elite:elite};
 }
 
@@ -2054,9 +2088,15 @@ function spawn(type,x,y,o){
   if(type==='orb') hp=1;
   const e=Object.assign({type:type,x:x,y:y,vx:0,vy:d.vy*G.spS*(G.mutSp||1),regen:d.regen||0,lh:-9,r:d.r,hp:hp,maxhp:hp,val:Math.max(1,Math.round(d.val*G.cs)),dmg:Math.max(1,Math.round(d.dmg*(1+n*0.03)/mobn(n))),
     color:type==='boss'?BOSSCOL[Math.min(4,Math.floor(n/10)-1)]||C.red:d.color,res:mutRes(scaleRes(d.res,n)),rot:Math.random()*6.28,spin:(Math.random()-0.5)*1.4,flash:0,ft:0,t:0,ph:Math.random()*6.28,dead:false,slow:1,cr:0},o||{});
+  if(e.vet){ e.hp=e.maxhp=Math.round(e.hp*1.9); const kk=['k','b','e'][e.vr||0]; e.res=Object.assign({},e.res); e.res[kk]=Math.max(0.12,e.res[kk]*0.5); e.vk=kk; }
   G.pot+=e.cr; stSpawn(e);
   if(type==='swarm'||type==='dart'||type==='invader'||type==='orb'||type==='boss') e.spin=0;
   G.enemies.push(e); return e;
+}
+function releaseCarry(e,mid){
+  if(!e.carry) return; const t=e.carry, n=CARGON[t]||3; e.carry=null;
+  for(let k=0;k<n;k++){ const px=clamp(e.x+(k-(n-1)/2)*20,20,W-20), py=e.oz?e.y:Math.min(e.y,OZ_Y-10); if(t==='phantom'||t==='leech') warpIn(t,px,Math.min(py,OZ_Y-70),{cr:0}); else spawn(t,px,py-(mid?0:0),{cr:0,vx:(k-(n-1)/2)*18}); }
+  G.rings.push({x:e.x,y:e.y,r:e.r*0.6,max:e.r*3,life:0.5,t:0,color:C.yellow}); float(e.x,e.y-e.r-8,mid?'DEPLOYED':'CARGO',C.yellow);
 }
 function warpIn(type,x,y,o){ G.warps.push({type:type,x:x,y:y,o:o||{},t:0.75,max:0.75}); }
 function updateWarps(dt){
@@ -2107,6 +2147,7 @@ function killEnemy(e,reward,src){
     if(e.type==='chunk'&&src!=='shield') for(let k=-1;k<=1;k++) spawn('small',e.x+k*14,e.oz?e.y:Math.min(e.y,OZ_Y-10),{vx:k*55+rnd(-10,10),vy:rnd(40,70)*G.spS,cr:0});
   }
   Music.boom(e.type==='boss'||e.type==='chunk'||e.type==='brute');
+  if(e.carry&&reward&&src!=='shield') releaseCarry(e,false);
   if(e.type==='boss'){ G.boss=null; for(const o of G.enemies) if(!o.dead&&o!==e) killEnemy(o,false); }
 }
 const ROCKY={rock:1,small:1,chunk:1};
@@ -3114,14 +3155,15 @@ function updateEnemies(dt){
         if(e.y<290) e.y+=5*d;
         e.bd-=d; e.bo-=d;
         if(e.mega){ e.bs=(e.bs===undefined?5:e.bs)-d; if(e.bs<=0){ e.bs=8; spawn('brute',e.x,e.y+70,{cr:0}); spawn('shield',e.x-70,e.y+55,{cr:0}); spawn('shield',e.x+70,e.y+55,{cr:0}); } }
-        if(e.bd<=0){ e.bd=Math.max(1.2,3.4-e.bt*0.4); spawn('dart',e.x,e.y+30,{cr:0}); }
-        if(e.bo<=0){ e.bo=Math.max(2.2,4.8-e.bt*0.45); const cnt=e.mega?7:e.bt>=3?5:3; for(let k=0;k<cnt;k++) spawn('orb',e.x+(k-(cnt-1)/2)*34,e.y+50,{vx:(k-(cnt-1)/2)*30,cr:0}); }
+        if(e.bd<=0){ e.bd=Math.max(1.2,3.4-e.bt*0.4)*(G.elite?0.7:1); spawn('dart',e.x,e.y+30,{cr:0}); }
+        if(e.bo<=0){ e.bo=Math.max(2.2,4.8-e.bt*0.45)*(G.elite?0.75:1); const cnt=e.mega?7:e.bt>=3?5:3; for(let k=0;k<cnt;k++) spawn('orb',e.x+(k-(cnt-1)/2)*34,e.y+50,{vx:(k-(cnt-1)/2)*30,cr:0}); }
       }
     }
     else {
       e.x+=e.vx*d; e.y+=e.vy*d;
       if(e.x<e.r){ e.x=e.r; e.vx=Math.abs(e.vx); } else if(e.x>W-e.r){ e.x=W-e.r; e.vx=-Math.abs(e.vx); }
     }
+    if(e.carry&&e.y>=250) releaseCarry(e,true);
     if(e.regen&&e.hp<e.maxhp&&G.time-e.lh>1.2) e.hp=Math.min(e.maxhp,e.hp+e.maxhp*e.regen*d);
     if(!e.oz&&!e.ozx&&e.y>=OZ_Y&&G.sh>0&&e.type!=='boss'&&G.time>=(G.shieldUntil||0)){
       const cost=Math.max(1,e.dmg*SH_COST);
@@ -3289,6 +3331,8 @@ function drawEnemy(e){
   if(ROCKY[e.type]){ const tg=0.55+0.45*Math.max(0,Math.min(1,e.hp/e.maxhp)); e.sc=e.sc===undefined?1:e.sc+(tg-e.sc)*0.25; ctx.scale(e.sc,e.sc); }
   shape(ctx,e.type,e.r,{color:e.color,flash:e.flash,t:G.time,rot:e.rot,vx:e.vx,vy:e.vy,bs:sx,lw:2.2,col:e.col||0,seed:e.ph});
   ctx.restore();
+  if(e.vet){ ctx.save(); ctx.shadowBlur=0; ctx.strokeStyle=C.yellow; ctx.lineWidth=1.6; ctx.globalAlpha=0.85; ctx.beginPath(); ctx.arc(e.x,e.y,e.r+4,0,6.2832); ctx.stroke(); ctx.globalAlpha=0.45; ctx.beginPath(); ctx.arc(e.x,e.y,e.r+8,0,6.2832); ctx.stroke(); ctx.restore(); }
+  if(e.carry){ ctx.save(); ctx.shadowBlur=0; ctx.strokeStyle=C.yellow; ctx.lineWidth=1.4; ctx.setLineDash([4,5]); ctx.lineDashOffset=-G.time*20; ctx.beginPath(); ctx.arc(e.x,e.y,e.r+13,0,6.2832); ctx.stroke(); ctx.setLineDash([]); ctx.fillStyle=MOB[e.carry].color; for(let k=0;k<3;k++){ const a=G.time*2+k*2.094; ctx.beginPath(); ctx.arc(e.x+Math.cos(a)*(e.r+13),e.y+Math.sin(a)*(e.r+13),2.6,0,6.2832); ctx.fill(); } ctx.restore(); }
   if(e.latched){ ctx.shadowBlur=0; ctx.strokeStyle='rgba(255,56,96,.7)'; ctx.lineWidth=1.4; ctx.beginPath(); ctx.moveTo(e.x,e.y); ctx.lineTo(T.x,TURRET_Y-6); ctx.stroke(); }
   if(e.slow<1){ ctx.shadowBlur=0; ctx.strokeStyle='rgba(157,77,255,.55)'; ctx.lineWidth=1.2; ctx.beginPath(); ctx.arc(e.x,e.y,e.r+5,0,6.2832); ctx.stroke(); }
   if(e.type!=='boss'&&e.maxhp>1.5&&e.hp<e.maxhp&&e.hp>0){
@@ -4008,7 +4052,7 @@ function startLevel(n,world,elite){
   G.run={rz:{},hold:{},kw:{}}; G.ozFlash=0; G.maxHp=ST.armor(0); G.hp=G.maxHp; G.shMax=ST.shield(L('armor')); G.sh=G.shMax; G.shRg=ST.shreg(L('armor')); G.shT=0; G.shFlash=0; G.shBreak=0; G.shOk=Math.random()<SH_CARD_P; G.mend=0; G.peeps=[]; G.scorch=[]; G.pplT=1; G.earned=0; G.kills=0; G.pot=0; G.credits=0; G.boost={}; G.pity={}; G.sinceW=0; G.revived=false; G.shieldUntil=0; G.tools={}; G.pickQ=0; G.rerolls=1; G.offer=[]; G.superOn=0; G.superCd=10; G.chainT=2; G.blobs=[]; G.chips=[]; G.teachQ=[]; { const to=document.getElementById('teachov'); if(to) to.remove(); } G.cpend=null; G.flashA=0; G.sawCd=0; G.stormT=12; G.mort=2; G.mortT=0; G.saws=[]; G.bolts=[]; G.shells=[]; G.fires=[]; G.delay=[]; lastCred=0;
   cmdStart();
   G.enemies=[]; G.bullets=[]; G.parts=[]; G.splash=[]; G.rings=[]; G.floats=[]; G.mines=[]; G.fields=[]; G.boss=null; G.tag=null; G.warps=[];
-  { const pf=profileFor(G.wd,n,G.elite); G.prof=pf; G.mutHp=pf.mut==='armored'?1.3:pf.mut==='dense'?0.8:pf.mut==='swift'?0.85:1; G.mutSp=pf.mut==='swift'?1.25:1; if(pf.mut||n>1) setTimeout(()=>{ if(G.state==='playing'&&G.n===n&&G.wave<=1) say(pf.name,pf.mut?MUTS[pf.mut].note:(BRIEF[pf.feat]||'')); },1400); }
+  { const pf=profileFor(G.wd,n,G.elite); G.prof=pf; G.mutHp=(pf.mut==='armored'?1.3:pf.mut==='dense'?0.8:pf.mut==='swift'?0.85:1)*(pf.mut2==='swift'?0.85:1); G.mutSp=(pf.mut==='swift'?1.25:1)*(pf.mut2==='swift'?1.25:1); if(pf.mut||n>1) setTimeout(()=>{ if(G.state==='playing'&&G.n===n&&G.wave<=1) say(pf.name,pf.doc&&pf.doc.length?pf.doc.map(k=>DOCS[k].note).join(' '):pf.mut?MUTS[pf.mut].note:(BRIEF[pf.feat]||'')); },1400); }
   G.waveT=0; G.shake=0; G.armed=null; G.ghost.show=false; G.placing=false; G.autoT=0.5;
   G.stock=0; G.mineT=0; G.fieldCd=0; G.pin={}; grabEnd(false);
   T.x=W/2; T.cool=0; T.recoil=0; T.target=null; T.idle=0; input.active=false;
@@ -4998,15 +5042,15 @@ if(!P.intro){ const io=document.createElement('div'); io.id='introov'; io.innerH
 requestAnimationFrame(frame);
 
 /* test hook for headless checks */
-window.__rr={startWave:startWave,pickWave:pickWave,SHELVED:SHELVED,TABS:TABS,WCTL:WCTL,eligible:eligible,pickTarget:pickTarget,fire:fire,spawn:spawn,killEnemy:killEnemy,openPack:openPack,renderArmory:renderArmory,UI:UI,queueTeach:queueTeach,DEMO:DEMO,coach:coach,save:save,paintTurret:paintTurret,coachGrab:coachGrab,GR:GR,CTL:CTL,wReady:wReady,isManual:isManual,chainSnap:chainSnap,T:T,MOB:MOB,SKIN:SKIN,applySkin:applySkin,PKEYS:PKEYS,cry:cry,cryAdd:cryAdd,crySpend:crySpend,cryLegacy:cryLegacy,loadCry:loadCry,cmdPrice:cmdPrice,cmdMix:cmdMix,CRANK:CRANK,PACKS:PACKS,useCmd:useCmd,cmdBuy:cmdBuy,cmdNodeBuy:cmdNodeBuy,cmdP:cmdP,cmdLeft:cmdLeft,cmdEarned:cmdEarned,CMDS:CMDS,kName:kName,fireball:fireball,chip:chip,openTeach:openTeach,fireMortar:fireMortar,shape:shape,spawn:spawn,G:G,get P(){return P;},set P(v){P=v;},newP:newP,startLevel:startLevel,update:update,UPS:UPS,waveCount:waveCount,levelPool:levelPool,hpScale:hpScale,tune:(a,b,c,d,m,k,bk,wh,pm,lk,c0,cg)=>{if(lk!==undefined)LATEK=lk;if(pm!==undefined)PICKM=pm;if(wh!==undefined)WAVEHP=wh;if(k!==undefined)HPK=k;if(m!==undefined)MOBN=m;if(c0!==undefined)CDROP0=c0;if(cg!==undefined)CDROPG=cg;HPG=a;POOL0=b;POOLG=c;if(d!==undefined)HPA=d;},bst:bst,pickCard:pickCard,CARDS:CARDS,offerCards:offerCards,applyCard:applyCard,hasTool:hasTool,fireMortar:fireMortar,canMortar:canMortar,T:T,wcount:wcount,canBuy:canBuy,buyUp:buyUp,upCost:upCost,upStage:upStage,bandOf:bandOf,awardCards:awardCards,dropCount:dropCount,dropVal:dropVal,useEnergy:useEnergy,enTick:enTick,tryStart:tryStart,win:win,gameOver:gameOver,profileFor:profileFor,MOB:MOB,WORLDS:WORLDS,briefFor:briefFor,welcomeReady:welcomeReady,claimWelcome:claimWelcome,premActive:premActive,passActive:passActive,spAdd:spAdd,spClaim:spClaim,ssCur:ssCur,seasonNo:seasonNo,tierRw:tierRw,buyGems:buyGems,claim:claim,showGain:showGain,shopHtml:shopHtml,toArmory:toArmory};
+window.__rr={profileFor:profileFor,buildWave:buildWave,DOCS:DOCS,startWave:startWave,pickWave:pickWave,SHELVED:SHELVED,TABS:TABS,WCTL:WCTL,eligible:eligible,pickTarget:pickTarget,fire:fire,spawn:spawn,killEnemy:killEnemy,openPack:openPack,renderArmory:renderArmory,UI:UI,queueTeach:queueTeach,DEMO:DEMO,coach:coach,save:save,paintTurret:paintTurret,coachGrab:coachGrab,GR:GR,CTL:CTL,wReady:wReady,isManual:isManual,chainSnap:chainSnap,T:T,MOB:MOB,SKIN:SKIN,applySkin:applySkin,PKEYS:PKEYS,cry:cry,cryAdd:cryAdd,crySpend:crySpend,cryLegacy:cryLegacy,loadCry:loadCry,cmdPrice:cmdPrice,cmdMix:cmdMix,CRANK:CRANK,PACKS:PACKS,useCmd:useCmd,cmdBuy:cmdBuy,cmdNodeBuy:cmdNodeBuy,cmdP:cmdP,cmdLeft:cmdLeft,cmdEarned:cmdEarned,CMDS:CMDS,kName:kName,fireball:fireball,chip:chip,openTeach:openTeach,fireMortar:fireMortar,shape:shape,spawn:spawn,G:G,get P(){return P;},set P(v){P=v;},newP:newP,startLevel:startLevel,update:update,UPS:UPS,waveCount:waveCount,levelPool:levelPool,hpScale:hpScale,tune:(a,b,c,d,m,k,bk,wh,pm,lk,c0,cg)=>{if(lk!==undefined)LATEK=lk;if(pm!==undefined)PICKM=pm;if(wh!==undefined)WAVEHP=wh;if(k!==undefined)HPK=k;if(m!==undefined)MOBN=m;if(c0!==undefined)CDROP0=c0;if(cg!==undefined)CDROPG=cg;HPG=a;POOL0=b;POOLG=c;if(d!==undefined)HPA=d;},bst:bst,pickCard:pickCard,CARDS:CARDS,offerCards:offerCards,applyCard:applyCard,hasTool:hasTool,fireMortar:fireMortar,canMortar:canMortar,T:T,wcount:wcount,canBuy:canBuy,buyUp:buyUp,upCost:upCost,upStage:upStage,bandOf:bandOf,awardCards:awardCards,dropCount:dropCount,dropVal:dropVal,useEnergy:useEnergy,enTick:enTick,tryStart:tryStart,win:win,gameOver:gameOver,profileFor:profileFor,MOB:MOB,WORLDS:WORLDS,briefFor:briefFor,welcomeReady:welcomeReady,claimWelcome:claimWelcome,premActive:premActive,passActive:passActive,spAdd:spAdd,spClaim:spClaim,ssCur:ssCur,seasonNo:seasonNo,tierRw:tierRw,buyGems:buyGems,claim:claim,showGain:showGain,shopHtml:shopHtml,toArmory:toArmory};
 })();
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 114</div>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 115</div>
 <script>
 /* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
-(function(){ const BUILD=114; let busy=false, shown=false;
+(function(){ const BUILD=115; let busy=false, shown=false;
   const inRun=()=>{ try{ return typeof G!=='undefined'&&(G.state==='playing'||G.state==='cards'||G.state==='shop'||G.state==='paused'||G.state==='teach'||G.state==='ctl'); }catch(e){ return false; } };
   function wipeReload(){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
     if(n>=3) return;
