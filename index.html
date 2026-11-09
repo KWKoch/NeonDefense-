@@ -897,16 +897,16 @@ body.menu{background:
   <footer id="dock">
     <div id="row0">
       <button type="button" class="tool" id="toolMine" style="--c:var(--orange)" aria-pressed="false" aria-label="Mine layer" hidden><span class="ts" id="mineS"></span><span class="tt" id="mineT"></span><i class="tp" id="mineP"></i></button>
-      <div class="tool" id="toolMortar" style="--c:#ffc400" aria-label="Mortar" title="Mortar: AI fires it. Hold and drag to aim" hidden><span class="ts" id="mortS"></span><span class="tt" id="mortT"></span><i class="tp" id="mortP"></i></div>
+      <div class="tool" id="toolMortar" style="--c:#ffc400" aria-label="Mortar" title="Mortar. The AI fires it automatically. Hold and drag to aim a shot yourself." hidden><span class="ts" id="mortS"></span><span class="tt" id="mortT"></span><i class="tp" id="mortP"></i></div>
       <button type="button" class="tool" id="toolField" style="--c:var(--violet)" aria-pressed="false" aria-label="Slow field" hidden><span class="ts" id="fieldS"></span><span class="tt" id="fieldT"></span><i class="tp" id="fieldP"></i></button>
-      <div class="tool" id="toolChain" style="--c:var(--yellow)" aria-label="Chain lightning" title="Chain lightning: AI fires it. Hold and drag to aim" hidden><span class="ts" id="chainS"></span><span class="tt" id="chainT"></span><i class="tp" id="chainP"></i></div>
-      <div class="tool" id="toolSaw" style="--c:var(--lime)" aria-label="Buzz saw" title="Buzz saw: AI launches it. Hold and drag to aim" hidden><span class="ts" id="sawS"></span><span class="tt" id="sawT"></span><i class="tp" id="sawP"></i></div>
+      <div class="tool" id="toolChain" style="--c:var(--yellow)" aria-label="Chain lightning" title="Chain lightning. The AI fires it automatically. Hold and drag to aim a shot yourself." hidden><span class="ts" id="chainS"></span><span class="tt" id="chainT"></span><i class="tp" id="chainP"></i></div>
+      <div class="tool" id="toolSaw" style="--c:var(--lime)" aria-label="Buzz saw" title="Buzz saw. The AI launches it automatically. Hold and drag to aim a throw yourself." hidden><span class="ts" id="sawS"></span><span class="tt" id="sawT"></span><i class="tp" id="sawP"></i></div>
     </div>
     <div id="cmdDock"><button type="button" class="cmo" id="cmdA2" hidden></button><button type="button" class="cmo" id="cmdA1" hidden></button></div>
     <div id="row1">
-      <span id="hint">Hold the field to aim. Hold a weapon icon and drag to place it.</span>
+      <span id="hint">Hold anywhere on the field to aim the turret. Hold a weapon icon and drag to place that weapon.</span>
       <div style="display:flex;gap:6px">
-        <button type="button" class="mini" id="ctlBtn" aria-label="Weapon control: auto or manual">Aim</button>
+        <button type="button" class="mini" id="ctlBtn" aria-label="Switch weapons between automatic and manual control">Aim</button>
         <button type="button" class="mini" id="shopBtn">Perks</button>
         <button type="button" class="mini" id="spdBtn" aria-label="Game speed">1x</button>
         <button type="button" class="mini" id="pauseBtn">Pause</button>
@@ -932,25 +932,25 @@ const C={cyan:'#00f0ff',magenta:'#ff2bd6',lime:'#b6ff00',violet:'#9d4dff',orange
 const KIND={k:{name:'Kinetic',color:C.cyan},b:{name:'Blast',color:C.orange},e:{name:'Energy',color:C.violet}};
 /* Damage multipliers per mob. Kinetic = turret, Blast = mines, Energy = slow field. */
 const MOB={
-  rock:   {name:'Meteor',      r:19, hp:4,  vy:38,  val:6,  dmg:8,  color:C.orange, res:{k:1,  b:1,  e:1  }, bounty:1, unlock:1,  spawn:true,  note:'Neutral. Takes full damage from everything.'},
-  small:  {name:'Fragment',    r:10, hp:1,  vy:62,  val:2,  dmg:4,  color:C.amber,  res:{k:1,  b:1,  e:1  }, bounty:0, unlock:7,  spawn:false, note:'Debris from splitters.'},
-  dart:   {name:'Dart',        r:13, hp:2,  vy:92,  val:5,  dmg:6,  color:C.magenta,res:{k:1,  b:.5, e:1.6}, bounty:2, unlock:3,  spawn:true,  note:'Light and quick. Mines barely scratch it.'},
-  invader:{name:'Invader',     r:14, hp:3,  vy:0,   val:8,  dmg:7,  color:C.lime,   res:{k:1,  b:.7, e:1.5}, bounty:1, unlock:5,  spawn:true,  note:'Marches in formation. Metal hull conducts energy.'},
-  chunk:  {name:'Splitter',    r:28, hp:12, vy:26,  val:14, dmg:18, color:C.violet, res:{k:.6, b:1.5,e:.8 }, bounty:3, unlock:7,  spawn:true,  note:'Dense rock. Bullets glance off, blasts crack it.'},
-  swarm:  {name:'Swarmer',     r:8,  hp:1,  vy:100, val:3,  dmg:3,  color:C.mint,   res:{k:.8, b:1.8,e:.7 }, bounty:1, unlock:9,  spawn:true,  note:'Packs of tiny ships. Mines wipe whole packs.'},
-  orb:    {name:'Plasma orb',  r:8,  hp:1,  vy:130, val:1,  dmg:8,  color:C.yellow, res:{k:1.5,b:1,  e:.2 }, bounty:0, unlock:10, spawn:false, note:'Boss ammo. Immune to energy.'},
-  shield: {name:'Shield drone',r:17, hp:7,  vy:40,  val:12, dmg:10, color:C.blue,   res:{k:.4, b:.8, e:1.8}, bounty:3, unlock:13, spawn:true,  note:'Deflects bullets. Shield overloads under energy.'},
-  brute:  {name:'Brute',       r:30, hp:28, vy:22,  val:30, dmg:25, color:C.steel,  res:{k:.5, b:1.5,e:.7 }, bounty:6, unlock:18, spawn:true,  note:'Heavy plating. Blast it open.'},
-  boss:   {name:'Mothership',  r:56, hp:260,vy:14,  val:150,dmg:9999,color:C.red,    res:{k:.8, b:1.2,e:1.1}, bounty:50, unlock:10, spawn:false, note:'Every 10th level. Hovers and launches darts and orbs.'}
-  ,phantom:{name:'Phantom',     r:13, hp:3,  vy:55,  val:9,  dmg:7,  color:'#8fa8ff', res:{k:1.3,b:.5, e:1  }, bounty:2, unlock:15, spawn:true,  note:'Warps in out of nowhere and blinks sideways. Blasts pass through it.'},
-  leech:  {name:'Latcher',     r:12, hp:4,  vy:72,  val:10, dmg:8,  color:'#ff5c8a', res:{k:.8, b:1.2,e:1.5}, bounty:2, unlock:21, spawn:true,  note:'Bio. Latches onto the turret and drains the base until killed.'},
-  tender: {name:'Hive tender', r:18, hp:9,  vy:28,  val:14, dmg:10, color:'#00ffc8', res:{k:.7, b:1.3,e:1.2}, bounty:3, unlock:28, spawn:true,  note:'Bio. Heals nearby enemies. Kill it first.'},
-  egg:    {name:'Brood sac',   r:24, hp:18, vy:70,  val:22, dmg:12, color:'#ffd35a', res:{k:.6, b:1.5,e:1.2}, bounty:4, unlock:32, spawn:true,  note:'Bio. Hovers and hatches swarmlings until destroyed.'},
-  regen:  {name:'Hydra cell',  r:20, hp:10, vy:30,  val:14, dmg:12, color:'#d58bff', res:{k:.6, b:1.3,e:1.4}, bounty:3, unlock:36, spawn:true,  regen:0.07, note:'Bio. Regrows fast unless you keep hitting it. Needs burst damage.'},
-  hatch:  {name:'Swarmling',   r:7,  hp:1,  vy:115, val:1,  dmg:3,  color:'#ffb36b', res:{k:1,  b:1.5,e:1  }, bounty:0, unlock:32, spawn:false, note:'Bio. Hatched by brood sacs. Fast and fragile.'}
+  rock:   {name:'Meteor',      r:19, hp:4,  vy:38,  val:6,  dmg:8,  color:C.orange, res:{k:1,  b:1,  e:1  }, bounty:1, unlock:1,  spawn:true,  note:'Takes full damage from every weapon.'},
+  small:  {name:'Fragment',    r:10, hp:1,  vy:62,  val:2,  dmg:4,  color:C.amber,  res:{k:1,  b:1,  e:1  }, bounty:0, unlock:7,  spawn:false, note:'Debris left behind when a Splitter breaks apart.'},
+  dart:   {name:'Dart',        r:13, hp:2,  vy:92,  val:5,  dmg:6,  color:C.magenta,res:{k:1,  b:.5, e:1.6}, bounty:2, unlock:3,  spawn:true,  note:'Light and quick, and blast damage barely scratches it.'},
+  invader:{name:'Invader',     r:14, hp:3,  vy:0,   val:8,  dmg:7,  color:C.lime,   res:{k:1,  b:.7, e:1.5}, bounty:1, unlock:5,  spawn:true,  note:'Marches in formation. Its metal hull conducts energy, so energy damage hurts it more.'},
+  chunk:  {name:'Splitter',    r:28, hp:12, vy:26,  val:14, dmg:18, color:C.violet, res:{k:.6, b:1.5,e:.8 }, bounty:3, unlock:7,  spawn:true,  note:'Dense rock that bullets glance off, though blasts crack it open.'},
+  swarm:  {name:'Swarmer',     r:8,  hp:1,  vy:100, val:3,  dmg:3,  color:C.mint,   res:{k:.8, b:1.8,e:.7 }, bounty:1, unlock:9,  spawn:true,  note:'Packs of tiny ships that blast damage can clear out all at once.'},
+  orb:    {name:'Plasma orb',  r:8,  hp:1,  vy:130, val:1,  dmg:8,  color:C.yellow, res:{k:1.5,b:1,  e:.2 }, bounty:0, unlock:10, spawn:false, note:'Ammunition fired by the Mothership. Energy damage has no effect on it.'},
+  shield: {name:'Shield drone',r:17, hp:7,  vy:40,  val:12, dmg:10, color:C.blue,   res:{k:.4, b:.8, e:1.8}, bounty:3, unlock:13, spawn:true,  note:'Deflects bullets, but its shield overloads under energy damage.'},
+  brute:  {name:'Brute',       r:30, hp:28, vy:22,  val:30, dmg:25, color:C.steel,  res:{k:.5, b:1.5,e:.7 }, bounty:6, unlock:18, spawn:true,  note:'Its heavy plating resists bullets, so blast damage works best.'},
+  boss:   {name:'Mothership',  r:56, hp:260,vy:14,  val:150,dmg:9999,color:C.red,    res:{k:.8, b:1.2,e:1.1}, bounty:50, unlock:10, spawn:false, note:'Appears on every tenth level. It hovers over the field and launches darts and orbs.'}
+  ,phantom:{name:'Phantom',     r:13, hp:3,  vy:55,  val:9,  dmg:7,  color:'#8fa8ff', res:{k:1.3,b:.5, e:1  }, bounty:2, unlock:15, spawn:true,  note:'Warps in without warning and blinks from side to side. Blast damage mostly passes through it.'},
+  leech:  {name:'Latcher',     r:12, hp:4,  vy:72,  val:10, dmg:8,  color:'#ff5c8a', res:{k:.8, b:1.2,e:1.5}, bounty:2, unlock:21, spawn:true,  note:'A living creature that latches onto the turret and drains the base until you kill it.'},
+  tender: {name:'Hive tender', r:18, hp:9,  vy:28,  val:14, dmg:10, color:'#00ffc8', res:{k:.7, b:1.3,e:1.2}, bounty:3, unlock:28, spawn:true,  note:'A living creature that heals nearby enemies, so it should be killed first.'},
+  egg:    {name:'Brood sac',   r:24, hp:18, vy:70,  val:22, dmg:12, color:'#ffd35a', res:{k:.6, b:1.5,e:1.2}, bounty:4, unlock:32, spawn:true,  note:'A living creature that hovers over the field and hatches swarmlings until you destroy it.'},
+  regen:  {name:'Hydra cell',  r:20, hp:10, vy:30,  val:14, dmg:12, color:'#d58bff', res:{k:.6, b:1.3,e:1.4}, bounty:3, unlock:36, spawn:true,  regen:0.07, note:'A living creature that regrows quickly unless you keep hitting it, so burst damage works best.'},
+  hatch:  {name:'Swarmling',   r:7,  hp:1,  vy:115, val:1,  dmg:3,  color:'#ffb36b', res:{k:1,  b:1.5,e:1  }, bounty:0, unlock:32, spawn:false, note:'A living creature hatched by brood sacs. It moves fast but has very little health.'}
 };
 /* Mob classes: the system behind strengths and weaknesses. */
-const CLS={mineral:{name:'Mineral',color:C.orange,note:'Dense rock. Bullets glance off, blasts crack it.'},mech:{name:'Mech',color:C.blue,note:'Machines. Energy overloads them.'},bio:{name:'Bio',color:'#ff5c8a',note:'Living tissue. Bullets bounce, but it regrows, heals and breeds.'}};
+const CLS={mineral:{name:'Mineral',color:C.orange,note:'Dense rock that bullets glance off, while blasts crack it open.'},mech:{name:'Mech',color:C.blue,note:'Machines that are overloaded by energy damage.'},bio:{name:'Bio',color:'#ff5c8a',note:'Living tissue that bullets bounce off. Many of these mobs regrow, heal their allies, or breed.'}};
 const CLSOF={rock:'mineral',small:'mineral',chunk:'mineral',brute:'mineral',dart:'mech',invader:'mech',swarm:'mech',shield:'mech',orb:'mech',boss:'mech',phantom:'mech',leech:'bio',tender:'bio',egg:'bio',regen:'bio',hatch:'bio'};
 for(const k in MOB) MOB[k].cls=CLSOF[k]||'mech';
 const BOSSCOL=[C.red,C.magenta,C.violet,C.orange,C.cyan];
@@ -964,73 +964,73 @@ for(const k in UW) MOB[k].unlock=Math.ceil(UW[k]/20);
    n=name c=colour r=[kinetic,blast,energy] taken (higher = hurts more) g=regen note=bestiary text br=level brief. The belt is the baseline. ---- */
 const SKIN={
  nebula:{ /* The Brood: living carapace. Shrugs off bullets and slime-coated against energy; soft against blasts. Regrows. */
-  rock:{n:'Spore pod',c:'#8fd14f',r:[.9,1.2,.8],note:'A seed pod, thrown like a rock.'},
-  dart:{n:'Skitter',c:'#d4ff3a',r:[1.2,1.1,.6],g:.03,note:'A brood scout. Quick, slick, and it mends itself.'},
-  swarm:{n:'Gnatling',c:'#5dffb0',r:[.9,1.7,.6],note:'Clouds of newborn fliers.'},
-  invader:{n:'Brood warrior',c:'#a7ff5e',r:[.8,1.4,.8],g:.02,note:'Marches in a tight line, hide glistening.'},
-  shield:{n:'Carapace drone',c:'#3dd6a0',r:[.5,1.2,.9],br:'Carapace drones screen the swarm.',note:'Grown armour on a flying frame.'},
-  phantom:{n:'Mirage moth',c:'#c9ff9a',r:[1.2,.9,.7],note:'Flickers in and out of the spore haze.'},
-  chunk:{n:'Husk',c:'#7ecb3f',r:[.7,1.6,.6],note:'Hardened shell that bursts into smaller husk bits.'},
-  small:{n:'Husk bit',c:'#a8d86a',note:'Shell fragments from a husk.'},
-  brute:{n:'Behemoth',c:'#4caf50',r:[.5,1.6,.7],g:.02,note:'A slow wall of living armour.'},
-  leech:{n:'Tick',c:'#ff7a5c',r:[.7,1.3,.6],g:.02,br:'Ticks drop onto the turret and cling to it. Kill them fast.',note:'Latches onto the turret and drains the base until killed.'},
-  tender:{n:'Nurse',c:'#00ffc8',r:[.8,1.5,.7],br:'Nurses mend everything near them. Kill them first.',note:'Mends nearby brood. Kill it first.'},
-  egg:{n:'Hatchery',c:'#ffe066',r:[.6,1.7,.8],br:'Hatcheries hover and spill larvae. Break them early.',note:'Hovers and spills larvae until destroyed.'},
-  hatch:{n:'Larva',c:'#e8ff8a',note:'Hatched from a hatchery. Fast and fragile.'},
-  regen:{n:'Bloomling',c:'#b6ff6b',r:[.7,1.4,.7],g:.09,br:'Bloomlings regrow. Burst them down, do not chip.',note:'Regrows fast unless you keep hitting it.'},
-  boss:{n:'Brood Mother',c:'#7dff4a',r:[.7,1.5,.8],note:'The nest queen. Hovers and spits spores and scouts.'},
-  orb:{n:'Spore bomb',c:'#d4ff3a',note:'Boss ammunition. Slick against energy.'}},
+  rock:{n:'Spore pod',c:'#8fd14f',r:[.9,1.2,.8],note:'A seed pod that the Brood hurls at the city like a rock.'},
+  dart:{n:'Skitter',c:'#d4ff3a',r:[1.2,1.1,.6],g:.03,note:'A brood scout that moves quickly and slowly mends its own wounds.'},
+  swarm:{n:'Gnatling',c:'#5dffb0',r:[.9,1.7,.6],note:'Newborn fliers that arrive in large clouds.'},
+  invader:{n:'Brood warrior',c:'#a7ff5e',r:[.8,1.4,.8],g:.02,note:'A brood warrior that marches in a tight line with the rest of its formation.'},
+  shield:{n:'Carapace drone',c:'#3dd6a0',r:[.5,1.2,.9],br:'Carapace drones fly in front of the swarm to shield it.',note:'A flying creature with a grown, armored shell.'},
+  phantom:{n:'Mirage moth',c:'#c9ff9a',r:[1.2,.9,.7],note:'A moth that flickers in and out of sight inside the spore haze.'},
+  chunk:{n:'Husk',c:'#7ecb3f',r:[.7,1.6,.6],note:'A hardened shell that bursts into smaller husk bits when it breaks.'},
+  small:{n:'Husk bit',c:'#a8d86a',note:'A fragment of shell left over when a husk breaks apart.'},
+  brute:{n:'Behemoth',c:'#4caf50',r:[.5,1.6,.7],g:.02,note:'A slow creature covered in thick, living armor.'},
+  leech:{n:'Tick',c:'#ff7a5c',r:[.7,1.3,.6],g:.02,br:'Ticks drop onto the turret and cling to it, so kill them quickly.',note:'Latches onto the turret and drains the base until you kill it.'},
+  tender:{n:'Nurse',c:'#00ffc8',r:[.8,1.5,.7],br:'Nurses heal everything near them, so kill them first.',note:'Heals nearby brood, so it should be killed first.'},
+  egg:{n:'Hatchery',c:'#ffe066',r:[.6,1.7,.8],br:'Hatcheries hover over the field and release larvae, so break them early.',note:'Hovers over the field and releases larvae until you destroy it.'},
+  hatch:{n:'Larva',c:'#e8ff8a',note:'Hatched by a hatchery. It moves fast but has very little health.'},
+  regen:{n:'Bloomling',c:'#b6ff6b',r:[.7,1.4,.7],g:.09,br:'Bloomlings regrow quickly, so use burst damage instead of chipping away at them.',note:'Regrows quickly unless you keep hitting it.'},
+  boss:{n:'Brood Mother',c:'#7dff4a',r:[.7,1.5,.8],note:'The nest queen. She hovers over the field and spits out spores and scouts.'},
+  orb:{n:'Spore bomb',c:'#d4ff3a',note:'Ammunition fired by the nest queen. Energy damage slides right off it.'}},
  armada:{ /* The Ironclad: reactive plating. Bullets and blasts bounce; conductive hulls overload under energy. */
-  rock:{n:'Scrap slug',c:'#b0a090',r:[.7,.7,1.2],note:'A lump of scrap fired from a hull cannon.'},
-  dart:{n:'Lancer',c:'#ff9f43',r:[.5,.7,1.5],note:'A needle-nosed interceptor.'},
-  swarm:{n:'Rivet',c:'#ffcf6b',r:[.5,.8,1.4],note:'Tiny drones that fly in blocks.'},
-  invader:{n:'Marine',c:'#c0c8d0',r:[.4,.6,1.6],note:'Marches in step. Plated head to foot.'},
-  shield:{n:'Aegis drone',c:'#6fa8ff',r:[.3,.6,1.7],br:'Aegis drones screen the fleet.',note:'Projects a plate of hard light in front of the fleet.'},
-  phantom:{n:'Cloaker',c:'#9aa8b8',r:[.7,.5,1.4],note:'Cloaks, then reappears off to one side.'},
-  chunk:{n:'Slag block',c:'#8a7f78',r:[.4,.7,1.5],note:'A cooled block of slag that breaks into shrapnel.'},
-  small:{n:'Shrapnel',c:'#9a8f88',note:'Fragments from a slag block.'},
+  rock:{n:'Scrap slug',c:'#b0a090',r:[.7,.7,1.2],note:'A lump of scrap that is fired from a hull cannon.'},
+  dart:{n:'Lancer',c:'#ff9f43',r:[.5,.7,1.5],note:'This interceptor has a needle-shaped nose and is very quick.'},
+  swarm:{n:'Rivet',c:'#ffcf6b',r:[.5,.8,1.4],note:'These tiny drones fly together in tight blocks.'},
+  invader:{n:'Marine',c:'#c0c8d0',r:[.4,.6,1.6],note:'These soldiers march in step and are plated from head to foot.'},
+  shield:{n:'Aegis drone',c:'#6fa8ff',r:[.3,.6,1.7],br:'Aegis drones fly in front of the fleet to screen it.',note:'This drone projects a plate of hard light in front of the fleet.'},
+  phantom:{n:'Cloaker',c:'#9aa8b8',r:[.7,.5,1.4],note:'This ship cloaks itself and then reappears off to one side.'},
+  chunk:{n:'Slag block',c:'#8a7f78',r:[.4,.7,1.5],note:'This cooled block of slag breaks apart into shrapnel.'},
+  small:{n:'Shrapnel',c:'#9a8f88',note:'These are fragments left over from a slag block.'},
   brute:{n:'Dreadnought',c:'#9aa4ac',r:[.3,.6,1.4],note:'A walking bulkhead.'},
-  leech:{n:'Limpet',c:'#ff7043',r:[.5,.7,1.5],br:'Limpets clamp onto the turret and drain the base. Kill them fast.',note:'Clamps onto the turret and drains the base until killed.'},
-  tender:{n:'Mender',c:'#e0b060',r:[.5,.8,1.5],br:'Menders patch up everything near them. Kill them first.',note:'Patches up nearby hulls. Kill it first.'},
-  egg:{n:'Hangar pod',c:'#c9a227',r:[.4,.8,1.5],br:'Hangar pods hover and launch interceptors. Break them early.',note:'Hovers and launches interceptors until destroyed.'},
-  hatch:{n:'Interceptor',c:'#ffd08a',note:'Launched from a hangar pod. Fast and fragile.'},
-  regen:{n:'Nanite cell',c:'#ffb347',r:[.4,.7,1.6],g:.09,br:'Nanite cells knit themselves back together. Burst them down, do not chip.',note:'Rebuilds itself fast unless you keep hitting it.'},
-  boss:{n:'Flagship',c:'#e8e8f0',r:[.5,.8,1.4],note:'The fleet command ship. Hovers and fires slag and interceptors.'},
-  orb:{n:'Slag shot',c:'#ff9f43',note:'Boss ammunition. Shrugs off energy.'}},
+  leech:{n:'Limpet',c:'#ff7043',r:[.5,.7,1.5],br:'Limpets clamp onto the turret and drain the base, so kill them quickly.',note:'This limpet clamps onto the turret and drains the base until you kill it.'},
+  tender:{n:'Mender',c:'#e0b060',r:[.5,.8,1.5],br:'Menders repair everything near them, so kill them first.',note:'This mender repairs nearby hulls, so it should be killed first.'},
+  egg:{n:'Hangar pod',c:'#c9a227',r:[.4,.8,1.5],br:'Hangar pods hover over the field and launch interceptors, so break them early.',note:'This pod hovers over the field and launches interceptors until you destroy it.'},
+  hatch:{n:'Interceptor',c:'#ffd08a',note:'Launched from a hangar pod. It moves fast but has very little health.'},
+  regen:{n:'Nanite cell',c:'#ffb347',r:[.4,.7,1.6],g:.09,br:'Nanite cells repair themselves, so use burst damage instead of chipping away at them.',note:'This cell rebuilds itself quickly unless you keep hitting it.'},
+  boss:{n:'Flagship',c:'#e8e8f0',r:[.5,.8,1.4],note:'This is the fleet command ship. It hovers over the field and fires slag and interceptors.'},
+  orb:{n:'Slag shot',c:'#ff9f43',note:'Ammunition fired by the command ship. Energy damage has almost no effect on it.'}},
  rift:{ /* The Wraiths: bodies of light. Energy passes through them; solid shot shatters them. Fast. */
-  rock:{n:'Light shard',c:'#b28dff',r:[1.4,1,.5],s:1.1,note:'A cold splinter of the rift.'},
-  dart:{n:'Streak',c:'#4df3ff',r:[1.5,1,.4],s:1.15,note:'A line of light with a point on the end.'},
-  swarm:{n:'Glint',c:'#7df9ff',r:[1.3,.9,.4],s:1.1,note:'Sparks that move together.'},
-  invader:{n:'Prism',c:'#d17dff',r:[1.4,.8,.5],note:'Glides in formation, bending the light around it.'},
-  shield:{n:'Mirror drone',c:'#9d8cff',r:[1.2,.8,.3],br:'Mirror drones ripple in the light.',note:'A shimmering pane that hangs in front of the others.'},
-  phantom:{n:'Wraith',c:'#e0b3ff',r:[1.5,.7,.6],s:1.1,note:'Flickers in and out, never where you expect.'},
-  chunk:{n:'Crystal',c:'#8d6bff',r:[1.6,.7,.5],note:'Brittle crystal that shatters into glints.'},
-  small:{n:'Glass shard',c:'#9d8cff',note:'Splinters from a crystal.'},
-  brute:{n:'Obelisk',c:'#a855f7',r:[1.1,.7,.5],note:'A tall, humming slab.'},
-  leech:{n:'Siphon',c:'#ff6bd6',r:[1.3,.9,.4],s:1.1,br:'Siphons dive onto the turret and drain the base. Kill them fast.',note:'Dives onto the turret and drains the base until killed.'},
-  tender:{n:'Conduit',c:'#6bffea',r:[1.2,.9,.5],br:'Conduits feed everything near them. Kill them first.',note:'Feeds nearby wraiths. Kill it first.'},
-  egg:{n:'Rift bloom',c:'#ff9de2',r:[1.3,.9,.5],br:'Rift blooms hover and burst into sparks. Break them early.',note:'Hovers and bursts into sparks until destroyed.'},
-  hatch:{n:'Spark',c:'#ff9de2',note:'Born from a rift bloom. Fast and fragile.'},
-  regen:{n:'Echo',c:'#c0a0ff',r:[1.3,.8,.5],g:.08,br:'Echoes reform after every hit. Burst them down, do not chip.',note:'Reforms fast unless you keep hitting it.'},
-  boss:{n:'Prism Core',c:'#ff4dd2',r:[1.3,.8,.5],note:'The heart of the rift. Hovers and throws flares and streaks.'},
-  orb:{n:'Flare',c:'#4df3ff',note:'Boss ammunition. Passes through energy.'}},
+  rock:{n:'Light shard',c:'#b28dff',r:[1.4,1,.5],s:1.1,note:'This cold splinter has broken off from the rift.'},
+  dart:{n:'Streak',c:'#4df3ff',r:[1.5,1,.4],s:1.15,note:'This streak of light has a sharp point at one end.'},
+  swarm:{n:'Glint',c:'#7df9ff',r:[1.3,.9,.4],s:1.1,note:'These sparks always move together as a group.'},
+  invader:{n:'Prism',c:'#d17dff',r:[1.4,.8,.5],note:'This creature glides in formation and bends the light around it.'},
+  shield:{n:'Mirror drone',c:'#9d8cff',r:[1.2,.8,.3],br:'Mirror drones ripple in the light as they approach.',note:'This shimmering pane hangs in front of the other mobs.'},
+  phantom:{n:'Wraith',c:'#e0b3ff',r:[1.5,.7,.6],s:1.1,note:'This creature flickers in and out of sight and rarely appears where you expect.'},
+  chunk:{n:'Crystal',c:'#8d6bff',r:[1.6,.7,.5],note:'This brittle crystal shatters into glints when it breaks.'},
+  small:{n:'Glass shard',c:'#9d8cff',note:'These splinters are left over when a crystal shatters.'},
+  brute:{n:'Obelisk',c:'#a855f7',r:[1.1,.7,.5],note:'This tall slab hums as it moves slowly forward.'},
+  leech:{n:'Siphon',c:'#ff6bd6',r:[1.3,.9,.4],s:1.1,br:'Siphons dive onto the turret and drain the base, so kill them quickly.',note:'This siphon dives onto the turret and drains the base until you kill it.'},
+  tender:{n:'Conduit',c:'#6bffea',r:[1.2,.9,.5],br:'Conduits recharge everything near them, so kill them first.',note:'This conduit feeds nearby wraiths, so it should be killed first.'},
+  egg:{n:'Rift bloom',c:'#ff9de2',r:[1.3,.9,.5],br:'Rift blooms hover over the field and burst into sparks, so break them early.',note:'This bloom hovers over the field and releases sparks until you destroy it.'},
+  hatch:{n:'Spark',c:'#ff9de2',note:'Born from a rift bloom. It moves fast but has very little health.'},
+  regen:{n:'Echo',c:'#c0a0ff',r:[1.3,.8,.5],g:.08,br:'Echoes reform after every hit, so use burst damage instead of chipping away at them.',note:'This echo reforms quickly unless you keep hitting it.'},
+  boss:{n:'Prism Core',c:'#ff4dd2',r:[1.3,.8,.5],note:'This is the heart of the rift. It hovers over the field and throws flares and streaks.'},
+  orb:{n:'Flare',c:'#4df3ff',note:'Ammunition fired by the rift heart. Energy damage passes straight through it.'}},
  void:{ /* The Hollow: dense dark matter. Bullets barely mark it; heavy blasts and energy do the work. Slow. */
-  rock:{n:'Hollow shard',c:'#8a4a5a',r:[.5,1.3,1],s:.9,note:'A shard of something that was never rock.'},
-  dart:{n:'Shade',c:'#ff5c6c',r:[.5,1.2,1.1],s:.9,note:'A fast shadow with a bright eye.'},
-  swarm:{n:'Dust',c:'#c0394f',r:[.5,1.4,.9],s:.9,note:'Clouds of dark grit.'},
-  invader:{n:'Sentinel',c:'#d65a7a',r:[.4,1.2,1.2],note:'Stands guard in perfect rows.'},
-  shield:{n:'Warden',c:'#7a5cff',r:[.3,1.1,1.3],br:'Wardens stand in front of everything.',note:'A tall frame that guards the ones behind it.'},
-  phantom:{n:'Fade',c:'#a07aa8',r:[.6,1,1],note:'Slips out of sight and back again.'},
-  chunk:{n:'Singularity',c:'#6b2f45',r:[.4,1.4,.9],note:'A knot of dark matter that collapses into motes.'},
-  small:{n:'Mote',c:'#7a3a4a',note:'Dark fragments from a singularity.'},
-  brute:{n:'Colossus',c:'#b02a3a',r:[.35,1.3,1],s:.9,note:'A slow, crushing mass.'},
-  leech:{n:'Parasite',c:'#ff3860',r:[.5,1.2,1.2],br:'Parasites slip onto the turret and drain the base. Kill them fast.',note:'Slips onto the turret and drains the base until killed.'},
-  tender:{n:'Whisper',c:'#ff6b8a',r:[.5,1.3,1.1],br:'Whispers knit the dark back together around them. Kill them first.',note:'Knits nearby hollow back together. Kill it first.'},
-  egg:{n:'Maw seed',c:'#c04a7a',r:[.4,1.4,1],br:'Maw seeds hang in the air and split open. Break them early.',note:'Hangs in the air and splits open until destroyed.'},
-  hatch:{n:'Spawn',c:'#ff8aa8',note:'Split from a maw seed. Fast and fragile.'},
-  regen:{n:'Unraveler',c:'#ff7a9c',r:[.4,1.2,1.2],g:.08,br:'Unravelers pull themselves back together. Burst them down, do not chip.',note:'Pulls itself back together unless you keep hitting it.'},
-  boss:{n:'The Maw',c:'#ff2040',r:[.5,1.3,1],note:'A hole in the gate with teeth. Spits dark orbs and shades.'},
-  orb:{n:'Null orb',c:'#ff5c6c',note:'Boss ammunition. Shrugs off energy.'}}
+  rock:{n:'Hollow shard',c:'#8a4a5a',r:[.5,1.3,1],s:.9,note:'This dark shard is made of something that was never ordinary rock.'},
+  dart:{n:'Shade',c:'#ff5c6c',r:[.5,1.2,1.1],s:.9,note:'This fast shadow has a single bright eye.'},
+  swarm:{n:'Dust',c:'#c0394f',r:[.5,1.4,.9],s:.9,note:'These clouds of dark grit arrive in huge numbers.'},
+  invader:{n:'Sentinel',c:'#d65a7a',r:[.4,1.2,1.2],note:'These guards stand in perfect rows.'},
+  shield:{n:'Warden',c:'#7a5cff',r:[.3,1.1,1.3],br:'Wardens stand in front of the other mobs and take hits for them.',note:'This tall frame guards the mobs behind it.'},
+  phantom:{n:'Fade',c:'#a07aa8',r:[.6,1,1],note:'This creature slips out of sight and then comes back.'},
+  chunk:{n:'Singularity',c:'#6b2f45',r:[.4,1.4,.9],note:'This knot of dark matter collapses into motes when it breaks.'},
+  small:{n:'Mote',c:'#7a3a4a',note:'These dark fragments are left over from a singularity.'},
+  brute:{n:'Colossus',c:'#b02a3a',r:[.35,1.3,1],s:.9,note:'This slow mass crushes everything in its path.'},
+  leech:{n:'Parasite',c:'#ff3860',r:[.5,1.2,1.2],br:'Parasites slip onto the turret and drain the base, so kill them quickly.',note:'This parasite slips onto the turret and drains the base until you kill it.'},
+  tender:{n:'Whisper',c:'#ff6b8a',r:[.5,1.3,1.1],br:'Whispers knit the dark back together around them, so kill them first.',note:'This whisper mends nearby Hollow mobs, so it should be killed first.'},
+  egg:{n:'Maw seed',c:'#c04a7a',r:[.4,1.4,1],br:'Maw seeds hang in the air and split open, so break them early.',note:'This seed hangs in the air and splits open until you destroy it.'},
+  hatch:{n:'Spawn',c:'#ff8aa8',note:'Split from a maw seed. It moves fast but has very little health.'},
+  regen:{n:'Unraveler',c:'#ff7a9c',r:[.4,1.2,1.2],g:.08,br:'Unravelers pull themselves back together, so use burst damage instead of chipping away at them.',note:'This unraveler pulls itself back together unless you keep hitting it.'},
+  boss:{n:'The Maw',c:'#ff2040',r:[.5,1.3,1],note:'This is a hole in the gate lined with teeth. It spits out dark orbs and shades.'},
+  orb:{n:'Null orb',c:'#ff5c6c',note:'Ammunition fired by the gate maw. Energy damage has almost no effect on it.'}}
 };
 const MOB0={}; for(const k in MOB) MOB0[k]=Object.assign({},MOB[k],{res:Object.assign({},MOB[k].res)});
 let SKW='belt', SKD=false;
@@ -1101,44 +1101,44 @@ const RAR=[{name:'Mk I',ab:'I',color:'#9fb2be'},{name:'Mk II',ab:'II',color:'#4f
 const SHELVED=['mine','saw'];
 const shelved=k=>SHELVED.indexOf(k)>=0;
 const TOOLS={
-  mine:{name:'Mine layer',color:'#aeb8bf',cost:150,kind:'b',desc:'Drop proximity mines on the field. They detonate when an enemy gets close and hurt everything in the blast.'},
-  field:{name:'Slow field',color:C.violet,cost:300,kind:'e',desc:'Lay a horizontal energy bar. Anything inside it slows down and takes energy damage over time.'}
+  mine:{name:'Mine layer',color:'#aeb8bf',cost:150,kind:'b',desc:'Drops proximity mines on the field. Each mine explodes when an enemy gets close and damages everything in the blast.'},
+  field:{name:'Slow field',color:C.violet,cost:300,kind:'e',desc:'Lays a horizontal energy bar across the field. Anything inside it slows down and takes energy damage over time.'}
 };
 /* Worlds: each one specialises mobs (uw = global wave a mob first appears), favoured weapons (bias on card odds) and look.
    World 1 is free. The other four are scaffolded and pay-gated (demo unlock for now). Each has its own 50 levels and progress. */
 const WORLDS=[
-  {id:'belt',  name:'Meteor Belt',  sub:'The Reavers raid Halcyon for its power.',                      color:C.cyan,   price:0,gate:0,      uw:null, sig:[],                    bias:{},                       hp:1},
-  {id:'nebula',name:'Swarm Nebula', sub:'The Brood nests here and swarms anything near its young.',           color:C.mint,   price:1,uw:LV({rock:1,swarm:2,dart:4,leech:6,regen:9,tender:12,phantom:15,egg:18,chunk:24,shield:30,invader:36,brute:42}),        sig:['swarm','dart'],      bias:{mine:2.2,chain:2,mortar:1.5}, hp:1.7},
-  {id:'armada',name:'Iron Armada',  sub:'The Ironclad fleets muster here, stitching hulls from stolen steel.',color:C.steel,price:1,uw:LV({rock:1,shield:3,invader:5,brute:10,phantom:14,chunk:18,dart:22,tender:30,egg:36,leech:40}),      sig:['shield','invader','brute'], bias:{mortar:2.2,field:2,mine:1.5}, hp:2.5},
-  {id:'rift',  name:'Plasma Rift',  sub:'The Wraiths feed on raw light in a tear in space.',color:C.violet, price:1,uw:LV({rock:1,dart:2,phantom:4,shield:7,swarm:10,invader:14,leech:20,regen:26,chunk:30,egg:36,tender:42}),     sig:['dart','shield'],     bias:{saw:2.2,turret:1.4,chain:1.5}, hp:3.5},
-  {id:'void',  name:'Void Gate',    sub:'The Hollow guard the gate. They were here before anyone.',          color:C.red,    price:1,uw:LV({rock:1,chunk:3,brute:8,shield:13,regen:18,egg:22,leech:26,swarm:30,dart:34,tender:38,phantom:42}),       sig:['chunk','brute'],     bias:{mortar:2.2,saw:2,field:1.5}, hp:4.8}
+  {id:'belt',  name:'Meteor Belt',  sub:'The Reavers are raiding Halcyon to steal its power.',                      color:C.cyan,   price:0,gate:0,      uw:null, sig:[],                    bias:{},                       hp:1},
+  {id:'nebula',name:'Swarm Nebula', sub:'The Brood has built its nest here and attacks anything that comes close to its young.',           color:C.mint,   price:1,uw:LV({rock:1,swarm:2,dart:4,leech:6,regen:9,tender:12,phantom:15,egg:18,chunk:24,shield:30,invader:36,brute:42}),        sig:['swarm','dart'],      bias:{mine:2.2,chain:2,mortar:1.5}, hp:1.7},
+  {id:'armada',name:'Iron Armada',  sub:'The Ironclad fleets gather here and build new hulls out of stolen steel.',color:C.steel,price:1,uw:LV({rock:1,shield:3,invader:5,brute:10,phantom:14,chunk:18,dart:22,tender:30,egg:36,leech:40}),      sig:['shield','invader','brute'], bias:{mortar:2.2,field:2,mine:1.5}, hp:2.5},
+  {id:'rift',  name:'Plasma Rift',  sub:'The Wraiths live in a tear in space, where they feed on raw light.',color:C.violet, price:1,uw:LV({rock:1,dart:2,phantom:4,shield:7,swarm:10,invader:14,leech:20,regen:26,chunk:30,egg:36,tender:42}),     sig:['dart','shield'],     bias:{saw:2.2,turret:1.4,chain:1.5}, hp:3.5},
+  {id:'void',  name:'Void Gate',    sub:'The Hollow guard the gate, and they were here before anyone else arrived.',          color:C.red,    price:1,uw:LV({rock:1,chunk:3,brute:8,shield:13,regen:18,egg:22,leech:26,swarm:30,dart:34,tender:38,phantom:42}),       sig:['chunk','brute'],     bias:{mortar:2.2,saw:2,field:1.5}, hp:4.8}
 ];
-const MUTS={warp:{name:'Warp storm',note:'Enemies blink in from nowhere.'},swift:{name:'Swift',note:'Faster, but frailer.'},armored:{name:'Armored',note:'Fewer, tougher.'},dense:{name:'Dense',note:'More of them, but weaker.'},ionized:{name:'Ionized',note:'The air crackles with static.'},hardened:{name:'Hardened',note:'Plating thicker than it looks.'},bunkered:{name:'Bunkered',note:'These hulls were built to be hit.'}};
+const MUTS={warp:{name:'Warp storm',note:'Enemies warp in without warning.'},swift:{name:'Swift',note:'Enemies move faster but have less health.'},armored:{name:'Armored',note:'There are fewer enemies, but each one has more health.'},dense:{name:'Dense',note:'There are more enemies, but each one has less health.'},ionized:{name:'Ionized',note:'The air is full of static, which weakens energy damage.'},hardened:{name:'Hardened',note:'The plating on these enemies is thicker than it looks.'},bunkered:{name:'Bunkered',note:'These hulls were built to survive a lot of hits.'}};
 const MUTRES={ionized:{k:1,b:1,e:0.4},hardened:{k:0.45,b:1,e:1},bunkered:{k:1,b:0.45,e:1}};
 const MUTK=['warp','swift','armored','dense','ionized','hardened','bunkered'];
 const THEME={rock:'Rock Field',dart:'Dart Run',swarm:'Swarm Tide',invader:'Fleet Advance',shield:'Shield Wall',phantom:'Phantom Raid',chunk:'Splitter Storm',brute:'Heavy Siege',leech:'Latcher Hunt',tender:'Hive Rising',egg:'Brood Nest',regen:'Hydra Pit'};
-const BRIEF={rock:'Loose rock, nothing clever. Learn the rhythm.',dart:'Fast, weaving contacts. Hard to pin down.',swarm:'Packs of tiny ships, far too many to count.',invader:'A marching fleet in tight formation.',shield:'Shield drones screen the fleet. Something about them turns shots aside.',phantom:'They warp in and blink. Never quite where you expect.',chunk:'Dense rock that splits when it breaks.',brute:'Heavy plating, slow but relentless. Stop it before it lands.',leech:'Latchers dive and cling to the turret. Kill them fast.',tender:'Tenders heal everything near them. Kill them first.',egg:'Brood sacs hover and hatch swarmlings. Break them early.',regen:'Hydra cells regrow. Burst them down, do not chip.'};
-const WORLD_INTRO={nebula:'Swarm Nebula. The Brood nests here, where the Hive Bloom grows. They will swarm anything that comes near their young.',armada:'Iron Armada. The Ironclad fleets muster here, hulls stitched from stolen steel. They are gathering strength for something.',rift:'Plasma Rift. The Wraiths feed on raw light here, in a tear in space. They swarm whatever crosses it.',void:'Void Gate. The Hollow guard the way through. They were here before anyone, and they do not want company.'};
+const BRIEF={rock:'These are plain rocks with no tricks, so use them to get a feel for the rhythm.',dart:'These contacts are fast and weave from side to side, which makes them hard to hit.',swarm:'Packs of tiny ships will arrive in numbers too large to count.',invader:'A fleet is marching toward the city in tight formation.',shield:'Shield drones are protecting the fleet, and bullets seem to bounce off them.',phantom:'These ships warp in and blink from place to place, so they rarely appear where you expect.',chunk:'This level has dense rock that splits into smaller pieces when it breaks.',brute:'Heavily plated ships are coming. They are slow but they keep advancing, so stop them before they reach the city.',leech:'Latchers dive onto the turret and cling to it, so kill them quickly.',tender:'Tenders heal everything near them, so kill them first.',egg:'Brood sacs hover over the field and hatch swarmlings, so break them early.',regen:'Hydra cells regrow quickly, so use burst damage instead of chipping away at them.'};
+const WORLD_INTRO={nebula:'Welcome to the Swarm Nebula. The Brood has built its nest here, around the Hive Bloom, and it will attack anything that comes near its young.',armada:'Welcome to the Iron Armada. The Ironclad fleets gather here and build their hulls from stolen steel. They are preparing for a larger attack.',rift:'Welcome to the Plasma Rift. The Wraiths live in a tear in space and feed on raw light, and they attack anything that crosses it.',void:'Welcome to the Void Gate. The Hollow guard the way through, and they were here long before anyone else. They do not want visitors.'};
 const STORY={
-  intro:['Halcyon was the last light on the Belt. Then the Reavers came for its power.','You are RAVE, the Rampart defense mind. Keep the beat going. Keep the city alive.'],
+  intro:['Halcyon is the last city in the Belt that still has power. The Reavers have come to take it.','You are RAVE, the defense system that protects the Rampart. Keep the city alive for as long as you can.'],
   belt:{
-    1:'Transmission 01. Raiders on the approach, throwing rock ahead of their ships. Hold the line, RAVE.',
-    5:'The rocks are not falling. They are being thrown. Something out there is aiming.',
-    10:'A Mothership. It is not trying to wreck the city. It is draining it. Halcyon\'s lights are dimming.',
-    15:'Contacts that never show on radar until they arrive. The Reavers are learning.',
-    20:'The second Mothership carried seeds. Living ones. The Belt is being planted.',
-    25:'Biologics grow where the rocks fall. They are not just raiding. They are settling.',
-    30:'Hive signals everywhere. Every kill feeds the harvest, so make them count.',
-    40:'We traced their signal to a gate on the far side. It wants the city\'s power, not its people.',
-    50:'The Reaver Queen, flagship of the raid. Break her and the Belt goes quiet. Then we go through the gate.'
+    1:'Transmission 01. Raiders are approaching and throwing rocks ahead of their ships. Hold the line, RAVE.',
+    5:'These rocks are being thrown at the city instead of drifting in by chance. Someone out there is aiming them.',
+    10:'A Mothership has arrived. It is draining the city\'s power instead of destroying it, and Halcyon\'s lights are starting to dim.',
+    15:'These contacts do not appear on radar until they are already here. The Reavers are adapting to our defenses.',
+    20:'The second Mothership was carrying living seeds, and the Reavers are planting them across the Belt.',
+    25:'Living creatures are growing wherever the rocks land. The Reavers are no longer only raiding. They are trying to settle here.',
+    30:'Hive signals are coming from every direction. Every kill feeds their harvest, so make each one count.',
+    40:'We traced their signal to a gate on the far side of the Belt. They want the city\'s power, and they have shown no interest in its people.',
+    50:'This is the Reaver Queen, the flagship of the raid. If we destroy her, the Belt will go quiet, and then we can go through the gate.'
   },
-  win:{10:'The core is still pulsing like a heart. It is watching.',20:'Spore residue in the wreck. The Belt will never be the same.',30:'It knew we were coming. It let us win.',40:'The gate is open on the far side. Something is waiting.',50:'The Belt is quiet. Beyond the gate, something older is waiting.'}
+  win:{10:'The Mothership\'s core is still pulsing like a heart, and it seems to be watching us.',20:'There are spores in the wreckage. The Belt will never be the same.',30:'The hive knew we were coming, and it let us win.',40:'The gate on the far side is open, and a signal is coming from inside it.',50:'The Belt is quiet again. Beyond the gate, there is an older enemy that we have not met yet.'}
 };
 function briefFor(wd,n,elite){
   const p=profileFor(wd,n,elite);
   if(!elite&&wd.id==='belt'&&STORY.belt[n]) return STORY.belt[n];
   if(!elite&&n===1&&WORLD_INTRO[wd.id]) return WORLD_INTRO[wd.id];
-  if(isBoss(n)) return n%50===0?'Mega boss. The whole raiding fleet is behind it.':'Boss level. A '+skinName(wd.id,'boss')+' drops in at the final wave.';
+  if(isBoss(n)) return n%50===0?'This is a mega boss, and the whole raiding fleet is behind it.':'This is a boss level. A '+skinName(wd.id,'boss')+' will arrive on the final wave.';
   return (((skinOf(wd.id,p.feat)||{}).br)||BRIEF[p.feat]||'')+(p.mut?' '+MUTS[p.mut].note:'');
 }
 const PROF={};
@@ -1736,7 +1736,7 @@ function grabEnd(fire){
 const WSHORT={turret:'Turret',mine:'Mines',field:'Field',chain:'Chain',saw:'Saw',mortar:'Mortar'};
 function ctlHtml(){
   const rows=WCTL.map(w=>{ const on=isManual(w); return '<button type="button" class="cw'+(on?' man':'')+'" data-cw="'+w+'" aria-pressed="'+on+'" aria-label="'+WSHORT[w]+': '+(on?'manual':'auto')+'" style="--c:'+WCOL[w]+'">'+ico(w,18)+'<b>'+WSHORT[w]+'</b><i>'+(on?'Manual':'Auto')+'</i></button>'; }).join('');
-  return '<h2 class="ch2">Weapon control</h2><p class="cnote">Auto: the AI fires the weapon. In battle, hold a weapon icon and drag onto the field to aim one shot yourself. Manual: the AI never fires it, you do.</p>'
+  return '<h2 class="ch2">Weapon control</h2><p class="cnote">Auto means the AI fires the weapon for you. During a battle you can still hold a weapon icon and drag onto the field to aim a single shot yourself. Manual means the AI never fires the weapon, so you have to fire it yourself.</p>'
     +'<button type="button" class="call'+(CTL.all?' on':'')+'" data-call="1" aria-pressed="'+CTL.all+'">All weapons manual</button><div class="cgrid">'+rows+'</div>';
 }
 function ctlToggle(t){
@@ -1786,7 +1786,7 @@ function buildWave(n,w){
   const ev=[], add=(t,fn)=>ev.push({t:t,fn:fn});
   if(boss&&last){
     const mega=n%50===0;
-    add(1.2,()=>{ G.boss=spawn('boss',W/2,-100,{mega:mega,r:mega?84:56,cr:Math.round((mega?150:50)*G.bm*1.5)}); say(mega?'Mega boss':skinName(G.wd.id,'boss'),mega?'Level '+n+' finale':'Destroy it'); });
+    add(1.2,()=>{ G.boss=spawn('boss',W/2,-100,{mega:mega,r:mega?84:56,cr:Math.round((mega?150:50)*G.bm*1.5)}); say(mega?'Mega boss':skinName(G.wd.id,'boss'),mega?'Level '+n+' finale':'Destroy it.'); });
     return {ev:ev,span:9999,elite:true};
   }
   const elite=w%5===0&&!last, span=15+Math.min(5,n*0.1);
@@ -2274,17 +2274,17 @@ const CRAR=['Mk I','Mk II','Mk III','Mk IV'], CRM=[1,1.2,1.45,1.8], CWK=[1,0.8,0
 const CSTAT={dmg:'Turret damage',rate:'Fire rate',hp:'City health',sh:'Ozone shield',shRg:'Shield recharge',blast:'Blast damage',crit:'Critical chance',cd1:'Ability 1 recharge time',cd2:'Ability 2 recharge time',pow1:'Ability 1 power',pow2:'Ability 2 power'};
 const CMDS=[
  {id:'warden',name:'Warden Sol',role:'Guardian',color:'#00ffa3',pas:{sh:0.25,shRg:0.25},wk:{dmg:-0.12},
-  ab:[{n:'Ozone Mend',ic:'frt',cd:38,d:'Pours power into the ozone shield for 6 seconds. About half of it grows back.'},{n:'Field Repair',ic:'heart',cd:50,d:'Patches 25% of the city.'}],
+  ab:[{n:'Ozone Mend',ic:'frt',cd:38,d:'Pours power into the ozone shield for 6 seconds. About half of that power grows back afterward.'},{n:'Field Repair',ic:'heart',cd:50,d:'Repairs 25% of the city.'}],
   br:[{n:'Bastion',nodes:[{id:'b1',n:'Hardened Shield',max:3,fx:{sh:0.1},t:'+10% ozone shield per level'},{id:'b2',n:'Rapid Regen',max:3,fx:{shRg:0.2},t:'+20% shield recharge per level'},{id:'b3',n:'Reactive Plating',cap:1,max:1,fx:{sh:0.4},t:'+40% ozone shield'}]},
       {n:'Mend',nodes:[{id:'a1',n:'Quick Mend',max:3,fx:{cd1:-0.08},t:'-8% Mend cooldown per level'},{id:'a2',n:'Deep Reserves',max:3,fx:{pow1:0.15},t:'+15% Mend regrowth per level'},{id:'a3',n:'Retaliation',cap:1,max:1,flag:'aegisWave',t:'Mend also sends a shockwave through every mob'}]},
       {n:'Resolve',nodes:[{id:'r1',n:'Reinforced Walls',max:3,fx:{hp:0.08},t:'+8% city health per level'},{id:'r2',n:'Rapid Crews',max:3,fx:{cd2:-0.08},t:'-8% Field Repair cooldown per level'},{id:'r3',n:'Field Engineers',cap:1,max:1,flag:'unlock2',t:'Unlocks Field Repair at any rank'}]}]},
  {id:'rook',name:'Cmdr Rook',role:'Gunnery',color:'#ff8a00',pas:{dmg:0.18,rate:0.1},wk:{hp:-0.2},
-  ab:[{n:'Overdrive',ic:'bolt',cd:30,d:'Turret fires twice as fast for 5 seconds.'},{n:'Broadside',ic:'turret',cd:26,d:'Three extra turret volleys, back to back.'}],
+  ab:[{n:'Overdrive',ic:'bolt',cd:30,d:'The turret fires twice as fast for 5 seconds.'},{n:'Broadside',ic:'turret',cd:26,d:'Fires three extra turret volleys, one right after the other.'}],
   br:[{n:'Gunnery',nodes:[{id:'g1',n:'Heavy Rounds',max:3,fx:{dmg:0.08},t:'+8% turret damage per level'},{id:'g2',n:'Hair Trigger',max:3,fx:{rate:0.06},t:'+6% fire rate per level'},{id:'g3',n:'Armor Piercing',cap:1,max:1,fx:{pierce:1},t:'Bullets pierce one extra mob'}]},
       {n:'Overdrive',nodes:[{id:'o1',n:'Extended Burn',max:3,fx:{pow1:0.2},t:'+20% Overdrive duration per level'},{id:'o2',n:'Quick Cycle',max:3,fx:{cd1:-0.08},t:'-8% Overdrive cooldown per level'},{id:'o3',n:'Heavy Battery',cap:1,max:1,flag:'unlock2',t:'Unlocks Broadside at any rank'}]},
       {n:'Crew',nodes:[{id:'c1',n:'Flak Vests',max:3,fx:{hp:0.1},t:'+10% city health per level'},{id:'c2',n:'Drill Sergeant',max:3,fx:{pow2:0.2},t:'+20% Broadside volleys per level'},{id:'c3',n:'Last Stand',cap:1,max:1,flag:'lastStand',t:'+40% turret damage while the city is below 35% health'}]}]},
  {id:'vex',name:'Cmdr Vex',role:'Ordnance',color:'#9d4dff',pas:{blast:0.3},wk:{sh:-0.25},
-  ab:[{n:'Airstrike',ic:'mortar',cd:34,d:'Three bombs land on the thickest clusters.'},{n:'EMP Burst',ic:'chain',cd:42,d:'Freezes the whole field for a beat. Mechs take damage.'}],
+  ab:[{n:'Airstrike',ic:'mortar',cd:34,d:'Drops three bombs on the thickest clusters of mobs.'},{n:'EMP Burst',ic:'chain',cd:42,d:'Freezes the whole field for a moment and damages every Mech.'}],
   br:[{n:'Ordnance',nodes:[{id:'n1',n:'High Explosive',max:3,fx:{blast:0.1},t:'+10% blast damage per level'},{id:'n2',n:'Shaped Charges',max:3,fx:{pow1:0.12},t:'+12% Airstrike damage per level'},{id:'n3',n:'Heavy Ordnance',cap:1,max:1,fx:{blast:0.4},t:'+40% blast damage'}]},
       {n:'Bombardment',nodes:[{id:'s1',n:'Rapid Dispatch',max:3,fx:{cd1:-0.08},t:'-8% Airstrike cooldown per level'},{id:'s2',n:'Extra Bombs',max:2,fx:{strikes:1},t:'+1 bombing run per level'},{id:'s3',n:'Carpet Bombing',cap:1,max:1,fx:{strikes:2},t:'+2 more bombing runs'}]},
       {n:'Signals',nodes:[{id:'e1',n:'Wide Pulse',max:3,fx:{pow2:0.2},t:'+20% EMP freeze time per level'},{id:'e2',n:'Capacitors',max:3,fx:{cd2:-0.08},t:'-8% EMP cooldown per level'},{id:'e3',n:'Signals Corps',cap:1,max:1,flag:'unlock2',t:'Unlocks EMP Burst at any rank'}]}]}
@@ -2304,52 +2304,52 @@ const FXL=(k,o)=>Object.assign({k:k},o);
 [
  /* ---- Common ---- */
  {id:'flint',name:'Sgt. Flint',role:'Engineer',color:'#ffd23f',tier:0,pas:{blast:0.2,hp:0.1},wk:{rate:-0.1},
-  ab:[{n:'Minefield',ic:'mine',cd:32,d:'Six live mines drop where mobs are heaviest.',fx:[FXL('mines',{n:6})]},{n:'Demolition',ic:'wave',cd:42,d:'One shockwave, every mob on the field takes a hit.',fx:[FXL('nova',{frac:0.12,boss:0.2})]}],
+  ab:[{n:'Minefield',ic:'mine',cd:32,d:'Drops six live mines where the mobs are most crowded.',fx:[FXL('mines',{n:6})]},{n:'Demolition',ic:'wave',cd:42,d:'Sends out a single shockwave that hits every mob on the field.',fx:[FXL('nova',{frac:0.12,boss:0.2})]}],
   nm:['Shaped Charges','Sandbags','Master Sapper','Deep Pockets','Quick Hands','Carpet of Steel','Big Bang','Fast Fuses','Demo Crew'],look:{hull:'slab',brl:'cannon',side:'drums',fx:'sparks'}},
  {id:'juno',name:'Medic Juno',role:'Support',color:'#ff6ec7',tier:0,pas:{hp:0.2,shRg:0.2},wk:{dmg:-0.15},
-  ab:[{n:'Triage',ic:'heart',cd:36,d:'Patches 15% of the city and feeds the shield for 4 seconds.',fx:[FXL('heal',{v:0.15}),FXL('regen',{t:4,v:0.08})]},{n:'Stim Pack',ic:'bolt',cd:44,d:'Turret fires 50% faster for 4 seconds. Patches a little of the city.',fx:[FXL('haste',{t:4,rate:1.5}),FXL('heal',{v:0.05})]}],
+  ab:[{n:'Triage',ic:'heart',cd:36,d:'Repairs 15% of the city and feeds the shield for 4 seconds.',fx:[FXL('heal',{v:0.15}),FXL('regen',{t:4,v:0.08})]},{n:'Stim Pack',ic:'bolt',cd:44,d:'The turret fires 50% faster for 4 seconds, and the city is repaired a little.',fx:[FXL('haste',{t:4,rate:1.5}),FXL('heal',{v:0.05})]}],
   nm:['Thick Skin','Quick Mend','Field Surgeon','Deep Dressings','Fast Hands','Trauma Team','Strong Stim','Steady Supply','Combat Medic'],look:{hull:'dome',brl:'twin',side:'orbs',fx:'pulse'}},
  {id:'pip',name:'Scout Pip',role:'Recon',color:'#4dd8ff',tier:0,pas:{rate:0.12,crit:0.08},wk:{hp:-0.15},
-  ab:[{n:'Flare',ic:'eye',cd:34,d:'A flare slows every mob to 45% speed for 5 seconds.',fx:[FXL('slow',{t:5,f:0.45})]},{n:'Spotlight',ic:'aim',cd:40,d:'Turret hits 35% harder for 8 seconds.',fx:[FXL('focus',{t:8,dmg:1.35})]}],
+  ab:[{n:'Flare',ic:'eye',cd:34,d:'Fires a flare that slows every mob to 45% speed for 5 seconds.',fx:[FXL('slow',{t:5,f:0.45})]},{n:'Spotlight',ic:'aim',cd:40,d:'The turret hits 35% harder for 8 seconds.',fx:[FXL('focus',{t:8,dmg:1.35})]}],
   nm:['Light Feet','Sharp Eyes','Ghost','Long Burn','Quick Signal','Daybreak','Bright Beam','Short Fuse','Deadeye'],look:{hull:'spire',brl:'rail',side:'fins',fx:'runes'}},
  {id:'dax',name:'Pyro Dax',role:'Incendiary',color:'#ff3b3b',tier:0,pas:{blast:0.25},wk:{sh:-0.2},
-  ab:[{n:'Napalm',ic:'mortar',cd:36,d:'Three waves of fire sweep the thickest clusters.',fx:[FXL('burn',{n:3,frac:0.16})]},{n:'Flashfire',ic:'wave',cd:44,d:'Scorches every mob and slows the field for 2 seconds.',fx:[FXL('nova',{frac:0.1,boss:0.2}),FXL('slow',{t:2,f:0.6})]}],
+  ab:[{n:'Napalm',ic:'mortar',cd:36,d:'Sends three waves of fire across the thickest clusters of mobs.',fx:[FXL('burn',{n:3,frac:0.16})]},{n:'Flashfire',ic:'wave',cd:44,d:'Scorches every mob and slows the whole field for 2 seconds.',fx:[FXL('nova',{frac:0.1,boss:0.2}),FXL('slow',{t:2,f:0.6})]}],
   nm:['Hot Rounds','Fireproof','Firestorm','Thick Fuel','Fast Igniter','Inferno','Wide Flame','Quick Burn','Pyromaniac'],look:{hull:'wedge',brl:'cannon',side:'wings',fx:'flames'}},
  /* ---- Rare ---- */
  {id:'kestrel',name:'Cmdr Kestrel',role:'Skirmisher',color:'#7dff4d',tier:1,pas:{rate:0.15,crit:0.1},wk:{sh:-0.15},
-  ab:[{n:'Rapid Salvo',ic:'bolt',cd:28,d:'Turret fires 70% faster for 6 seconds.',fx:[FXL('haste',{t:6,rate:1.7})]},{n:'Strafe Run',ic:'turret',cd:36,d:'Four strafing bombs hit the thickest clusters.',fx:[FXL('strike',{n:4,R:80,frac:0.3})]}],
+  ab:[{n:'Rapid Salvo',ic:'bolt',cd:28,d:'The turret fires 70% faster for 6 seconds.',fx:[FXL('haste',{t:6,rate:1.7})]},{n:'Strafe Run',ic:'turret',cd:36,d:'Drops four strafing bombs on the thickest clusters of mobs.',fx:[FXL('strike',{n:4,R:80,frac:0.3})]}],
   nm:['Light Trigger','Hot Eyes','Ace','Long Salvo','Quick Reload','Overclock','Heavy Pass','Fast Wings','Top Gun'],look:{hull:'wedge',brl:'rail',side:'wings',fx:'sparks'}},
  {id:'tessla',name:'Tessla',role:'Storm',color:'#33b5ff',tier:1,pas:{dmg:0.12,blast:0.15},wk:{hp:-0.15},
-  ab:[{n:'Chain Storm',ic:'chain',cd:30,d:'Lightning jumps to eight random mobs.',fx:[FXL('chainz',{n:8,frac:0.22,boss:0.15})]},{n:'Static Field',ic:'field',cd:40,d:'Freezes the whole field for a beat. Mechs take damage.',fx:[FXL('freeze',{t:1.6,mech:0.1})]}],
+  ab:[{n:'Chain Storm',ic:'chain',cd:30,d:'Sends lightning jumping between eight random mobs.',fx:[FXL('chainz',{n:8,frac:0.22,boss:0.15})]},{n:'Static Field',ic:'field',cd:40,d:'Freezes the whole field for a moment and damages every Mech.',fx:[FXL('freeze',{t:1.6,mech:0.1})]}],
   nm:['Charged Rounds','Surge','Stormcaller','High Voltage','Quick Charge','Thunderhead','Long Static','Fast Cycle','Faraday'],look:{hull:'dome',brl:'coil',side:'pods',fx:'rings'}},
  {id:'dane',name:'Bulwark Dane',role:'Sentinel',color:'#8fa8ff',tier:1,pas:{sh:0.3,hp:0.15},wk:{rate:-0.12},
-  ab:[{n:'Bulwark',ic:'frt',cd:42,d:'The city takes no damage for 3 seconds while the shield grows back.',fx:[FXL('invuln',{t:3}),FXL('regen',{t:3,v:0.2})]},{n:'Fortify',ic:'heart',cd:48,d:'Patches 20% of the city and feeds the shield for 4 seconds.',fx:[FXL('heal',{v:0.2}),FXL('regen',{t:4,v:0.08})]}],
+  ab:[{n:'Bulwark',ic:'frt',cd:42,d:'The city takes no damage for 3 seconds while the shield grows back.',fx:[FXL('invuln',{t:3}),FXL('regen',{t:3,v:0.2})]},{n:'Fortify',ic:'heart',cd:48,d:'Repairs 20% of the city and feeds the shield for 4 seconds.',fx:[FXL('heal',{v:0.2}),FXL('regen',{t:4,v:0.08})]}],
   nm:['Iron Plate','Hardened Wall','Immovable','Long Guard','Fast Rally','Last Bastion','Heavy Patch','Quick Crews','Stone Wall'],look:{hull:'slab',brl:'twin',side:'fins',fx:'halo'}},
  {id:'hex',name:'Hex',role:'Saboteur',color:'#cfd8ff',tier:1,pas:{dmg:0.1,shRg:0.15,cd1:-0.1},wk:{hp:-0.12},
-  ab:[{n:'Time Dilation',ic:'tmp',cd:40,d:'Every mob crawls at 35% speed for 6 seconds.',fx:[FXL('slow',{t:6,f:0.35})]},{n:'Meltdown',ic:'cog',cd:38,d:'Mechs take damage and the field stalls for half a second.',fx:[FXL('freeze',{t:0.5,mech:0.3})]}],
+  ab:[{n:'Time Dilation',ic:'tmp',cd:40,d:'Slows every mob to 35% speed for 6 seconds.',fx:[FXL('slow',{t:6,f:0.35})]},{n:'Meltdown',ic:'cog',cd:38,d:'Damages every Mech and stalls the whole field for half a second.',fx:[FXL('freeze',{t:0.5,mech:0.3})]}],
   nm:['Bad Code','Backdoor','Zero Day','Long Lag','Fast Hack','Rootkit','Heavy Virus','Quick Crash','Blackout'],look:{hull:'spire',brl:'coil',side:'orbs',fx:'runes'}},
  /* ---- Epic ---- */
  {id:'corvus',name:'Adm. Corvus',role:'Fleet',color:'#2e6bff',tier:2,pas:{blast:0.3,cd1:-0.1},wk:{rate:-0.1},
-  ab:[{n:'Orbital Barrage',ic:'mortar',cd:44,d:'Six orbital strikes on the thickest clusters.',fx:[FXL('strike',{n:6,R:110,frac:0.4})]},{n:'Reinforce',ic:'cards',cd:50,d:'Every weapon recharges, your other ability cools faster, and the city gets patched.',fx:[FXL('rally',{cd:0.5}),FXL('heal',{v:0.1})]}],
+  ab:[{n:'Orbital Barrage',ic:'mortar',cd:44,d:'Calls down six orbital strikes on the thickest clusters of mobs.',fx:[FXL('strike',{n:6,R:110,frac:0.4})]},{n:'Reinforce',ic:'cards',cd:50,d:'Recharges every weapon, speeds up your other ability\'s cooldown, and repairs the city.',fx:[FXL('rally',{cd:0.5}),FXL('heal',{v:0.1})]}],
   nm:['Heavy Shells','Fleet Doctrine','Flag Officer','Wide Barrage','Fast Guns','Broadside Fleet','Quick Logistics','Deep Reserve','Grand Admiral'],look:{hull:'crown',brl:'cannon',side:'pods',fx:'halo'}},
  {id:'nyx',name:'Nyx',role:'Reaper',color:'#ff2e63',tier:2,pas:{dmg:0.22,crit:0.12},wk:{hp:-0.25},
-  ab:[{n:'Reap',ic:'lock',cd:34,d:'Every wounded mob dies. Bosses lose a big chunk.',fx:[FXL('execute',{thr:0.3,boss:0.12})]},{n:'Harvest',ic:'aim',cd:42,d:'Strikes down the three toughest mobs on the field.',fx:[FXL('smite',{n:3,frac:0.5,boss:0.2})]}],
+  ab:[{n:'Reap',ic:'lock',cd:34,d:'Kills every wounded mob outright and takes a large chunk of health from bosses.',fx:[FXL('execute',{thr:0.3,boss:0.12})]},{n:'Harvest',ic:'aim',cd:42,d:'Strikes down the three toughest mobs on the field.',fx:[FXL('smite',{n:3,frac:0.5,boss:0.2})]}],
   nm:['Sharp Edge','Cold Aim','Grim Mark','Long Scythe','Fast Blade','Soul Harvest','Heavy Reaper','Quick Cut','Death Knell'],look:{hull:'spire',brl:'rail',side:'wings',fx:'sparks'}},
  {id:'solara',name:'Solara',role:'Radiant',color:'#ffb347',tier:2,pas:{sh:0.25,shRg:0.25,dmg:0.1},wk:{blast:-0.2},
-  ab:[{n:'Sunburst',ic:'spk',cd:38,d:'A wave of light burns every mob on the field.',fx:[FXL('nova',{frac:0.3,boss:0.2})]},{n:'Radiance',ic:'heart',cd:46,d:'Patches the city, makes it untouchable for 1.5 seconds, and grows the shield back over 4.',fx:[FXL('regen',{t:4,v:0.15}),FXL('heal',{v:0.15}),FXL('invuln',{t:1.5})]}],
+  ab:[{n:'Sunburst',ic:'spk',cd:38,d:'Sends out a wave of light that burns every mob on the field.',fx:[FXL('nova',{frac:0.3,boss:0.2})]},{n:'Radiance',ic:'heart',cd:46,d:'Repairs the city, makes it untouchable for 1.5 seconds, and grows the shield back over 4 seconds.',fx:[FXL('regen',{t:4,v:0.15}),FXL('heal',{v:0.15}),FXL('invuln',{t:1.5})]}],
   nm:['Warm Light','Glow','High Noon','Long Day','Quick Dawn','Corona','Bright Heal','Fast Dusk','Eclipse'],look:{hull:'crown',brl:'twin',side:'orbs',fx:'pulse'}},
  {id:'ironside',name:'Ironside',role:'Siegebreaker',color:'#9aa7b3',tier:2,pas:{dmg:0.2,hp:0.2},wk:{rate:-0.18},
-  ab:[{n:'Siege Cannon',ic:'turret',cd:32,d:'One huge shell lands on the toughest mob on the field.',fx:[FXL('smite',{n:1,frac:0.6,boss:0.35})]},{n:'Breach',ic:'chev',cd:40,d:'Bullets punch through three extra mobs and hit 25% harder for 8 seconds.',fx:[FXL('pierce',{n:3,t:8}),FXL('focus',{t:8,dmg:1.25})]}],
+  ab:[{n:'Siege Cannon',ic:'turret',cd:32,d:'Fires one huge shell that lands on the toughest mob on the field.',fx:[FXL('smite',{n:1,frac:0.6,boss:0.35})]},{n:'Breach',ic:'chev',cd:40,d:'Bullets pass through three extra mobs and hit 25% harder for 8 seconds.',fx:[FXL('pierce',{n:3,t:8}),FXL('focus',{t:8,dmg:1.25})]}],
   nm:['Armour Piercing','Thick Hull','Siege Master','Heavy Shell','Quick Load','Wall Breaker','Deep Breach','Fast Rams','Fortress Fall'],look:{hull:'slab',brl:'cannon',side:'drums',fx:'flames'}},
  /* ---- Legendary ---- */
  {id:'aurora',name:'Aurora Prime',role:'Celestial',color:'#fff1b8',tier:3,pas:{sh:0.3,hp:0.2,shRg:0.3},wk:{dmg:-0.1},
-  ab:[{n:'Genesis',ic:'spk',cd:60,d:'Full city repair, full shield, 3 seconds untouchable, every weapon recharged.',fx:[FXL('heal',{v:1}),FXL('shield',{v:1}),FXL('invuln',{t:3}),FXL('rally',{})]},{n:'Judgement',ic:'wave',cd:48,d:'Burns every mob for nearly half its health.',fx:[FXL('nova',{frac:0.45,boss:0.25})]}],
+  ab:[{n:'Genesis',ic:'spk',cd:60,d:'Fully repairs the city, fully restores the shield, makes the city untouchable for 3 seconds, and recharges every weapon.',fx:[FXL('heal',{v:1}),FXL('shield',{v:1}),FXL('invuln',{t:3}),FXL('rally',{})]},{n:'Judgement',ic:'wave',cd:48,d:'Burns every mob for nearly half of its health.',fx:[FXL('nova',{frac:0.45,boss:0.25})]}],
   nm:['Halo','Grace','Ascension','Long Dawn','Quick Prayer','Rebirth','Holy Fire','Fast Verdict','Divinity'],look:{hull:'crown',brl:'rail',side:'wings',fx:'halo'}},
  {id:'krait',name:'Overlord Krait',role:'Warlord',color:'#ff1a75',tier:3,pas:{dmg:0.3,rate:0.2,blast:0.2},wk:{hp:-0.2,sh:-0.2},
-  ab:[{n:'War Machine',ic:'bolt',cd:44,d:'Turret fires 2.5x as fast and hits 50% harder for 7 seconds.',fx:[FXL('haste',{t:7,rate:2.5,dmg:1.5})]},{n:'Annihilate',ic:'mortar',cd:52,d:'Eight strikes flatten the thickest clusters.',fx:[FXL('strike',{n:8,R:110,frac:0.45})]}],
+  ab:[{n:'War Machine',ic:'bolt',cd:44,d:'The turret fires 2.5 times as fast and hits 50% harder for 7 seconds.',fx:[FXL('haste',{t:7,rate:2.5,dmg:1.5})]},{n:'Annihilate',ic:'mortar',cd:52,d:'Drops eight strikes that flatten the thickest clusters of mobs.',fx:[FXL('strike',{n:8,R:110,frac:0.45})]}],
   nm:['Blood Rounds','War Cry','Conqueror','Long Rampage','Quick Rage','Total War','Heavy Wrath','Fast Fury','Overlord'],look:{hull:'wedge',brl:'twin',side:'pods',fx:'flames'}},
  {id:'chrona',name:'Chrona',role:'Timekeeper',color:'#6a5cff',tier:3,pas:{cd1:-0.2,cd2:-0.2,rate:0.15,crit:0.1},wk:{hp:-0.15},
-  ab:[{n:'Stasis',ic:'tmp',cd:54,d:'Time stops. Every mob freezes for 3.5 seconds.',fx:[FXL('freeze',{t:3.5})]},{n:'Rewind',ic:'cards',cd:60,d:'Patches 40% of the city, grows the shield back over 5 seconds, recharges every weapon and cuts your cooldowns.',fx:[FXL('heal',{v:0.4}),FXL('regen',{t:5,v:0.15}),FXL('rally',{cd:0.4})]}],
+  ab:[{n:'Stasis',ic:'tmp',cd:54,d:'Stops time and freezes every mob for 3.5 seconds.',fx:[FXL('freeze',{t:3.5})]},{n:'Rewind',ic:'cards',cd:60,d:'Repairs 40% of the city, grows the shield back over 5 seconds, recharges every weapon, and shortens your cooldowns.',fx:[FXL('heal',{v:0.4}),FXL('regen',{t:5,v:0.15}),FXL('rally',{cd:0.4})]}],
   nm:['Fast Hands','Time Slip','Temporal Lord','Long Moment','Quick Tick','Paradox','Deep Echo','Short Loop','Eternity'],look:{hull:'dome',brl:'coil',side:'orbs',fx:'rings'}}
 ].forEach(s=>CMDS.push(mkCmd(s)));
 CMDS.forEach(c=>{ if(!(c.tier>0)) c.tier=0; });
@@ -2569,10 +2569,10 @@ function cmModal(view){
 function talentBar(left){ const e=cmdEarned(), u=Math.max(0,e-left);
   return '<div class="tbar"><span class="lbl">Talent points</span><span class="tbv"><b>'+left+'</b> to spend &middot; '+u+' of '+e+' used</span><div class="spbar" aria-hidden="true"><i style="width:'+(e?Math.round(100*u/e):0)+'%"></i></div></div>'; }
 function commandHtml(){
-  if(!cmdUnlocked()) return '<div class="wrap cmdv"><div class="card" style="--c:#6b7a85"><div class="ct"><span class="cn">Locked</span></div><div class="cv">Clear level '+CMD_LVL+' in any world to unlock commanders: leaders with a buff, a weakness and two abilities you tap during a level. Achievements earn the talent points to specialize them.</div></div></div>';
+  if(!cmdUnlocked()) return '<div class="wrap cmdv"><div class="card" style="--c:#6b7a85"><div class="ct"><span class="cn">Locked</span></div><div class="cv">Clear level '+CMD_LVL+' in any world to unlock commanders. Each commander has a buff, a weakness, and two abilities that you tap during a level. Achievements earn the talent points you use to specialize them.</div></div></div>';
   const left=cmdLeft();
   return '<div class="wrap cmdv">'+cryStrip()+talentBar(left)
-    +'<div class="note"><b>One commander leads each run.</b> Recruiting and each rank (Mk I to Mk IV) cost crystals of three types, shown on the commander. A higher rank strengthens the buff, softens the weakness and unlocks the second ability. Achievements earn talent points for specialties (1 for Bronze and Silver, 2 for Gold, 3 for Platinum).</div>'
+    +'<div class="note"><b>One commander leads each run.</b> Recruiting a commander and raising each rank (Mk I to Mk IV) costs crystals of three types, which are shown on the commander. A higher rank strengthens the buff, softens the weakness, and unlocks the second ability. Achievements earn talent points for specialties: 1 for Bronze and Silver, 2 for Gold, and 3 for Platinum.</div>'
     +cmGrid('cmd')+'</div>'+cmModal('cmd');
 }
 /* ================= guided tutorials ================= */
@@ -2648,29 +2648,29 @@ const cmdUnlocked=()=>Object.keys(P.prog||{}).some(k=>((P.prog[k]||{}).best||0)>
 const COACH={
   /* first launch: one step, done by doing it */
   tour:[
-    {sel:'.pvgo',ok:'.pvwrap [data-act="deploy"]',act:'tap',t:'Deploy',x:'Tap Battle to start Level 1. Each run uses a little energy, and it refills on its own.'}
+    {sel:'.pvgo',ok:'.pvwrap [data-act="deploy"]',act:'tap',t:'Deploy',x:'Tap Battle to start level 1. Each run costs a little energy, and your energy refills on its own over time.'}
   ],
   /* each menu explains itself the first time you open it */
-  nav_arsenal:[{sel:'#content .wpns',t:'Arsenal',x:'Spend crystals on the turret and each weapon. Commanders unlock at level '+CMD_LVL+'.'}],
-  nav_codex:[{t:'Codex',x:'Every mob you have met, what it fears, and your achievements.'}],
-  nav_shop:[{sel:'.topbar .pill[title="Gems"]',t:'Shop',x:'Daily chest, free gems, crystal crates and the season pass. Crystals upgrade weapons and commanders.'}],
-  nav_worlds:[{t:'Worlds',x:'Stars open new worlds. Each one sends a different faction.'}],
+  nav_arsenal:[{sel:'#content .wpns',t:'Arsenal',x:'Spend crystals here to upgrade your turret and each of your weapons. Commanders unlock at level '+CMD_LVL+'.'}],
+  nav_codex:[{t:'Codex',x:'The Codex lists every mob you have met and the damage types each one is weak to. It also tracks your achievements.'}],
+  nav_shop:[{sel:'.topbar .pill[title="Gems"]',t:'Shop',x:'The shop has a daily chest, free gems, crystal crates, and the season pass. Crystals are used to upgrade your weapons and commanders.'}],
+  nav_worlds:[{t:'Worlds',x:'Earn stars to open new worlds. Each world is attacked by a different enemy faction.'}],
   command:[
-    {nav:'arsenal',tab:'command',sel:'.wpn[data-tab="command"]',t:'Commanders',x:'Bring one into battle. Each gives you a buff, a weakness and two abilities to tap.'},
-    {nav:'arsenal',tab:'command',sel:'.cmdv .tbar',t:'Talent points',x:'Achievements pay talent points. Spend them on specialty branches.'},
-    {nav:'arsenal',tab:'command',sel:'.cmdv .card',t:'Warden Sol',x:'Yours free. Read the buff, the weakness and the abilities, then open Specialties.'},
-    {nav:'arsenal',tab:'command',sel:'.cmdv .cmgrid',t:'Ranks',x:'Recruit and rank up with crystals of three types. A higher rank means a bigger buff, a smaller weakness and the second ability.'}
+    {nav:'arsenal',tab:'command',sel:'.wpn[data-tab="command"]',t:'Commanders',x:'You can bring one commander into each battle. Every commander has a buff, a weakness, and two abilities that you tap during the level.'},
+    {nav:'arsenal',tab:'command',sel:'.cmdv .tbar',t:'Talent points',x:'Achievements award talent points, which you can spend on specialty branches.'},
+    {nav:'arsenal',tab:'command',sel:'.cmdv .card',t:'Warden Sol',x:'Warden Sol is yours for free. Read through his buff, weakness, and abilities, and then open Specialties.'},
+    {nav:'arsenal',tab:'command',sel:'.cmdv .cmgrid',t:'Ranks',x:'You recruit commanders and raise their ranks with crystals of three types. A higher rank gives a bigger buff and a smaller weakness, and it unlocks the second ability.'}
   ],
   /* in battle every card freezes the run (mobs, meteors, timers, waves) until it is dismissed */
   run:[
-    {fx:'ozone',demo:'ozone',t:'Hold the line',x:'Kill mobs before they cross the glowing ozone line. Anything that crosses hits the city.'},
-    {demo:'steer',t:'Hold to aim',x:'Press and hold anywhere on the field. The turret follows your finger. Let go and the AI takes over.'}
+    {fx:'ozone',demo:'ozone',t:'Hold the line',x:'Destroy mobs before they cross the glowing ozone line. Anything that crosses the line damages the city.'},
+    {demo:'steer',t:'Hold to aim',x:'Press and hold anywhere on the field, and the turret will follow your finger. When you let go, the AI takes over again.'}
   ],
   grab:[
-    {sel:'#row0 .tool[data-w]:not([hidden])',demo:'drag',t:'Fire a weapon',x:'Hold the weapon icon, drag onto the field and let go to fire there. Aim sets weapons to Manual.'}
+    {sel:'#row0 .tool[data-w]:not([hidden])',demo:'drag',t:'Fire a weapon',x:'Hold a weapon icon, drag onto the field, and let go to fire at that spot. Aiming a weapon yourself switches it to manual control.'}
   ],
   cmdrun:[
-    {sel:'#cmdA1',demo:'ability',t:'Commander ability',x:'Tap it when it glows. Cooldowns run long, so save it for bad moments. Keys: Q and E.'}
+    {sel:'#cmdA1',demo:'ability',t:'Commander ability',x:'Tap an ability when it glows. The cooldowns are long, so save your abilities for the moments when you need them. You can also press Q and E on a keyboard.'}
   ]
 };
 /* counters the live prompts watch */
@@ -3444,9 +3444,9 @@ function drawGrab(){
   if(GR.live&&GR.w){
     const w=GR.w, col=WCOL[w], rdy=wReady(w), x=GR.x, y=GR.y;
     ctx.textAlign='center'; ctx.font='700 15px "Chakra Petch", monospace';
-    if(GR.out){ ctx.globalAlpha=0.95; ctx.fillStyle=C.red; ctx.fillText('Release here to cancel',W/2,GROUND-110); ctx.restore(); return; }
-    ctx.globalAlpha=1; ctx.fillStyle=col; ctx.fillText(rdy?'Release to fire':'Release to queue. It fires when ready',W/2,GROUND-110);
-    ctx.fillStyle='rgba(255,255,255,.55)'; ctx.font='600 12px "Chakra Petch", monospace'; ctx.fillText('Drag back down to the icons to cancel',W/2,GROUND-92);
+    if(GR.out){ ctx.globalAlpha=0.95; ctx.fillStyle=C.red; ctx.fillText('Release here to cancel the shot.',W/2,GROUND-110); ctx.restore(); return; }
+    ctx.globalAlpha=1; ctx.fillStyle=col; ctx.fillText(rdy?'Release to fire':'Release to queue the shot. It fires when the weapon is ready.',W/2,GROUND-110);
+    ctx.fillStyle='rgba(255,255,255,.55)'; ctx.font='600 12px "Chakra Petch", monospace'; ctx.fillText('Drag back down to the icons to cancel the shot.',W/2,GROUND-92);
     ctx.globalAlpha=rdy?1:0.7; ctx.strokeStyle=col; ctx.lineWidth=1.4;
     if(w==='mine'){ const R=mineR(), cx=clamp(x,24,W-24), cy=clamp(y,200,GROUND-50); ctx.globalAlpha*=0.5; ctx.setLineDash([5,7]); ctx.beginPath(); ctx.arc(cx,cy,R,0,6.2832); ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha=1; drawMine({x:cx,y:cy,t:1},true); }
     else if(w==='field'){ const hw=fieldHW(); drawField({x:clamp(x,hw*0.4,W-hw*0.4),y:clamp(y,140,GROUND-100),hw:hw,h:22,t:0,dur:1},true); }
@@ -3457,7 +3457,7 @@ function drawGrab(){
         ctx.globalAlpha=0.8; ctx.setLineDash([3,5]); ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(tg.x,tg.y); ctx.stroke(); ctx.setLineDash([]);
         ctx.beginPath(); ctx.arc(tg.x,tg.y,tg.r+8+2*Math.sin(tt*10),0,6.2832); ctx.stroke();
         ctx.globalAlpha=0.35; ctx.lineWidth=1; let n=0; for(const o of G.enemies){ if(o.dead||o===tg||n>=3||o.y<0) continue; if(Math.hypot(o.x-tg.x,o.y-tg.y)<160){ n++; ctx.beginPath(); ctx.moveTo(tg.x,tg.y); ctx.lineTo(o.x,o.y); ctx.stroke(); } }
-      } else { ctx.globalAlpha=0.9; ctx.strokeStyle=C.red; ctx.beginPath(); ctx.moveTo(x-9,y-9); ctx.lineTo(x+9,y+9); ctx.moveTo(x+9,y-9); ctx.lineTo(x-9,y+9); ctx.stroke(); ctx.fillStyle=C.red; ctx.font='600 12px "Chakra Petch", monospace'; ctx.fillText('no target close enough',x,y-24); }
+      } else { ctx.globalAlpha=0.9; ctx.strokeStyle=C.red; ctx.beginPath(); ctx.moveTo(x-9,y-9); ctx.lineTo(x+9,y+9); ctx.moveTo(x+9,y-9); ctx.lineTo(x-9,y+9); ctx.stroke(); ctx.fillStyle=C.red; ctx.font='600 12px "Chakra Petch", monospace'; ctx.fillText('No target is close enough.',x,y-24); }
     }
     else if(w==='saw'){
       const a=clamp(Math.atan2(x-sx,sy-y),-1.25,1.25), len=Math.max(120,Math.hypot(x-sx,sy-y)), ex=sx+Math.sin(a)*len, ey=sy-Math.cos(a)*len;
@@ -3875,7 +3875,7 @@ function render(dt){
   ctx.shadowBlur=0;
   ctx.globalAlpha=1;
   if(G.tag&&G.tag.t<2.4&&G.state==='playing'&&!G.boss){ ctx.globalAlpha=Math.max(0,Math.min(1,(2.4-G.tag.t)/0.8)); ctx.fillStyle=G.tag.color; ctx.font='700 20px "Chakra Petch", monospace'; ctx.shadowColor=G.tag.color; ctx.shadowBlur=10*sx; ctx.fillText(G.tag.text,W/2,64); ctx.shadowBlur=0; ctx.globalAlpha=1; }
-  if(G.armed&&G.state==='playing'){ ctx.fillStyle='rgba(255,255,255,.7)'; ctx.font='600 15px "Chakra Petch", monospace'; ctx.fillText(G.armed==='mine'?'Drag to aim, release to drop a mine':G.armed==='mortar'?'Tap where you want the shell to land':'Drag to aim, release to lay the field',W/2,GROUND-110); }
+  if(G.armed&&G.state==='playing'){ ctx.fillStyle='rgba(255,255,255,.7)'; ctx.font='600 15px "Chakra Petch", monospace'; ctx.fillText(G.armed==='mine'?'Drag to aim, and release to drop a mine.':G.armed==='mortar'?'Tap where you want the shell to land.':'Drag to aim, and release to lay the field.',W/2,GROUND-110); }
   if(G.boss&&!G.boss.dead){
     const b=G.boss; ctx.strokeStyle=C.red; ctx.lineWidth=1.5; ctx.strokeRect(150,14,300,10);
     ctx.fillStyle=C.red; ctx.fillRect(152,16,296*Math.max(0,b.hp/b.maxhp),6);
@@ -3954,12 +3954,12 @@ function renderTools(){
   $('chainS').textContent=''; toolChain.classList.toggle('rdy',ccd<=0.05); $('chainT').textContent=ccd>0.05?fmtS(ccd):''; $('chainP').style.width=cp+'%';
   $('sawS').textContent=''; toolSaw.classList.toggle('rdy',sact>0); $('sawT').textContent=sact>0?fmtS(sact):(scd>0.05?fmtS(scd):''); $('sawP').style.width=sp+'%';
   toolMine.classList.toggle('off',!live||G.stock<1); toolField.classList.toggle('off',!live||!canField());
-  [['mine',toolMine],['field',toolField],['chain',toolChain],['saw',toolSaw],['mortar',toolMortar]].forEach(a=>{ const w=a[0], el=a[1]; el.classList.toggle('man',isManual(w)); el.classList.toggle('held',!!G.pin[w]); el.classList.toggle('grab',GR.w===w&&GR.live); el.setAttribute('aria-label',WSHORT[w]+(isManual(w)?': manual. Hold and drag to aim':': AI controlled. Hold and drag to take over')); });
+  [['mine',toolMine],['field',toolField],['chain',toolChain],['saw',toolSaw],['mortar',toolMortar]].forEach(a=>{ const w=a[0], el=a[1]; el.classList.toggle('man',isManual(w)); el.classList.toggle('held',!!G.pin[w]); el.classList.toggle('grab',GR.w===w&&GR.live); el.setAttribute('aria-label',WSHORT[w]+(isManual(w)?' is set to manual. Hold and drag to aim.':' is controlled by the AI. Hold and drag to take over.')); });
   toolMine.classList.toggle('rdy',live&&G.stock>=1); toolMine.setAttribute('aria-pressed',String(G.armed==='mine')); toolField.setAttribute('aria-pressed',String(G.armed==='field'));
 }
 function setMode(m){
   G.mode='auto'; input.active=false;
-  $('hint').textContent='Hold the field to aim. Hold a weapon icon and drag to place it.';
+  $('hint').textContent='Hold anywhere on the field to aim the turret. Hold a weapon icon and drag to place that weapon.';
 }
 function arm(kind){
   if(G.state!=='playing') return;
@@ -4143,7 +4143,7 @@ const adLeft=()=>Math.max(0,AD_GEMS_DAY-(P.adDay===today()?(P.adN||0):0));
 const payBtns=(sku,done)=>'<div class="paytwo"><button class="btn big" type="button" data-gem="'+sku+'" '+(done?'disabled':'')+'>'+ico('gem',15)+' '+COST[sku]+'</button><button class="btn" type="button" disabled aria-label="Pay with money: coming soon">'+ico('lock',14)+' Money</button></div>';
 function buyGems(sku){
   if(!COST[sku]) return;
-  if((P.gems||0)<COST[sku]){ toast('Not enough gems. Watch ads or play levels to earn more.'); return; }
+  if((P.gems||0)<COST[sku]){ toast('You do not have enough gems. Watch ads or play levels to earn more.'); return; }
   if(sku==='pass'&&premActive()) return; P.gems-=COST[sku]; grantSku(sku); Music.up(); toast('Season '+seasonNo()+' premium unlocked'); }
 function adGems(){
   if(adLeft()<=0) return;
@@ -4200,7 +4200,7 @@ function reviveRun(){
     G.enemies.forEach(e=>{ if(!e.dead&&e.y>GROUND-330){ e.dead=true; explode(e); } });
     G.hp=Math.max(G.hp,G.maxHp*0.6); G.sh=G.shMax; G.shieldUntil=G.time+2.5; G.shake=0.6;
     G.state='playing'; overlay.hidden=true; Ads.gameplayStart(); Music.resume(); hudKey=''; toolKey='';
-    say('Base revived','Hold the line');
+    say('Base revived','Hold the line.');
   });
 }
 function adReroll(){ if(G.state!=='cards') return; rewardFlow('card_reroll',()=>{ if(G.state==='cards'){ G.offer=offerCards(); renderCards(); } }); }
@@ -4231,7 +4231,7 @@ function grantRw(r){
 function spClaim(t,prem){
   const s=ssCur(), bit=1<<(t-1), key=prem?'cp':'cf';
   if(!(t>=1&&t<=SEASON.tiers)||t>tierOf(s)||(s[key]&bit)) return false;
-  if(prem&&!premActive()){ toast('Unlock premium to claim this'); return false; }
+  if(prem&&!premActive()){ toast('Unlock Premium to claim this reward.'); return false; }
   s[key]|=bit; const r=tierRw(t,prem), pr=grantRw(r);
   logEv('tier',s.n+':'+t+(prem?'p':'f')); save(); Music.up();
   if(r.gems) toast('+'+r.gems+' gems');
@@ -4246,7 +4246,7 @@ function claimWelcome(){
   P.tw=1; P.gems=(P.gems||0)+WELCOME.gems; enTick(); P.en=Math.max(P.en,EN_MAX); P.enT=Date.now();
   const n=seasonNo(), prem=SEASON.free.indexOf(n)>=0; if(prem){ P.prem=P.prem||{}; P.prem[n]=1; }
   const got=spreadCry(welcomeCry()); cryAddMap(got);
-  logEv('welcome',prem?'s'+n:''); save(); Music.up(); toast('Welcome aboard: +'+WELCOME.gems+' gems, full energy'+(prem?', Season '+n+' premium':''));
+  logEv('welcome',prem?'s'+n:''); save(); Music.up(); toast('Welcome aboard! You received '+WELCOME.gems+' gems and full energy'+(prem?', plus Season '+n+' premium':''));
   if(!armoryEl.hidden) renderArmory(); showGain('Tester welcome package',got);
   return true;
 }
@@ -4260,10 +4260,10 @@ function welcomeHtml(){
 function seasonHtml(){
   const s=ssCur(), n=s.n, tier=tierOf(s), pa=premActive(), old=!pa&&passActive(), left=Math.max(1,Math.ceil((seasonEnd(n)-Date.now())/864e5)), into=tier>=SEASON.tiers?SEASON.per:s.pts-tier*SEASON.per;
   let h='<div class="card" style="--c:var(--gemc)"><div class="ct"><span class="cn">Season '+n+' pass</span><span class="chip" style="--c:var(--gemc)">'+left+' day'+(left===1?'':'s')+' left</span></div>'
-    +'<div class="cv">Season XP comes from playing: '+SP.first+' per new clear, '+SP.replay+' per replay, '+SP.star+' per new star, '+SP.chest+' for the daily chest. Every '+SEASON.per+' XP opens a tier.</div>'
+    +'<div class="cv">You earn season XP by playing: '+SP.first+' per new clear, '+SP.replay+' per replay, '+SP.star+' per new star, '+SP.chest+' for the daily chest. Every '+SEASON.per+' XP opens a tier.</div>'
     +'<div class="note"><b style="color:var(--fg)">Tier '+tier+'/'+SEASON.tiers+'</b> · '+(tier>=SEASON.tiers?'season complete':into+'/'+SEASON.per+' to the next tier')+'</div>'
     +'<div class="spbar" role="progressbar" aria-label="Season progress" aria-valuemin="0" aria-valuemax="'+spMax()+'" aria-valuenow="'+s.pts+'"><i style="width:'+Math.round(100*s.pts/spMax())+'%"></i></div>'
-    +'<div class="cv"><b>Premium</b>: the only way to remove ads. Every reward ad is granted instantly, 15 gems every day, double daily chest crystals, and the premium tier rewards.</div>';
+    +'<div class="cv"><b>Premium</b> is the only way to remove ads. It also grants every reward ad instantly, gives you 15 gems every day, doubles the crystals in your daily chest, and unlocks the premium tier rewards.</div>';
   if(pa||old) h+='<button class="btn" data-claim="pass" type="button" style="--c:var(--gemc)" '+(P.passDay===today()?'disabled':'')+'>'+(P.passDay===today()?'Daily 15 gems claimed':'Claim 15 gems')+'</button>';
   if(!pa) h+=payBtns('pass',false);
   h+='<div class="sptiers"><div class="sprow sphd"><span>Tier</span><span>Free</span><span>Premium'+(pa?'':' '+ico('lock',12))+'</span></div>';
@@ -4287,7 +4287,7 @@ const PACK_TW={pow:31,tmp:22,rch:16.5,cap:16.5,frt:14};   /* crates from rewards
 function openPack(id){
   const pk=PACKS.find(x=>x.id===id); if(!pk) return; P.pk=P.pk||{s:0,m:0,l:0,f:0};
   const t=CT[UI.pt]?UI.pt:'pow', free=id==='s'&&!P.pk.f, cost=free?0:pk.cost;
-  if((P.gems||0)<cost){ toast('Not enough gems. Play levels and claim daily rewards to earn more.'); return; }
+  if((P.gems||0)<cost){ toast('You do not have enough gems. Play levels and claim daily rewards to earn more.'); return; }
   P.gems-=cost; if(free) P.pk.f=1; cryAdd(t,pk.cry);
   logEv('pack',id+':'+t+(free?':free':'')); save(); Music.up(); toast(pk.name+': +'+pk.cry+' '+CT[t].name+' crystals'); renderArmory();
 }
@@ -4377,7 +4377,7 @@ function battleHtml(){
     +'<button type="button" data-mode="e" style="--c:'+C.red+'" aria-pressed="'+el+'">'+(eOk?'':ico('lock',13))+'Elite</button></div>'
     +'<div class="pvrow"><button class="chev" data-act="prev" type="button" aria-label="Previous level" '+(n<=1?'disabled':'')+'>'+ico('chev',30)+'</button>'
     +'<div class="pvwrap"><canvas id="pv" data-act="deploy" aria-label="Preview of this level\'s enemies. Tap to start."></canvas>'+(el?'<span class="pvtag">ELITE</span>':'')+(pr.perf[n]&&!el?'<span class="pvstar" title="Perfected">'+ico('pow',20)+'</span>':'')
-    +(lockElite?'<div class="pvlock">'+ico('lock',30)+'<span>Clear level '+n+' with no base damage to unlock Elite</span></div>':'<button class="btn big go pvgo" data-act="deploy" type="button" data-lock="0">Battle</button>')+'</div>'
+    +(lockElite?'<div class="pvlock">'+ico('lock',30)+'<span>Clear level '+n+' without taking any base damage to unlock Elite.</span></div>':'<button class="btn big go pvgo" data-act="deploy" type="button" data-lock="0">Battle</button>')+'</div>'
     +'<button class="chev r" data-act="next" type="button" aria-label="Next level" '+(n>=maxSel?'disabled':'')+'>'+ico('chev',30)+'</button></div>'
     +'<div class="brief">'+briefFor(wd,n,el)+'</div>'
     +(el?'':'<div class="goals">'+goalsFor(wd,n).map((t,k)=>'<span class="gl'+(((pr.stars||{})[n]|0)>>k&1?' on':'')+'">'+ico('pow',13)+t+'</span>').join('')+'</div>')
@@ -4412,7 +4412,7 @@ function arsenalHtml(){
     h+='</div>';
   });
   h+='</div>';
-  if(TEST_BUILD) h+='<div class="foot">'+(confirmReset?'<span class="note">Erase all upgrades, crystals and progress?</span><button class="btn sm" data-act="reset2" type="button" style="--c:var(--red)">Erase</button><button class="btn sm" data-act="cancel" type="button">Cancel</button>':'<button class="mini" data-act="reset" type="button">Reset progress</button><button class="mini" data-act="ad" type="button" title="Placeholder for a rewarded ad">Demo: ad +5 energy</button>')+'</div>';
+  if(TEST_BUILD) h+='<div class="foot">'+(confirmReset?'<span class="note">Erase all of your upgrades, crystals, and progress?</span><button class="btn sm" data-act="reset2" type="button" style="--c:var(--red)">Erase</button><button class="btn sm" data-act="cancel" type="button">Cancel</button>':'<button class="mini" data-act="reset" type="button">Reset progress</button><button class="mini" data-act="ad" type="button" title="Placeholder for a rewarded ad">Demo: ad +5 energy</button>')+'</div>';
   h+=accountHtml();
   return h;
 }
@@ -4447,7 +4447,7 @@ function levelsGrid(wd){
 function levelsView(wd){
   const tot=LEVELS*3, n=starsOfWorld(wd.id), i=WORLDS.indexOf(wd), nx=WORLDS[i+1];
   return '<div class="awgrid"><div class="atile wide" style="--c:'+wd.color+'"><div class="ath"><span class="ai">'+ico('pow',16)+'</span><b class="an">'+wd.name+' stars</b><span class="rtag" style="--g:'+wd.color+'">'+n+'/'+tot+'</span></div>'
-    +'<div class="ad">Three stars a level: clear it, hold the ozone, hold its featured mob. '+(nx?ECON.gate+' stars open '+nx.name+'.':'This is the last world.')+'</div><div class="abar"><i style="width:'+Math.round(n/tot*100)+'%"></i></div></div></div>'+levelsGrid(wd);
+    +'<div class="ad">Each level has three stars. You earn them by clearing the level, holding the ozone line, and holding it against the level\'s featured mob. '+(nx?ECON.gate+' stars open '+nx.name+'.':'This is the last world.')+'</div><div class="abar"><i style="width:'+Math.round(n/tot*100)+'%"></i></div></div></div>'+levelsGrid(wd);
 }
 function awardsHtml(){
   const st=stOf(), list=achList(), wd=WORLDS.find(w=>w.id===UI.a0)||curWorld(), wid=wd.id, wl=list.filter(d=>d.wid===wid);
@@ -4464,7 +4464,7 @@ function awardsHtml(){
 function recordHtml(){
   const a=agg(), s=stOf(), res=a.kill+a.leak, R=(n,d)=>d?(n/d*100).toFixed(1)+'%':'--', RC=(n,d)=>d?Math.round(n/d*100)+'%':'--';
   const stat=(l,v)=>'<div class="rst"><b>'+v+'</b><span>'+l+'</span></div>';
-  let h='<div class="note" style="margin-bottom:10px">Defense is judged at the ozone line: a mob is held if it dies above it, and breaches if it crosses it. Weapon success is the share of mobs a weapon hit that ended up destroyed.</div>'
+  let h='<div class="note" style="margin-bottom:10px">Defense is judged at the ozone line. A mob is held if it dies above the line, and it counts as a breach if it crosses the line. Weapon success is the share of the mobs a weapon hit that were eventually destroyed.</div>'
     +'<div class="rgrid">'+stat('Mobs met',fmtN(a.sight))+stat('Held at ozone',fmtN(a.hold))+stat('Breached',fmtN(a.rz-a.hold))+stat('Defense',R(a.hold,a.rz))+'</div>';
   h+='<div class="cn rh">By class</div><div class="wtab">'+Object.keys(CLS).map(c=>{ const k=a.cls[c]; return '<div class="wr c3"><span class="wn" style="color:'+CLS[c].color+'">'+CLS[c].name+'</span><span>'+RC(k.hold,k.rz)+'<small>held</small></span><span>'+fmtN(k.enc)+'<small>met</small></span></div>'; }).join('')+'</div>';
   h+='<div class="cn rh">Weapon success</div><div class="wtab"><div class="wr hd"><span></span>'+Object.keys(CLS).map(c=>'<span style="color:'+CLS[c].color+'">'+CLS[c].name+'</span>').join('')+'<span title="Mobs that resist this weapon">Resisted</span></div>'
@@ -4486,7 +4486,7 @@ function recordHtml(){
 function bestiaryHtml(){
   const keys=Object.keys(MOB), got=keys.filter(k=>seenK(k)).length;
   let h='<div class="cls">'+Object.keys(CLS).map(c=>'<span style="--c:'+CLS[c].color+'" title="'+CLS[c].note+'">'+CLS[c].name+'</span>').join('')+'</div>'
-    +'<div class="note" style="margin-bottom:10px">Discovered '+got+'/'+keys.length+'. Mobs are added as you meet them. Each takes a different share of the three damage types: bright numbers hurt, dim numbers barely scratch.</div><div class="cards">';
+    +'<div class="note" style="margin-bottom:10px">Discovered '+got+'/'+keys.length+'. Mobs are added as you meet them. Each mob takes a different share of the three damage types. A bright number means the mob takes a lot of that damage, and a dim number means it barely takes any.</div><div class="cards">';
   keys.forEach(k=>{
     const m=MOB[k], cl=CLS[m.cls];
     if(!seenK(k)){ h+='<div class="card dim" style="--c:#33434d"><div class="mob"><canvas width="120" height="120" data-t="'+k+'"></canvas><div><div class="cn">???</div><div class="note">Not encountered yet.</div></div></div></div>'; return; }
@@ -4690,51 +4690,51 @@ const WEAPN={turret:{name:'Turret',color:C.cyan},base:{name:'Base',color:C.lime}
 const CARDS=[
  {id:'rate',w:'turret',t:1,max:1,name:'Rapid Fire',txt:l=>'+'+Math.round((CARD_SPD-1)*100)+'% fire rate'},
  {id:'dmg',w:'turret',t:1,max:1,name:'Heavy Rounds',txt:l=>'+'+Math.round((CARD_PWR-1)*100)+'% damage'},
- {id:'barrel',w:'turret',t:1,max:MAXBARRELS-1,name:'Extra Barrel',txt:l=>'+1 barrel'},
+ {id:'barrel',w:'turret',t:1,max:MAXBARRELS-1,name:'Extra Barrel',txt:l=>'Adds 1 barrel'},
  {id:'pierce',w:'turret',t:1,max:2,name:'Piercing Rounds',txt:l=>'+'+l+' pierce'},
  {id:'slide',w:'turret',t:1,max:1,copies:4,name:'Servo Motors',txt:l=>'+'+Math.round((CARD_SLIDE-1)*100)+'% turret speed'},
- {id:'arc',w:'turret',t:2,max:3,name:'Arc Rounds',txt:l=>'shots add +'+(l*35)+'% energy damage and fork 3 mini lightning bolts at '+(l*15)+'% damage',lv:EVO_LV,ovl:1},
- {id:'frag',w:'turret',t:2,max:3,name:'Explosive Rounds',txt:l=>'shots splash +'+(l*30)+' % blast damage'.replace(' %','%'),lv:EVO_LV,ovl:1},
+ {id:'arc',w:'turret',t:2,max:3,name:'Arc Rounds',txt:l=>'Shots add +'+(l*35)+'% energy damage and fork into 3 mini lightning bolts that deal '+(l*15)+'% damage',lv:EVO_LV,ovl:1},
+ {id:'frag',w:'turret',t:2,max:3,name:'Explosive Rounds',txt:l=>'Shots splash for +'+(l*30)+'% blast damage',lv:EVO_LV,ovl:1},
  {id:'deep',w:'turret',t:2,max:1,name:'Deep Pierce',txt:l=>'+2 more pierce',lv:EVO_LV},
- {id:'super',w:'turret',t:3,max:3,name:'Supercharge',txt:l=>'every '+(22-l*3)+'s: 4s overdrive, 2x fire rate and +50% damage',lv:ULT_LV},
- {id:'tmine',w:'mine',t:1,max:1,unlock:true,name:'Mine Layer',desc:'NEW WEAPON. Drops proximity mines that blast everything nearby. The AI places them for you, or tap the Mine button and drag to place them yourself. Blast damage.'},
- {id:'tfield',w:'field',t:1,max:1,unlock:true,name:'Slow Field',desc:'NEW WEAPON. Lays an energy bar that slows mobs and burns them while they pass through. The AI places it, or tap Field and drag to place it yourself. Energy damage.'},
+ {id:'super',w:'turret',t:3,max:3,name:'Supercharge',txt:l=>'Every '+(22-l*3)+' seconds, the turret overdrives for 4 seconds with double fire rate and +50% damage',lv:ULT_LV},
+ {id:'tmine',w:'mine',t:1,max:1,unlock:true,name:'Mine Layer',desc:'New weapon. Drops proximity mines that damage everything near the blast. The AI places them for you, or you can tap the Mine button and drag to place them yourself. It deals blast damage.'},
+ {id:'tfield',w:'field',t:1,max:1,unlock:true,name:'Slow Field',desc:'New weapon. Lays an energy bar that slows mobs and burns them while they pass through it. The AI places the bar for you, or you can tap Field and drag to place it yourself. It deals energy damage.'},
  {id:'mine',w:'mine',t:1,max:5,name:'Mine Power',txt:l=>'+'+Math.round((Math.pow(1.4,l)-1)*100)+'% blast damage'},
  {id:'marea',w:'mine',t:1,max:4,name:'Blast Area',txt:l=>'+'+Math.round((Math.pow(1.35,l)-1)*100)+'% blast radius'},
  {id:'mcount',w:'mine',t:1,max:5,name:'Mines per Drop',txt:l=>(1+l)+' mines per drop'},
  {id:'mrech',w:'mine',t:1,max:4,name:'Mine Reload',txt:l=>'-'+Math.round((1-Math.pow(0.75,l))*100)+'% recharge time'},
- {id:'mcluster',w:'mine',t:2,max:2,name:'Cluster Mines',txt:l=>'EVOLVE: each blast spawns '+(2+2*l)+' smaller blasts (crowd control)',evo:1,lv:EVO_LV,mst:EVO_MST,ex:['mfreeze']},
- {id:'mfreeze',w:'mine',t:2,max:2,name:'Cryo Mines',txt:l=>'EVOLVE: blasts freeze mobs for '+(l>1?'3.2':'1.6')+'s (setup for single targets)',evo:1,lv:EVO_LV,mst:EVO_MST,ex:['mcluster']},
- {id:'mchain',w:'mine',t:3,max:2,name:'Chain Reaction',txt:l=>'ULTIMATE: blasts set off nearby mines'+(l>1?', +50% reach':''),ult:1,lv:ULT_LV,mst:ULT_MST,any:['mcluster','mfreeze']},
+ {id:'mcluster',w:'mine',t:2,max:2,name:'Cluster Mines',txt:l=>'Evolve: each blast spawns '+(2+2*l)+' smaller blasts, which is good for crowd control',evo:1,lv:EVO_LV,mst:EVO_MST,ex:['mfreeze']},
+ {id:'mfreeze',w:'mine',t:2,max:2,name:'Cryo Mines',txt:l=>'Evolve: blasts freeze mobs for '+(l>1?'3.2':'1.6')+' seconds, which sets up single targets',evo:1,lv:EVO_LV,mst:EVO_MST,ex:['mcluster']},
+ {id:'mchain',w:'mine',t:3,max:2,name:'Chain Reaction',txt:l=>'Ultimate: blasts set off nearby mines'+(l>1?' and have +50% reach':''),ult:1,lv:ULT_LV,mst:ULT_MST,any:['mcluster','mfreeze']},
  {id:'field',w:'field',t:1,max:5,name:'Field Power',txt:l=>'+'+Math.round((Math.pow(1.4,l)-1)*100)+'% energy damage'},
  {id:'fwidb',w:'field',t:1,max:4,name:'Field Width',txt:l=>'+'+(l*20)+'% bar width'},
  {id:'fcount',w:'field',t:1,max:2,name:'Extra Field',txt:l=>(1+l)+' fields at once'},
  {id:'fdurc',w:'field',t:1,max:3,name:'Field Duration',txt:l=>'+'+(l*2)+'s duration'},
- {id:'fchill',w:'field',t:2,max:2,name:'Deep Chill',txt:l=>'EVOLVE: slows 15% harder, and mobs caught for over 1.2s freeze solid',evo:1,lv:EVO_LV,mst:EVO_MST,ex:['fpull']},
- {id:'fpull',w:'field',t:2,max:1,name:'Gravity Well',txt:l=>'EVOLVE: field drags mobs to its centre, packing them for blasts',evo:1,lv:EVO_LV,mst:EVO_MST,ex:['fchill']},
- {id:'fstorm',w:'field',t:3,max:1,name:'Storm Field',txt:l=>'ULTIMATE: field zaps a mob inside every 0.6s',ult:1,lv:ULT_LV,mst:ULT_MST,any:['fchill','fpull']},
- {id:'tchain',w:'chain',t:1,max:1,unlock:true,name:'Chain Lightning',desc:'NEW WEAPON. Fires automatically: a bolt hits the lowest mob and arcs to nearby mobs. Energy damage.'},
+ {id:'fchill',w:'field',t:2,max:2,name:'Deep Chill',txt:l=>'Evolve: slows mobs 15% more, and mobs caught for over 1.2 seconds freeze solid',evo:1,lv:EVO_LV,mst:EVO_MST,ex:['fpull']},
+ {id:'fpull',w:'field',t:2,max:1,name:'Gravity Well',txt:l=>'Evolve: the field drags mobs to its center and packs them together for blasts',evo:1,lv:EVO_LV,mst:EVO_MST,ex:['fchill']},
+ {id:'fstorm',w:'field',t:3,max:1,name:'Storm Field',txt:l=>'Ultimate: the field zaps a mob inside it every 0.6 seconds',ult:1,lv:ULT_LV,mst:ULT_MST,any:['fchill','fpull']},
+ {id:'tchain',w:'chain',t:1,max:1,unlock:true,name:'Chain Lightning',desc:'New weapon. Chain lightning fires automatically. Each bolt hits the lowest mob on the field and then arcs to nearby mobs. It deals energy damage.'},
  {id:'cpow',w:'chain',t:1,max:5,name:'Bolt Power',txt:l=>'+'+Math.round((Math.pow(1.4,l)-1)*100)+'% lightning damage'},
  {id:'cjump',w:'chain',t:1,max:4,name:'Extra Jumps',txt:l=>'+'+(l*2)+' jumps'},
  {id:'crate',w:'chain',t:1,max:4,name:'Quick Discharge',txt:l=>'-'+Math.round((1-Math.pow(0.85,l))*100)+'% cooldown'},
- {id:'cfork',w:'chain',t:2,max:1,name:'Forked Lightning',txt:l=>'EVOLVE: each jump splits in two (crowds)',evo:1,lv:EVO_LV,mst:EVO_MST,ex:['cshock']},
- {id:'cshock',w:'chain',t:2,max:1,name:'Overload',txt:l=>'EVOLVE: bolts stun what they hit for 0.7s; first target takes +60%',evo:1,lv:EVO_LV,mst:EVO_MST,ex:['cfork']},
- {id:'cstorm',w:'chain',t:3,max:1,name:'Thunderstorm',txt:l=>'ULTIMATE: every 15s strike every mob on screen',ult:1,lv:ULT_LV,mst:ULT_MST,any:['cfork','cshock']},
- {id:'tsaw',w:'saw',t:1,max:1,unlock:true,name:'Buzz Saw',desc:'NEW WEAPON. A big saw blade launches itself and bounces off the walls, slicing through every mob it touches until its damage runs out. Kinetic damage.'},
+ {id:'cfork',w:'chain',t:2,max:1,name:'Forked Lightning',txt:l=>'Evolve: each jump splits in two, which is good against crowds',evo:1,lv:EVO_LV,mst:EVO_MST,ex:['cshock']},
+ {id:'cshock',w:'chain',t:2,max:1,name:'Overload',txt:l=>'Evolve: bolts stun whatever they hit for 0.7 seconds, and the first target takes +60% damage',evo:1,lv:EVO_LV,mst:EVO_MST,ex:['cfork']},
+ {id:'cstorm',w:'chain',t:3,max:1,name:'Thunderstorm',txt:l=>'Ultimate: every 15 seconds, lightning strikes every mob on screen',ult:1,lv:ULT_LV,mst:ULT_MST,any:['cfork','cshock']},
+ {id:'tsaw',w:'saw',t:1,max:1,unlock:true,name:'Buzz Saw',desc:'New weapon. A big saw blade launches itself and bounces off the walls, slicing through every mob it touches until its damage runs out. It deals kinetic damage.'},
  {id:'spow',w:'saw',t:1,max:5,name:'Saw Power',txt:l=>'+'+Math.round((Math.pow(1.4,l)-1)*100)+'% saw damage'},
  {id:'scount',w:'saw',t:1,max:3,name:'Extra Saw',txt:l=>(1+l)+' saws at once'},
  {id:'sspeed',w:'saw',t:1,max:3,name:'Long Life',txt:l=>'+'+(l*2)+'s saw lifetime'},
- {id:'sfire',w:'saw',t:2,max:1,name:'Molten Saw',txt:l=>'EVOLVE: hits burst into flame (blast + burn)',evo:1,lv:EVO_LV,mst:EVO_MST,ex:['sbleed']},
- {id:'sbleed',w:'saw',t:2,max:1,name:'Serrated Edge',txt:l=>'EVOLVE: hits cause a 4s bleed that stacks the damage',evo:1,lv:EVO_LV,mst:EVO_MST,ex:['sfire']},
- {id:'sbig',w:'saw',t:3,max:1,name:'Mega Saw',txt:l=>'ULTIMATE: saw is 60% bigger and hits 50% harder',ult:1,lv:ULT_LV,mst:ULT_MST,any:['sfire','sbleed']},
- {id:'tmortar',w:'mortar',t:1,max:1,unlock:true,name:'Mortar',desc:'NEW WEAPON. AI-controlled mortar: it picks clusters and big targets and leads its shots. Two shells, slow reload. Blast damage.'},
+ {id:'sfire',w:'saw',t:2,max:1,name:'Molten Saw',txt:l=>'Evolve: hits burst into flame for blast damage and burning',evo:1,lv:EVO_LV,mst:EVO_MST,ex:['sbleed']},
+ {id:'sbleed',w:'saw',t:2,max:1,name:'Serrated Edge',txt:l=>'Evolve: hits cause a 4-second bleed, and the damage stacks',evo:1,lv:EVO_LV,mst:EVO_MST,ex:['sfire']},
+ {id:'sbig',w:'saw',t:3,max:1,name:'Mega Saw',txt:l=>'Ultimate: the saw is 60% bigger and hits 50% harder',ult:1,lv:ULT_LV,mst:ULT_MST,any:['sfire','sbleed']},
+ {id:'tmortar',w:'mortar',t:1,max:1,unlock:true,name:'Mortar',desc:'New weapon. The AI controls the mortar. It picks clusters and big targets and leads its shots. It holds two shells and reloads slowly. It deals blast damage.'},
  {id:'mortpow',w:'mortar',t:1,max:3,name:'Shell Power',txt:l=>'+'+Math.round((Math.pow(1.4,l)-1)*100)+'% shell damage'},
  {id:'mortarea',w:'mortar',t:1,max:3,name:'Wide Burst',txt:l=>'+'+(l*15)+'% blast radius'},
  {id:'mortcap',w:'mortar',t:1,max:2,name:'Ammo Rack',txt:l=>(2+l)+' shells loaded'},
  {id:'mortspd',w:'mortar',t:1,max:4,name:'Autoloader',txt:l=>'-'+Math.round((1-Math.pow(0.6,l))*100)+'% reload time'},
- {id:'mortclu',w:'mortar',t:2,max:4,name:'Cluster Shell',txt:l=>'EVOLVE: shell lands with '+(2+2*l)+' bomblets (crowds)',evo:1,lv:EVO_LV,mst:EVO_MST,ex:['mortbust']},
- {id:'mortbust',w:'mortar',t:2,max:4,name:'Bunker Buster',txt:l=>'EVOLVE: shell hits +'+(l*140)+'% harder, tighter blast, ignores resistance (armor)',evo:1,lv:EVO_LV,mst:EVO_MST,ex:['mortclu']},
- {id:'mortnap',w:'mortar',t:3,max:4,name:'Napalm Shell',txt:l=>'ULTIMATE: leaves a burning zone for 5s'+(l>1?', burning '+l+'x as hard':''),ult:1,lv:ULT_LV,mst:ULT_MST,any:['mortclu','mortbust']}
+ {id:'mortclu',w:'mortar',t:2,max:4,name:'Cluster Shell',txt:l=>'Evolve: the shell lands with '+(2+2*l)+' bomblets, which is good against crowds',evo:1,lv:EVO_LV,mst:EVO_MST,ex:['mortbust']},
+ {id:'mortbust',w:'mortar',t:2,max:4,name:'Bunker Buster',txt:l=>'Evolve: the shell hits +'+(l*140)+'% harder in a tighter blast and ignores armor resistance',evo:1,lv:EVO_LV,mst:EVO_MST,ex:['mortclu']},
+ {id:'mortnap',w:'mortar',t:3,max:4,name:'Napalm Shell',txt:l=>'Ultimate: leaves a burning zone for 5 seconds'+(l>1?' that burns '+l+' times as hard':''),ult:1,lv:ULT_LV,mst:ULT_MST,any:['mortclu','mortbust']}
 ];
 const CARDBY={}; CARDS.forEach(c=>CARDBY[c.id]=c);
 const reqOk=c=>!c.req||Object.keys(c.req).every(k=>bst(k)>=c.req[k]);
@@ -4778,7 +4778,7 @@ function applyCard(c){
   /* shown-and-passed bookkeeping (no longer affects odds: the deck is finite now) */
   G.pity=G.pity||{}; (G.offer||[]).forEach(o=>{ G.pity[o.id]=(G.pity[o.id]||0)+1; }); G.pity[c.id]=0; G.sinceW=c.unlock?0:(G.sinceW||0)+(c.id==='repair'?0:1);
   G.boost[c.id]=bst(c.id)+1;
-  if(c.unlock){ G.tools[c.w]=true; if(c.w==='mortar'){ G.mort=mortMax(); G.mortT=0; say('Mortar online','AI fires it at clusters'); } if(c.w==='mine'){ G.stock=mineMax(); G.mineT=0; } }
+  if(c.unlock){ G.tools[c.w]=true; if(c.w==='mortar'){ G.mort=mortMax(); G.mortT=0; say('Mortar online','The AI fires it at clusters of mobs.'); } if(c.w==='mine'){ G.stock=mineMax(); G.mineT=0; } }
   if(c.id==='fort'){ const add=ST.shield(L('armor'))*0.25*cmw('fort'); G.shMax+=add; G.sh+=add; G.shRg*=1+0.1*cmw('fort'); }
   if(c.id==='mend') G.mend=(G.mend||0)+(8/60)*cmw('mend');
   if(c.id==='repair') G.hp=Math.min(G.maxHp,G.hp+G.maxHp*0.3);
@@ -4808,13 +4808,13 @@ function renderCards(){
 /* ---- teaching pauses: a first-time mob or weapon stops the game until the player acknowledges it ---- */
 const TEACH=()=>!navigator.webdriver||window.__forceTeach;
 const WTEACH={
-  mine:{kind:'Blast',good:'Packs and armored hulls.',bad:'Fast darts and blast-proof plating.',how:'Plants itself where mobs bunch up. Hold the icon and drag to plant one yourself.'},
-  field:{kind:'Energy',good:'Fast or heavy mobs. Slowed targets eat more of everything else.',bad:'Ionized levels, where energy dies.',how:'Lays a slow zone across the lane. Hold the icon and drag to drop it where you want.'},
-  chain:{kind:'Energy',good:'Crowds. The bolt jumps from mob to mob.',bad:'Shield drones and Ionized levels.',how:'Arcs on its own at mobs away from the turret. Hold the icon and drag to pick the first target.'},
-  saw:{kind:'Kinetic',good:'Tight groups and soft mobs.',bad:'Hard plating and bosses.',how:'Launches itself and ricochets around the field. Hold the icon and drag to throw it yourself.'},
-  mortar:{kind:'Blast',good:'Big targets and clusters.',bad:'Fast movers.',how:'Lobs shells at clusters. A flare marks each landing spot. Hold the icon and drag to choose it.'}
+  mine:{kind:'Blast',good:'Packs of mobs and armored hulls.',bad:'Fast darts and blast-proof plating.',how:'It plants itself where mobs bunch up. Hold the icon and drag onto the field to plant one yourself.'},
+  field:{kind:'Energy',good:'Fast or heavy mobs. Slowed mobs also take more damage from every other weapon.',bad:'Ionized levels, where energy damage is weakened.',how:'It lays a slow zone across the field. Hold the icon and drag onto the field to place it where you want.'},
+  chain:{kind:'Energy',good:'Crowds, because the bolt jumps from mob to mob.',bad:'Shield drones and Ionized levels.',how:'It fires on its own at the mobs farthest from the turret. Hold the icon and drag onto the field to pick the first target.'},
+  saw:{kind:'Kinetic',good:'Tight groups and soft mobs.',bad:'Hard plating and bosses.',how:'It launches itself and ricochets around the field. Hold the icon and drag onto the field to throw it yourself.'},
+  mortar:{kind:'Blast',good:'Big targets and clusters of mobs.',bad:'Fast movers.',how:'It lobs shells at clusters of mobs, and a flare marks each landing spot. Hold the icon and drag onto the field to choose the spot yourself.'}
 };
-function teachRes(res){ const nm={k:'Kinetic (turret, saw)',b:'Blast (mines, mortar)',e:'Energy (field, chain)'}, w=[],r=[]; for(const k of ['k','b','e']){ if(res[k]>=1.3) w.push(nm[k]); else if(res[k]<=0.7) r.push(nm[k]); } return {w:w,r:r}; }
+function teachRes(res){ const lst=(a)=>a.filter(x=>!shelved(x)).join(', '), nm={k:'Kinetic ('+lst(['turret','saw'])+')',b:'Blast ('+lst(['mine','mortar'])+')',e:'Energy ('+lst(['field','chain'])+')'}, w=[],r=[]; for(const k of ['k','b','e']){ if(res[k]>=1.3) w.push(nm[k]); else if(res[k]<=0.7) r.push(nm[k]); } return {w:w,r:r}; }
 function queueTeach(it){ if(!TEACH()) return; if(!G.teachQ) G.teachQ=[]; G.teachQ.push(it); if(G.state==='playing') openTeach(); }
 function openTeach(){
   if(!G.teachQ||!G.teachQ.length||G.state==='teach') return;
@@ -5003,15 +5003,15 @@ window.__rr={startWave:startWave,pickWave:pickWave,SHELVED:SHELVED,TABS:TABS,WCT
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 113</div>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 114</div>
 <script>
 /* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
-(function(){ const BUILD=113; let busy=false, shown=false;
+(function(){ const BUILD=114; let busy=false, shown=false;
   const inRun=()=>{ try{ return typeof G!=='undefined'&&(G.state==='playing'||G.state==='cards'||G.state==='shop'||G.state==='paused'||G.state==='teach'||G.state==='ctl'); }catch(e){ return false; } };
   function wipeReload(){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
     if(n>=3) return;
     Promise.all([(navigator.serviceWorker?navigator.serviceWorker.getRegistrations().then(rs=>Promise.all(rs.map(r=>r.unregister()))):0),(window.caches?caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k)))):0)]).catch(()=>{}).then(()=>location.replace(location.pathname+'?u='+Date.now())); }
-  function banner(){ if(shown) return; shown=true; const d=document.createElement('button'); d.type='button'; d.textContent='Update ready \u2013 tap to reload'; d.style.cssText='position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 8px);transform:translateX(-50%);z-index:99999;background:#00f0ff;color:#000;font:700 13px system-ui;border:0;border-radius:999px;padding:9px 16px;box-shadow:0 0 16px #00f0ff'; d.onclick=wipeReload; document.body.appendChild(d); }
+  function banner(){ if(shown) return; shown=true; const d=document.createElement('button'); d.type='button'; d.textContent='Update ready. Tap to reload.'; d.style.cssText='position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 8px);transform:translateX(-50%);z-index:99999;background:#00f0ff;color:#000;font:700 13px system-ui;border:0;border-radius:999px;padding:9px 16px;box-shadow:0 0 16px #00f0ff'; d.onclick=wipeReload; document.body.appendChild(d); }
   function check(){ if(busy) return; busy=true; try{
     fetch('index.html?v='+Date.now(),{cache:'no-store'}).then(r=>r.text()).then(t=>{
       busy=false; const m=t.match(/const BUILD=(\d+);/); const live=m?+m[1]:BUILD;
