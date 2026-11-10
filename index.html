@@ -1055,6 +1055,7 @@ const INTRO={};
 /* ================= upgrades ================= */
 let WAVEHP=0.1, CRK=1, HPK=6.0, MOBN=18, MOBF=3.2, HPG=1.07, HPA=0, POOL0=55, POOLG=1.145, COSTK=1;
 const n1=v=>v<10?v.toFixed(1):String(Math.round(v));
+const CHAIN_DMG=0.75, CHAIN_SPD=0.75;   /* chain lightning nerf: 25% less damage and 25% slower firing */
 const EN_MAX=50, EN_COST=5, EN_REGEN=96*1000, EN_AD=5;   /* 50 max, 5 per attempt (10 elite), ~8 min per attempt back, rewarded ad = +5 */
 const ST={
   rate:l=>0.36*Math.pow(0.9,l), dmg:l=>Math.pow(1.18,l), barrels:l=>1+l, pierce:l=>l, slide:l=>300+l*45, armor:l=>100, shield:l=>24+l*8, shreg:l=>0.2+0.03*l,
@@ -1080,8 +1081,8 @@ const UPS=[
   {id:'frech',  tab:'field', ty:'tmp',name:'Recharge',    max:8, kind:'e',txt:l=>ST.frech(l).toFixed(1)+' s'},
   {id:'fwid',   tab:'field', ty:'rch',name:'Bar width',   max:6, kind:'e',txt:l=>(ST.fwid(l)*2)+' px'},
   {id:'fdur',   tab:'field', ty:'cap',name:'Duration',    max:8, kind:'e',txt:l=>ST.fdur(l).toFixed(0)+' s'},
-  {id:'cdmg',   tab:'chain', ty:'pow',name:'Lightning damage',max:25,kind:'e',txt:l=>n1(ST.cdmg(l))+' per bolt'},
-  {id:'ccool',  tab:'chain', ty:'tmp',name:'Cooldown',    max:8, kind:'e',txt:l=>ST.ccool(l).toFixed(2)+' s'},
+  {id:'cdmg',   tab:'chain', ty:'pow',name:'Lightning damage',max:25,kind:'e',txt:l=>n1(ST.cdmg(l)*CHAIN_DMG)+' per bolt'},
+  {id:'ccool',  tab:'chain', ty:'tmp',name:'Cooldown',    max:8, kind:'e',txt:l=>(ST.ccool(l)/CHAIN_SPD).toFixed(2)+' s'},
   {id:'cjmp',   tab:'chain', ty:'rch',name:'Base jumps',  max:5, kind:'e',txt:l=>ST.cj(l)+' jumps'},
   {id:'cfk',    tab:'chain', ty:'cap',name:'Forks',       max:2, kind:'e',txt:l=>ST.cfk(l)+(l?' branches':' branch')+' per jump'},
   {id:'sdmg',   tab:'saw',   ty:'pow',name:'Saw damage',  max:25,kind:'k',txt:l=>n1(ST.sdmg(l))+' per hit'},
@@ -2286,7 +2287,7 @@ function updateTurret(dt){
 /* ---- tools ---- */
 function mineRech(){ return ST.mrech(L('mrech'))*Math.pow(0.75,bq('mrech')); }
 function mortRech(){ return ST.mortrech(L('mortrech'))*Math.pow(0.6,bq('mortspd')); }
-function chainCd(){ return Math.max(0.3,ST.ccool(L('ccool'))*Math.pow(0.85,bq('crate'))); }
+function chainCd(){ return Math.max(0.3,ST.ccool(L('ccool'))*Math.pow(0.85,bq('crate')))/CHAIN_SPD; }
 function mineMax(){ return ST.mstock(L('mstock'))+2*bst('mcount'); }
 function mineR(){ return ST.mrad(L('mrad'))*Math.pow(1.35,bq('marea')); }
 function fieldHW(){ return ST.fwid(L('fwid'))*(1+0.2*bq('fwidb')); }
@@ -2921,7 +2922,7 @@ function autoTools(dt){
 
 /* ---- chain lightning (auto, energy) ---- */
 function chainStrike(tg){
-  const dmg=ST.cdmg(L('cdmg'))*Math.pow(1.4,bq('cpow')), jumps=ST.cj(L('cjmp'))+2*bst('cjump'), fork=ST.cfk(L('cfk'))+(bst('cfork')?1:0);
+  const dmg=ST.cdmg(L('cdmg'))*Math.pow(1.4,bq('cpow'))*CHAIN_DMG, jumps=ST.cj(L('cjmp'))+2*bst('cjump'), fork=ST.cfk(L('cfk'))+(bst('cfork')?1:0);
   const hit=new Set([tg]); let fr=[{e:tg,x:tg.x,y:tg.y}];
   G.rings.push({x:tg.x,y:tg.y,r:4,max:tg.r*2.6,life:0.3,t:0,color:C.yellow}); burst(tg.x,tg.y,C.yellow,14,200); G.shake=Math.min(1,G.shake+0.15);
   hurt(tg,dmg*(bst('cshock')?1.6:1),'e',false,0,'chain'); if(bst('cshock')) freeze(tg,0.7);
@@ -2960,7 +2961,7 @@ function updateChain(dt){
   if(bst('cstorm')){
     G.stormT-=dt;
     if(G.stormT<=0 && G.enemies.some(e=>!e.dead&&e.y>0)){
-      G.stormT=15; const dmg=ST.cdmg(L('cdmg'))*Math.pow(1.4,bq('cpow'))*1.6; G.shake=Math.min(1,G.shake+0.5);
+      G.stormT=15; const dmg=ST.cdmg(L('cdmg'))*Math.pow(1.4,bq('cpow'))*1.6*CHAIN_DMG; G.shake=Math.min(1,G.shake+0.5);
       for(const e of G.enemies){ if(e.dead||e.y<0) continue; G.bolts.push({a:[e.x+rnd(-10,10),0],b:[e.x,e.y],t:0,life:0.45,color:C.yellow}); hurt(e,dmg,'e',false,0,'chain'); }
       float(W/2,GROUND-200,'THUNDERSTORM',C.yellow);
     }
@@ -5048,10 +5049,10 @@ window.__rr={profileFor:profileFor,buildWave:buildWave,DOCS:DOCS,startWave:start
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 116</div>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 117</div>
 <script>
 /* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
-(function(){ const BUILD=116; let busy=false, shown=false;
+(function(){ const BUILD=117; let busy=false, shown=false;
   const inRun=()=>{ try{ return typeof G!=='undefined'&&(G.state==='playing'||G.state==='cards'||G.state==='shop'||G.state==='paused'||G.state==='teach'||G.state==='ctl'); }catch(e){ return false; } };
   function wipeReload(){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
     if(n>=3) return;
