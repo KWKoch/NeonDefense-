@@ -1823,6 +1823,8 @@ const EHP=[0.55,0.65,0.9,1.05,1.1];
 const earlyHp=n=>n<=5?EHP[n-1]:n<=14?2.0+0.17*(n-6):n<=24?3.36-0.236*(n-14):1;
 const mobn=n=>Math.max(MOBF,MOBN*Math.pow(0.94,n-1)*earlyDamp(n));
 let LATEK=0.01;
+/* Pace of the whole game: mobs fall at MOBSPEED of their old speed, carry MOBHP times the health so each one takes real work to bring down, and waves release their mobs SPAWNSTRETCH times more slowly. */
+const MOBSPEED=0.55, MOBHP=1.7, SPAWNSTRETCH=1.5;
 const FIELDHP=1.10;   /* +10% enemy health now that the whole field can be shot at, on top of the lane-length factor below */
 const LATEHP=1.25*1.30; /* +25% enemy health on every level after 6, then another +30% on top of that */
 const hpScale=n=>Math.pow(HPG,n-1)*(1+HPA*(n-1))*(1+LATEK*Math.pow(Math.max(0,n-12),2))*(n>6?LATEHP:1);
@@ -3270,7 +3272,7 @@ function update(dt){
   G.time+=dt;
   if(G.state!=='playing') return;
   if(G.pickQ>0){ openCards(); return; }
-  G.waveT+=dt; if(G.tag) G.tag.t+=dt;
+  G.waveT+=dt/SPAWNSTRETCH; if(G.tag) G.tag.t+=dt;
   while(G.events.length&&G.events[0].t<=G.waveT) G.events.shift().fn();
   if(!G.events.length){
     const alive=G.enemies.some(e=>!e.dead)||G.warps.length>0;
@@ -4143,7 +4145,7 @@ function startWave(w){
 }
 function startLevel(n,world,elite){
   G.wd=WORLDS.find(w=>w.id===(world||P.world))||WORLDS[0]; applySkin(G.wd.id); G.elite=!!elite; UI.elite=G.elite;
-  G.n=n; G.hpS=hpScale(n)*(G.elite?1.6:1)*(G.wd.hp||1)*FIELDHP*(1+TOPX/OZ_Y); G.spS=1+n*0.01; G.NW=waveCount(n); G.wave=0;
+  G.n=n; G.hpS=hpScale(n)*(G.elite?1.6:1)*(G.wd.hp||1)*FIELDHP*MOBHP*(1+TOPX/OZ_Y); G.spS=(1+n*0.01)*MOBSPEED; G.NW=waveCount(n); G.wave=0;
   G.run={rz:{},hold:{},kw:{}}; G.ozFlash=0; G.maxHp=ST.armor(0); G.hp=G.maxHp; G.shMax=ST.shield(L('armor')); G.sh=G.shMax; G.shRg=ST.shreg(L('armor')); G.shT=0; G.shFlash=0; G.shBreak=0; G.shOk=Math.random()<SH_CARD_P; G.mend=0; G.peeps=[]; G.scorch=[]; G.pplT=1; G.earned=0; G.kills=0; G.pot=0; G.credits=0; G.boost={}; G.pity={}; G.sinceW=0; G.revived=false; G.shieldUntil=0; G.tools={}; G.pickQ=0; G.rerolls=1; G.offer=[]; G.superOn=0; G.superCd=10; G.chainT=2; G.blobs=[]; G.chips=[]; G.teachQ=[]; { const to=document.getElementById('teachov'); if(to) to.remove(); } G.cpend=null; G.flashA=0; G.sawCd=0; G.stormT=12; G.mort=2; G.mortT=0; G.saws=[]; G.bolts=[]; G.shells=[]; G.fires=[]; G.delay=[]; lastCred=0;
   cmdStart();
   G.enemies=[]; G.bullets=[]; G.parts=[]; G.splash=[]; G.rings=[]; G.floats=[]; G.mines=[]; G.fields=[]; G.boss=null; G.tag=null; G.warps=[];
@@ -5158,10 +5160,10 @@ window.__rr={profileFor:profileFor,buildWave:buildWave,DOCS:DOCS,startWave:start
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 133</div>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 134</div>
 <script>
 /* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
-(function(){ const BUILD=133; let busy=false, shown=false;
+(function(){ const BUILD=134; let busy=false, shown=false;
   const inRun=()=>{ try{ return typeof G!=='undefined'&&(G.state==='playing'||G.state==='cards'||G.state==='shop'||G.state==='paused'||G.state==='teach'||G.state==='ctl'); }catch(e){ return false; } };
   function wipeReload(){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
     if(n>=3) return;
