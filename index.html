@@ -898,7 +898,7 @@ body.menu{background:
     <div id="row0">
       <button type="button" class="tool" id="toolMine" style="--c:var(--orange)" aria-pressed="false" aria-label="Mine layer" hidden><span class="ts" id="mineS"></span><span class="tt" id="mineT"></span><i class="tp" id="mineP"></i></button>
       <div class="tool" id="toolMortar" style="--c:#ffc400" aria-label="Mortar" title="Mortar. The AI fires it automatically. Hold and drag to aim a shot yourself." hidden><span class="ts" id="mortS"></span><span class="tt" id="mortT"></span><i class="tp" id="mortP"></i></div>
-      <button type="button" class="tool" id="toolField" style="--c:var(--violet)" aria-pressed="false" aria-label="Slow field" hidden><span class="ts" id="fieldS"></span><span class="tt" id="fieldT"></span><i class="tp" id="fieldP"></i></button>
+      <button type="button" class="tool" id="toolField" style="--c:var(--violet)" aria-pressed="false" aria-label="Dimensional field" hidden><span class="ts" id="fieldS"></span><span class="tt" id="fieldT"></span><i class="tp" id="fieldP"></i></button>
       <div class="tool" id="toolChain" style="--c:var(--yellow)" aria-label="Chain lightning" title="Chain lightning. The AI fires it automatically. Hold and drag to aim a shot yourself." hidden><span class="ts" id="chainS"></span><span class="tt" id="chainT"></span><i class="tp" id="chainP"></i></div>
       <div class="tool" id="toolSaw" style="--c:var(--lime)" aria-label="Buzz saw" title="Buzz saw. The AI launches it automatically. Hold and drag to aim a throw yourself." hidden><span class="ts" id="sawS"></span><span class="tt" id="sawT"></span><i class="tp" id="sawP"></i></div>
     </div>
@@ -930,7 +930,7 @@ const BARREL_SPREAD=0.0595, TUR_RANGE=640;   /* angle between barrels (was 0.085
 const OZ_Y=Math.round(GROUND*0.6);   /* the ozone layer: defense is judged here. A mob must die above this line to count as held. */
 const C={cyan:'#00f0ff',magenta:'#ff2bd6',lime:'#b6ff00',violet:'#9d4dff',orange:'#ff8a00',amber:'#ffc400',yellow:'#fff200',red:'#ff3860',blue:'#3d8bff',mint:'#6dffb0',steel:'#dfeaf2'};
 const KIND={k:{name:'Kinetic',color:C.cyan},b:{name:'Blast',color:C.orange},e:{name:'Energy',color:C.violet}};
-/* Damage multipliers per mob. Kinetic = turret, Blast = mines, Energy = slow field. */
+/* Damage multipliers per mob. Kinetic = turret, Blast = mines, Energy = dimensional field. */
 const MOB={
   rock:   {name:'Meteor',      r:19, hp:4,  vy:38,  val:6,  dmg:8,  color:C.orange, res:{k:1,  b:1,  e:1  }, bounty:1, unlock:1,  spawn:true,  note:'Takes full damage from every weapon.'},
   small:  {name:'Fragment',    r:10, hp:1,  vy:62,  val:2,  dmg:4,  color:C.amber,  res:{k:1,  b:1,  e:1  }, bounty:0, unlock:7,  spawn:false, note:'Debris left behind when a Splitter breaks apart.'},
@@ -1105,7 +1105,7 @@ const SHELVED=['mine','saw'];
 const shelved=k=>SHELVED.indexOf(k)>=0;
 const TOOLS={
   mine:{name:'Mine layer',color:'#aeb8bf',cost:150,kind:'b',desc:'Drops proximity mines on the field. Each mine explodes when an enemy gets close and damages everything in the blast.'},
-  field:{name:'Slow field',color:C.violet,cost:300,kind:'e',desc:'Lays a horizontal energy bar across the field. Anything inside it slows down and takes energy damage over time.'}
+  field:{name:'Dimensional field',color:C.violet,cost:300,kind:'e',desc:'Lays a horizontal energy bar across the field. Anything inside it slows down and takes energy damage over time.'}
 };
 /* Worlds: each one specialises mobs (uw = global wave a mob first appears), favoured weapons (bias on card odds) and look.
    World 1 is free. The other four are scaffolded and pay-gated (demo unlock for now). Each has its own 50 levels and progress. */
@@ -1873,7 +1873,7 @@ function buildWave(n,w){
    RESISTED x or less from that weapon's main damage type (the same cut-off the Codex uses to flag a resist). */
 const WLIST=['turret','mine','field','chain','saw','mortar'];
 const WKIND={turret:'k',saw:'k',mine:'b',mortar:'b',field:'e',chain:'e'};
-const WNAME={turret:'Turret',mine:'Mines',field:'Slow field',chain:'Chain lightning',saw:'Buzz saw',mortar:'Mortar'};
+const WNAME={turret:'Turret',mine:'Mines',field:'Dimensional field',chain:'Chain lightning',saw:'Buzz saw',mortar:'Mortar'};
 const RESISTED=0.65;
 const TIER=[{n:'Bronze',c:'#cd7f32'},{n:'Silver',c:'#c4d0d8'},{n:'Gold',c:'#ffc400'},{n:'Platinum',c:'#7df9ff'}];
 const stOf=()=>P.st||(P.st=newSt());
@@ -4739,7 +4739,7 @@ const CARD_PWR=1.75, CARD_SPD=1.75, CARD_SLIDE=1.75, MAXBARRELS=5;
 const barrelN=()=>Math.min(MAXBARRELS,1+L('barrels')+bst('barrel'));
 const pickWave=w=>w>=2&&(w<=1+PICKEARLY||(w-1-PICKEARLY)%PICKM===0);
 const wcount=()=>['mine','field','chain','saw','mortar'].filter(hasTool).length;
-const WEAPN={turret:{name:'Turret',color:C.cyan},base:{name:'Base',color:C.lime},mine:{name:'Mine layer',color:'#aeb8bf'},field:{name:'Slow field',color:C.violet},chain:{name:'Chain lightning',color:C.yellow},saw:{name:'Buzz saw',color:C.lime},mortar:{name:'Mortar',color:C.amber}};
+const WEAPN={turret:{name:'Turret',color:C.cyan},base:{name:'Base',color:C.lime},mine:{name:'Mine layer',color:'#aeb8bf'},field:{name:'Dimensional field',color:C.violet},chain:{name:'Chain lightning',color:C.yellow},saw:{name:'Buzz saw',color:C.lime},mortar:{name:'Mortar',color:C.amber}};
 const CARDS=[
  {id:'rate',w:'turret',t:1,max:1,name:'Rapid Fire',txt:l=>'+'+Math.round((CARD_SPD-1)*100)+'% fire rate'},
  {id:'dmg',w:'turret',t:1,max:1,name:'Heavy Rounds',txt:l=>'+'+Math.round((CARD_PWR-1)*100)+'% damage'},
@@ -4751,7 +4751,7 @@ const CARDS=[
  {id:'deep',w:'turret',t:2,max:1,name:'Deep Pierce',txt:l=>'+2 more pierce',lv:EVO_LV},
  {id:'super',w:'turret',t:3,max:3,name:'Supercharge',txt:l=>'Every '+(22-l*3)+' seconds, the turret overdrives for 4 seconds with double fire rate and +50% damage',lv:ULT_LV},
  {id:'tmine',w:'mine',t:1,max:1,unlock:true,name:'Mine Layer',desc:'New weapon. Drops proximity mines that damage everything near the blast. The AI places them for you, or you can tap the Mine button and drag to place them yourself. It deals blast damage.'},
- {id:'tfield',w:'field',t:1,max:1,unlock:true,name:'Slow Field',desc:'New weapon. Lays an energy bar that slows mobs and burns them while they pass through it. The AI places the bar for you, or you can tap Field and drag to place it yourself. It deals energy damage.'},
+ {id:'tfield',w:'field',t:1,max:1,unlock:true,name:'Dimensional Field',desc:'New weapon. Lays an energy bar that slows mobs and burns them while they pass through it. The AI places the bar for you, or you can tap Field and drag to place it yourself. It deals energy damage.'},
  {id:'mine',w:'mine',t:1,max:5,name:'Mine Power',txt:l=>'+'+Math.round((Math.pow(1.4,l)-1)*100)+'% blast damage'},
  {id:'marea',w:'mine',t:1,max:4,name:'Blast Area',txt:l=>'+'+Math.round((Math.pow(1.35,l)-1)*100)+'% blast radius'},
  {id:'mcount',w:'mine',t:1,max:5,name:'Mines per Drop',txt:l=>(1+l)+' mines per drop'},
@@ -5057,10 +5057,10 @@ window.__rr={profileFor:profileFor,buildWave:buildWave,DOCS:DOCS,startWave:start
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 119</div>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 120</div>
 <script>
 /* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
-(function(){ const BUILD=119; let busy=false, shown=false;
+(function(){ const BUILD=120; let busy=false, shown=false;
   const inRun=()=>{ try{ return typeof G!=='undefined'&&(G.state==='playing'||G.state==='cards'||G.state==='shop'||G.state==='paused'||G.state==='teach'||G.state==='ctl'); }catch(e){ return false; } };
   function wipeReload(){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
     if(n>=3) return;
