@@ -890,7 +890,6 @@ body.menu{background:
   <header id="hud">
     <div class="stat"><span class="lbl">Level</span><span class="val" id="lvlVal">1/50</span></div>
     <div class="stat"><span class="lbl">Wave</span><span class="val" id="credVal">1/20</span></div>
-    <div class="stat"><span class="lbl">Weapons</span><span class="val" id="bankVal">0/4</span></div>
     <div class="stat"><span class="lbl">Base</span><div class="bar" id="bar"><i id="hpFill"></i></div><div class="bar sh" id="shBar"><i id="shFill"></i></div></div>
   </header>
 
@@ -1085,7 +1084,7 @@ const UPS=[
   {id:'dmg',    tab:'turret',ty:'pow',name:'Hard Hitter',  max:25,kind:'k',txt:l=>n1(ST.dmg(l))+' per shot'},
   {id:'rate',   tab:'turret',ty:'tmp',name:'Rapid Fire',   max:12,kind:'k',txt:l=>(1/ST.rate(l)).toFixed(1)+' shots a second, swivel '+ST.slide(l)},
   {id:'pierce', tab:'turret',ty:'rch',name:'Pierce',      max:4, kind:'k',txt:l=>l?'passes through '+l:'stops on hit'},
-  {id:'barrels',tab:'turret',ty:'cap',name:'Extra Barrels',max:4, kind:'k',txt:l=>(1+l)+(l?' barrels':' barrel')},
+  {id:'barrels',tab:'turret',ty:'cap',name:'Extra Barrels',max:2, kind:'k',txt:l=>(1+l)+(l?' barrels':' barrel')},
   {id:'armor',  tab:'base',  ty:'frt',name:'Ozone shield',max:10,txt:l=>ST.shield(l)+' shield, '+ST.shreg(l).toFixed(1)+'/s recharge'},
   {id:'mdmg',   tab:'mine',  ty:'pow',name:'Big Bang',    max:25,kind:'b',txt:l=>n1(ST.mdmg(l))+' damage'},
   {id:'mrech',  tab:'mine',  ty:'tmp',name:'Quick Layer',  max:8, kind:'b',txt:l=>'a new mine every '+ST.mrech(l).toFixed(1)+' s'},
@@ -4064,7 +4063,6 @@ function renderHud(){
   const k=G.n+'|'+(G.elite?1:0)+'|'+G.wave+'|'+G.NW+'|'+G.hp+'|'+Math.round(G.sh||0)+'|'+G.maxHp+'|'+wcount()+'|'+G.pickQ+'|'+G.state;
   if(k===hudKey) return; hudKey=k;
   lvlVal.textContent=G.n+'/'+LEVELS+(G.elite?' E':''); credVal.textContent=G.wave+'/'+G.NW;
-  $('bankVal').textContent=wcount()+'/'+LOADMAX;
   hpFill.style.width=(G.hp/G.maxHp*100)+'%'; shFill.style.width=(G.shMax?Math.max(0,G.sh)/G.shMax*100:0)+'%'; bar.classList.toggle('low',G.hp/G.maxHp<0.3);
 }
 function flashMortar(){ const f=$('mflash'); if(!f) return; f.classList.remove('go'); void f.offsetWidth; f.classList.add('go'); }
@@ -4833,8 +4831,8 @@ const deckSize=w=>CARDS.reduce((a,c)=>a+(c.w===w&&c.t===1&&!c.unlock&&!c.cond&&c
 const rareDecay=w=>{ const n=deckSize(w); return n?Math.max(RARE_FLOOR,Math.pow(Math.max(0,1-wlv(w)/n),1.5)):1; };
 /* Card level-ups: one on each of the first four waves that offer one (waves 2-5), then only every other wave (7, 9, 11...). */
 const PICKEARLY=4; let PICKM=2;
-/* Turret cards: damage, fire rate and turret speed are one pick each at +75%; extra barrels are +1 each, five barrels in total (armory barrels count toward it). */
-const CARD_PWR=1.75, CARD_SPD=1.75, CARD_SLIDE=1.75, MAXBARRELS=5;
+/* Turret cards: damage, fire rate and turret speed are one pick each at +75%; extra barrels are +1 each, three barrels in total (armory barrels count toward it). */
+const CARD_PWR=1.75, CARD_SPD=1.75, CARD_SLIDE=1.75, MAXBARRELS=3;
 const barrelN=()=>Math.min(MAXBARRELS,1+L('barrels')+bst('barrel'));
 const pickWave=w=>w>=2&&(w<=1+PICKEARLY||(w-1-PICKEARLY)%PICKM===0);
 const wcount=()=>['mine','field','chain','saw','mortar'].filter(hasTool).length;
@@ -4891,7 +4889,7 @@ const CARDS=[
 const CARDBY={}; CARDS.forEach(c=>CARDBY[c.id]=c);
 const reqOk=c=>!c.req||Object.keys(c.req).every(k=>bst(k)>=c.req[k]);
 const reqText=r=>Object.keys(r).map(k=>CARDBY[k].name+(CARDBY[k].max>1?' '+r[k]:'')).join(' + ');
-const CARD_HIDE=['mortcap','cjump','pierce','deep','fwidb'];   /* in-run cards that are switched off: Mortar Ammo Rack, Chain Extra Jumps the turret's Piercing Rounds and Deep Pierce, and the field's Field Width */
+const CARD_HIDE=['mortcap','cjump','pierce','deep','fwidb','mcount','fcount','scount'];   /* in-run cards that are switched off: Mortar Ammo Rack, Chain Extra Jumps the turret's Piercing Rounds and Deep Pierce, and the field's Field Width */
 function eligible(c){
   if(shelved(c.w)||CARD_HIDE.indexOf(c.id)>=0) return false;
   if(c.id==='barrel'&&barrelN()>=MAXBARRELS) return false;
@@ -5157,10 +5155,10 @@ window.__rr={profileFor:profileFor,buildWave:buildWave,DOCS:DOCS,startWave:start
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 131</div>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 132</div>
 <script>
 /* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
-(function(){ const BUILD=131; let busy=false, shown=false;
+(function(){ const BUILD=132; let busy=false, shown=false;
   const inRun=()=>{ try{ return typeof G!=='undefined'&&(G.state==='playing'||G.state==='cards'||G.state==='shop'||G.state==='paused'||G.state==='teach'||G.state==='ctl'); }catch(e){ return false; } };
   function wipeReload(){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
     if(n>=3) return;
