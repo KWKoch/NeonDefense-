@@ -1068,6 +1068,7 @@ const INTRO={};
 /* ================= upgrades ================= */
 let WAVEHP=0.1, CRK=1, HPK=6.0, MOBN=18, MOBF=3.2, HPG=1.07, HPA=0, POOL0=55, POOLG=1.145, COSTK=1;
 const n1=v=>v<10?v.toFixed(1):String(Math.round(v));
+const CHAIN_JUMP=0.5;   /* arcs that jump on from the first target hit for half of what they did before */
 const CHAIN_DMG=0.375, CHAIN_SPD=0.75;   /* chain lightning nerfs: damage is 75% x 50% of the original, firing is 25% slower */
 const EN_MAX=50, EN_COST=5, EN_REGEN=96*1000, EN_AD=5;   /* 50 max, 5 per attempt (10 elite), ~8 min per attempt back, rewarded ad = +5 */
 const ST={
@@ -2936,7 +2937,7 @@ function spokenSet(){
   for(const e of G.enemies){
     if(e.dead) continue; let d=0; const rb=Math.min(1.5,(e.res&&e.res.b)||1), re=(e.res&&e.res.e)||1;
     for(const sh of cl){ const tr=Math.max(0,sh.dur-sh.t), dd=Math.hypot(e.x+(e.vx||0)*tr-sh.tx,e.y+(e.vy||0)*tr-sh.ty); if(dd<R*0.9+e.r*0.3) d+=dm*rb*(1-0.4*dd/(R+e.r)); }
-    if(cp){ const i=cp.hits.indexOf(e); if(i>=0) d+=cd*(i===0&&bst('cshock')?1.6:1)*Math.pow(0.92,Math.min(i,4))*re; }
+    if(cp){ const i=cp.hits.indexOf(e); if(i>=0) d+=cd*(i===0&&bst('cshock')?1.6:1)*Math.pow(0.92,Math.min(i,4))*(i>0?CHAIN_JUMP:1)*re; }
     if(d>=e.hp*0.9) set.add(e);
   }
   return set;
@@ -2988,7 +2989,7 @@ function chainStrike(tg){
     const nx=[];
     for(const nd of fr){
       const cand=G.enemies.filter(e=>!e.dead&&!hit.has(e)&&e.y>-10&&Math.hypot(e.x-nd.x,e.y-nd.y)<160).sort((p,q)=>Math.hypot(p.x-nd.x,p.y-nd.y)-Math.hypot(q.x-nd.x,q.y-nd.y)).slice(0,fork);
-      for(const e of cand){ hit.add(e); G.bolts.push({a:[nd.x,nd.y],b:[e.x,e.y],t:0,life:0.3,color:C.yellow}); hurt(e,dmg*Math.pow(0.92,h),'e',false,0,'chain'); if(bst('cshock')) freeze(e,0.7); nx.push({e:e,x:e.x,y:e.y}); }
+      for(const e of cand){ hit.add(e); G.bolts.push({a:[nd.x,nd.y],b:[e.x,e.y],t:0,life:0.3,color:C.yellow}); hurt(e,dmg*Math.pow(0.92,h)*CHAIN_JUMP,'e',false,0,'chain'); if(bst('cshock')) freeze(e,0.7); nx.push({e:e,x:e.x,y:e.y}); }
     }
     fr=nx;
   }
@@ -5126,10 +5127,10 @@ window.__rr={profileFor:profileFor,buildWave:buildWave,DOCS:DOCS,startWave:start
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 124</div>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 125</div>
 <script>
 /* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
-(function(){ const BUILD=124; let busy=false, shown=false;
+(function(){ const BUILD=125; let busy=false, shown=false;
   const inRun=()=>{ try{ return typeof G!=='undefined'&&(G.state==='playing'||G.state==='cards'||G.state==='shop'||G.state==='paused'||G.state==='teach'||G.state==='ctl'); }catch(e){ return false; } };
   function wipeReload(){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
     if(n>=3) return;
