@@ -1822,7 +1822,7 @@ const earlyHp=n=>n<=5?EHP[n-1]:n<=14?2.0+0.17*(n-6):n<=24?3.36-0.236*(n-14):1;
 const mobn=n=>Math.max(MOBF,MOBN*Math.pow(0.94,n-1)*earlyDamp(n));
 let LATEK=0.01;
 const FIELDHP=1.10;   /* +10% enemy health now that the whole field can be shot at, on top of the lane-length factor below */
-const LATEHP=1.25; /* +25% enemy health on every level after 6 */
+const LATEHP=1.25*1.30; /* +25% enemy health on every level after 6, then another +30% on top of that */
 const hpScale=n=>Math.pow(HPG,n-1)*(1+HPA*(n-1))*(1+LATEK*Math.pow(Math.max(0,n-12),2))*(n>6?LATEHP:1);
 const waveBudget=(n,w,elite)=>1.4*(5.2+0.7*n)*(1+0.03*(w-1))*(elite?1.5:1);
 function levelPoints(n){
@@ -5157,10 +5157,10 @@ window.__rr={profileFor:profileFor,buildWave:buildWave,DOCS:DOCS,startWave:start
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 130</div>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 131</div>
 <script>
 /* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
-(function(){ const BUILD=130; let busy=false, shown=false;
+(function(){ const BUILD=131; let busy=false, shown=false;
   const inRun=()=>{ try{ return typeof G!=='undefined'&&(G.state==='playing'||G.state==='cards'||G.state==='shop'||G.state==='paused'||G.state==='teach'||G.state==='ctl'); }catch(e){ return false; } };
   function wipeReload(){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
     if(n>=3) return;
