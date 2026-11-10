@@ -1772,12 +1772,23 @@ function fireWeaponAt(w,x,y){
   }
   return false;
 }
+/* Hands-on bonus: a shot you aim yourself comes back sooner than one the AI fires, so taking over is always worth the effort. */
+const HANDS=0.35;
+function handsOn(w){
+  if(w==='mine') G.mineT+=mineRech()*HANDS;
+  else if(w==='mortar') G.mortT+=mortRech()*HANDS;
+  else if(w==='field') G.fieldCd*=1-HANDS;
+  else if(w==='chain') G.chainT*=1-HANDS;
+  else if(w==='saw') G.sawCd*=1-HANDS;
+  else return;
+  G.handsN=(G.handsN||0)+1; float(clamp(GR.x||T.x,60,W-60),clamp((GR.y||OZ_Y)-34,60-TOPX,GROUND-60),'HANDS-ON',WCOL[w]||C.cyan);
+}
 /* a pinned aim fires as soon as its weapon is ready; the AI stays off that weapon until then */
 function tickPins(dt){
   for(const w in G.pin){
     const p=G.pin[w]; p.t+=dt;
     if(GR.w===w) continue;
-    if(wReady(w)){ if(fireWeaponAt(w,p.x,p.y)) delete G.pin[w]; else if(p.t>8) delete G.pin[w]; }
+    if(wReady(w)){ if(fireWeaponAt(w,p.x,p.y)){ delete G.pin[w]; handsOn(w); } else if(p.t>8) delete G.pin[w]; }
     else if(p.t>30) delete G.pin[w];
   }
 }
@@ -1786,7 +1797,7 @@ function grabEnd(fire){
   clearTimeout(GR.tm);
   if(fire&&GR.live){
     if(!(wReady(w)&&fireWeaponAt(w,GR.x,GR.y))) G.pin[w]={x:GR.x,y:GR.y,t:0};
-    else { delete G.pin[w]; CF.fire++; }
+    else { delete G.pin[w]; CF.fire++; handsOn(w); }
     if(navigator.vibrate) try{ navigator.vibrate(12); }catch(e){}
   }
   GR.w=null; GR.live=false; toolKey='';
@@ -1823,11 +1834,10 @@ const EHP=[0.55,0.65,0.9,1.05,1.1];
 const earlyHp=n=>n<=5?EHP[n-1]:n<=14?2.0+0.17*(n-6):n<=24?3.36-0.236*(n-14):1;
 const mobn=n=>Math.max(MOBF,MOBN*Math.pow(0.94,n-1)*earlyDamp(n));
 let LATEK=0.01;
-/* Pace of the whole game: mobs fall at MOBSPEED of their old speed, carry MOBHP times the health so each one takes real work to bring down, and waves release their mobs SPAWNSTRETCH times more slowly. */
-const MOBSPEED=0.55, MOBHP=1.7, SPAWNSTRETCH=1.5;
-const FIELDHP=1.10;   /* +10% enemy health now that the whole field can be shot at, on top of the lane-length factor below */
-const LATEHP=1.25*1.30; /* +25% enemy health on every level after 6, then another +30% on top of that */
-const hpScale=n=>Math.pow(HPG,n-1)*(1+HPA*(n-1))*(1+LATEK*Math.pow(Math.max(0,n-12),2))*(n>6?LATEHP:1);
+/* One place for the pace of the whole game. speed: how fast mobs fall (1 = the original speed). hp: health on every mob, on top of the level curve. late: extra health on every level after 6.
+   field: extra health for having the whole field to shoot at (the lane-length factor for tall phones is applied on top of this). stretch: how many times slower a wave releases its mobs. */
+const TUNE={speed:0.55, hp:1.7, late:1.25*1.30, field:1.10, stretch:1.2};
+const hpScale=n=>Math.pow(HPG,n-1)*(1+HPA*(n-1))*(1+LATEK*Math.pow(Math.max(0,n-12),2))*(n>6?TUNE.late:1);
 const waveBudget=(n,w,elite)=>1.4*(5.2+0.7*n)*(1+0.03*(w-1))*(elite?1.5:1);
 function levelPoints(n){
   const NW=waveCount(n); let t=0;
@@ -2749,7 +2759,7 @@ const COACH={
     {demo:'steer',t:'Hold to aim',x:'Press and hold anywhere on the field, and the turret will follow your finger. When you let go, the AI takes over again.'}
   ],
   grab:[
-    {sel:'#row0 .tool[data-w]:not([hidden])',demo:'drag',t:'Fire a weapon',x:'Hold a weapon icon, drag onto the field, and let go to fire at that spot. Aiming a weapon yourself switches it to manual control.'}
+    {sel:'#row0 .tool[data-w]:not([hidden])',demo:'drag',t:'Fire a weapon',x:'Hold a weapon icon, drag onto the field, and let go to fire at that spot. A shot you aim yourself recharges 35% faster than one the AI fires.'}
   ],
   cmdrun:[
     {sel:'#cmdA1',demo:'ability',t:'Commander ability',x:'Tap an ability when it glows. The cooldowns are long, so save your abilities for the moments when you need them. You can also press Q and E on a keyboard.'}
@@ -3272,7 +3282,7 @@ function update(dt){
   G.time+=dt;
   if(G.state!=='playing') return;
   if(G.pickQ>0){ openCards(); return; }
-  G.waveT+=dt/SPAWNSTRETCH; if(G.tag) G.tag.t+=dt;
+  G.waveT+=dt/TUNE.stretch; if(G.tag) G.tag.t+=dt;
   while(G.events.length&&G.events[0].t<=G.waveT) G.events.shift().fn();
   if(!G.events.length){
     const alive=G.enemies.some(e=>!e.dead)||G.warps.length>0;
@@ -4145,7 +4155,7 @@ function startWave(w){
 }
 function startLevel(n,world,elite){
   G.wd=WORLDS.find(w=>w.id===(world||P.world))||WORLDS[0]; applySkin(G.wd.id); G.elite=!!elite; UI.elite=G.elite;
-  G.n=n; G.hpS=hpScale(n)*(G.elite?1.6:1)*(G.wd.hp||1)*FIELDHP*MOBHP*(1+TOPX/OZ_Y); G.spS=(1+n*0.01)*MOBSPEED; G.NW=waveCount(n); G.wave=0;
+  G.n=n; G.hpS=hpScale(n)*(G.elite?1.6:1)*(G.wd.hp||1)*TUNE.field*TUNE.hp*(1+TOPX/OZ_Y); G.spS=(1+n*0.01)*TUNE.speed; G.NW=waveCount(n); G.wave=0;
   G.run={rz:{},hold:{},kw:{}}; G.ozFlash=0; G.maxHp=ST.armor(0); G.hp=G.maxHp; G.shMax=ST.shield(L('armor')); G.sh=G.shMax; G.shRg=ST.shreg(L('armor')); G.shT=0; G.shFlash=0; G.shBreak=0; G.shOk=Math.random()<SH_CARD_P; G.mend=0; G.peeps=[]; G.scorch=[]; G.pplT=1; G.earned=0; G.kills=0; G.pot=0; G.credits=0; G.boost={}; G.pity={}; G.sinceW=0; G.revived=false; G.shieldUntil=0; G.tools={}; G.pickQ=0; G.rerolls=1; G.offer=[]; G.superOn=0; G.superCd=10; G.chainT=2; G.blobs=[]; G.chips=[]; G.teachQ=[]; { const to=document.getElementById('teachov'); if(to) to.remove(); } G.cpend=null; G.flashA=0; G.sawCd=0; G.stormT=12; G.mort=2; G.mortT=0; G.saws=[]; G.bolts=[]; G.shells=[]; G.fires=[]; G.delay=[]; lastCred=0;
   cmdStart();
   G.enemies=[]; G.bullets=[]; G.parts=[]; G.splash=[]; G.rings=[]; G.floats=[]; G.mines=[]; G.fields=[]; G.boss=null; G.tag=null; G.warps=[];
@@ -4177,6 +4187,9 @@ function win(){
   let sInfo=null; if(!el){ const q=pr.stars||(pr.stars={}), had=q[G.n]|0, sb=starBitsFor(G.run||{rz:{},hold:{}},starHold(G.n),(G.prof||{}).feat); q[G.n]=had|sb; sInfo=starPay(sb&~had,had|sb,had); }
   logEv(el?'elite':'clear',G.n+(perfect?' perfect':'')+' '+G.wd.id);
   const sp=spAdd((replay?SP.replay:SP.first)+SP.star*popc(sInfo?sInfo.nb:0));
+  /* First clear of level 1: the player gets a starter weapon, already equipped, so level 2 opens with something to aim. */
+  let starter='';
+  if(!el&&G.n===1&&!replay&&!loadout().length&&!(P.tut&&P.tut.starter)){ if(toggleEquip('mortar')){ P.tut=P.tut||{}; P.tut.starter=1; starter='<div class="note" style="text-align:center;margin:6px 0;color:'+WCOL.mortar+'"><b>New weapon: the Mortar.</b> It is already equipped for level 2. The AI fires it for you, and any shot you aim yourself recharges faster.</div>'; } }
   if(el) pr.eclr[G.n]=true;
   else { pr.best=Math.max(pr.best,G.n); pr.sel=Math.min(G.n+1,LEVELS); if(perfect) pr.perf[G.n]=true; }
   save();
@@ -4184,7 +4197,7 @@ function win(){
   const last=G.n>=LEVELS, nx=G.n+1, canNext=!last&&(!el||!!pr.perf[nx]);
   const tx=(!el&&G.wd.id==='belt'&&STORY.win[G.n])||'';
   let h='<div class="ovb"><h1>'+(last?'Installment clear':(el?'Elite ':'Level ')+(el?G.n+' ':G.n+' ')+'clear')+'</h1>'
-    +(tx?'<p class="sub">'+tx+'</p>':'')+dropsHtml(got)+gemLine(gem)+(sInfo?starsRow(sInfo):'')
+    +(tx?'<p class="sub">'+tx+'</p>':'')+dropsHtml(got)+gemLine(gem)+starter+(sInfo?starsRow(sInfo):'')
     +'<div class="stat1"><span style="color:var(--red)" title="Base health left">'+ico('heart',16)+Math.round(frac*100)+'%</span>'
     +(!el&&perfect?'<span style="color:var(--fg)" title="Perfect">'+ico('pow',16)+(hadPerf?' Perfect':' Elite unlocked')+'</span>':'')+'</div>'
     +(sp?'<div class="stat1" style="color:var(--dim)">+'+sp+' Season XP</div>':'')
@@ -4946,7 +4959,7 @@ const CIC={rate:'tmp',dmg:'pow',barrel:'cap',pierce:'rch',slide:'tmp',arc:'bolt'
   mortpow:'pow',mortarea:'rch',mortcap:'cap',mortspd:'tmp',mortclu:'bolt',mortnap:'bolt'};
 const WIC={turret:'turret',base:'frt',mine:'mine',field:'field',chain:'chain',saw:'saw',mortar:'mortar'};
 function renderCards(){
-  let h='<div class="wrap"><div class="ahead"><h1>Level up</h1><div class="cr"><span class="lbl">Weapons</span><b>'+wcount()+'/'+LOADMAX+'</b></div></div>'
+  let h='<div class="wrap"><div class="ahead"><h1>Level up</h1></div>'
     +'<div class="note" style="margin-bottom:12px">Wave '+G.wave+'/'+G.NW+(G.pickQ>0?' \u00b7 +'+G.pickQ:'')+'</div><div class="pickgrid">';
   G.offer.forEach((c,i)=>{
     const wc=WEAPN[c.w], l=bst(c.id), tcol=RAR[c.t-1].color;
@@ -5012,8 +5025,8 @@ function pickCard(i){
 function rerollCards(){ if(G.state!=='cards'||G.rerolls<=0) return; G.rerolls--; G.offer=offerCards(); renderCards(); }
 /* perks list (button / U key) */
 function renderShop(){
-  let h='<div class="wrap"><div class="ahead"><h1>Perks</h1><div class="cr"><span class="lbl">Weapons</span><b>'+wcount()+'/'+LOADMAX+'</b></div></div>'
-    +'<div class="note" style="margin-bottom:12px">You start with just the turret. Every other weapon comes from a card, and you can carry up to four.</div>';
+  let h='<div class="wrap"><div class="ahead"><h1>Perks</h1></div>'
+    +'<div class="note" style="margin-bottom:12px">These are the upgrades you have picked this run. Weapons are equipped in the Arsenal before a battle.</div>';
   Object.keys(WEAPN).forEach(w=>{
     if(w!=='turret'&&w!=='base'&&!hasTool(w)) return;
     const own=CARDS.filter(c=>c.w===w&&!c.unlock&&bst(c.id)>0);
@@ -5155,15 +5168,15 @@ if(!P.intro){ const io=document.createElement('div'); io.id='introov'; io.innerH
 requestAnimationFrame(frame);
 
 /* test hook for headless checks */
-window.__rr={profileFor:profileFor,buildWave:buildWave,DOCS:DOCS,startWave:startWave,pickWave:pickWave,SHELVED:SHELVED,TABS:TABS,WCTL:WCTL,eligible:eligible,pickTarget:pickTarget,fire:fire,spawn:spawn,killEnemy:killEnemy,openPack:openPack,renderArmory:renderArmory,UI:UI,queueTeach:queueTeach,DEMO:DEMO,coach:coach,save:save,paintTurret:paintTurret,coachGrab:coachGrab,GR:GR,CTL:CTL,wReady:wReady,isManual:isManual,chainSnap:chainSnap,T:T,MOB:MOB,SKIN:SKIN,applySkin:applySkin,PKEYS:PKEYS,cry:cry,cryAdd:cryAdd,crySpend:crySpend,cryLegacy:cryLegacy,loadCry:loadCry,cmdPrice:cmdPrice,cmdMix:cmdMix,CRANK:CRANK,PACKS:PACKS,useCmd:useCmd,cmdBuy:cmdBuy,cmdNodeBuy:cmdNodeBuy,cmdP:cmdP,cmdLeft:cmdLeft,cmdEarned:cmdEarned,CMDS:CMDS,kName:kName,fireball:fireball,chip:chip,openTeach:openTeach,fireMortar:fireMortar,shape:shape,spawn:spawn,G:G,get P(){return P;},set P(v){P=v;},newP:newP,startLevel:startLevel,update:update,UPS:UPS,waveCount:waveCount,levelPool:levelPool,hpScale:hpScale,tune:(a,b,c,d,m,k,bk,wh,pm,lk,c0,cg)=>{if(lk!==undefined)LATEK=lk;if(pm!==undefined)PICKM=pm;if(wh!==undefined)WAVEHP=wh;if(k!==undefined)HPK=k;if(m!==undefined)MOBN=m;if(c0!==undefined)CDROP0=c0;if(cg!==undefined)CDROPG=cg;HPG=a;POOL0=b;POOLG=c;if(d!==undefined)HPA=d;},bst:bst,pickCard:pickCard,CARDS:CARDS,offerCards:offerCards,applyCard:applyCard,hasTool:hasTool,fireMortar:fireMortar,canMortar:canMortar,T:T,wcount:wcount,canBuy:canBuy,buyUp:buyUp,upCost:upCost,upStage:upStage,bandOf:bandOf,awardCards:awardCards,dropCount:dropCount,dropVal:dropVal,useEnergy:useEnergy,enTick:enTick,tryStart:tryStart,win:win,gameOver:gameOver,profileFor:profileFor,MOB:MOB,WORLDS:WORLDS,briefFor:briefFor,welcomeReady:welcomeReady,claimWelcome:claimWelcome,premActive:premActive,passActive:passActive,spAdd:spAdd,spClaim:spClaim,ssCur:ssCur,seasonNo:seasonNo,tierRw:tierRw,buyGems:buyGems,claim:claim,showGain:showGain,shopHtml:shopHtml,toArmory:toArmory};
+window.__rr={handsOn:handsOn,TUNE:TUNE,toggleEquip:toggleEquip,loadout:loadout,wcount:wcount,profileFor:profileFor,buildWave:buildWave,DOCS:DOCS,startWave:startWave,pickWave:pickWave,SHELVED:SHELVED,TABS:TABS,WCTL:WCTL,eligible:eligible,pickTarget:pickTarget,fire:fire,spawn:spawn,killEnemy:killEnemy,openPack:openPack,renderArmory:renderArmory,UI:UI,queueTeach:queueTeach,DEMO:DEMO,coach:coach,save:save,paintTurret:paintTurret,coachGrab:coachGrab,GR:GR,CTL:CTL,wReady:wReady,isManual:isManual,chainSnap:chainSnap,T:T,MOB:MOB,SKIN:SKIN,applySkin:applySkin,PKEYS:PKEYS,cry:cry,cryAdd:cryAdd,crySpend:crySpend,cryLegacy:cryLegacy,loadCry:loadCry,cmdPrice:cmdPrice,cmdMix:cmdMix,CRANK:CRANK,PACKS:PACKS,useCmd:useCmd,cmdBuy:cmdBuy,cmdNodeBuy:cmdNodeBuy,cmdP:cmdP,cmdLeft:cmdLeft,cmdEarned:cmdEarned,CMDS:CMDS,kName:kName,fireball:fireball,chip:chip,openTeach:openTeach,fireMortar:fireMortar,shape:shape,spawn:spawn,G:G,get P(){return P;},set P(v){P=v;},newP:newP,startLevel:startLevel,update:update,UPS:UPS,waveCount:waveCount,levelPool:levelPool,hpScale:hpScale,tune:(a,b,c,d,m,k,bk,wh,pm,lk,c0,cg)=>{if(lk!==undefined)LATEK=lk;if(pm!==undefined)PICKM=pm;if(wh!==undefined)WAVEHP=wh;if(k!==undefined)HPK=k;if(m!==undefined)MOBN=m;if(c0!==undefined)CDROP0=c0;if(cg!==undefined)CDROPG=cg;HPG=a;POOL0=b;POOLG=c;if(d!==undefined)HPA=d;},bst:bst,pickCard:pickCard,CARDS:CARDS,offerCards:offerCards,applyCard:applyCard,hasTool:hasTool,fireMortar:fireMortar,canMortar:canMortar,T:T,wcount:wcount,canBuy:canBuy,buyUp:buyUp,upCost:upCost,upStage:upStage,bandOf:bandOf,awardCards:awardCards,dropCount:dropCount,dropVal:dropVal,useEnergy:useEnergy,enTick:enTick,tryStart:tryStart,win:win,gameOver:gameOver,profileFor:profileFor,MOB:MOB,WORLDS:WORLDS,briefFor:briefFor,welcomeReady:welcomeReady,claimWelcome:claimWelcome,premActive:premActive,passActive:passActive,spAdd:spAdd,spClaim:spClaim,ssCur:ssCur,seasonNo:seasonNo,tierRw:tierRw,buyGems:buyGems,claim:claim,showGain:showGain,shopHtml:shopHtml,toArmory:toArmory};
 })();
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 134</div>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 135</div>
 <script>
 /* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
-(function(){ const BUILD=134; let busy=false, shown=false;
+(function(){ const BUILD=135; let busy=false, shown=false;
   const inRun=()=>{ try{ return typeof G!=='undefined'&&(G.state==='playing'||G.state==='cards'||G.state==='shop'||G.state==='paused'||G.state==='teach'||G.state==='ctl'); }catch(e){ return false; } };
   function wipeReload(){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
     if(n>=3) return;
