@@ -2234,7 +2234,7 @@ function fire(target){
   if(!G.blobs) G.blobs=[]; if(G.blobs.length<40) G.blobs.push({x:T.x,y:TY()-34,r:3,max:9+2.5*n+1.2*L('dmg')+2*bq('dmg'),t:0,life:0.12,color:'#00f0ff'});
 }
 /* Would a shot fired from the turret's current x hit e? Checks every barrel's straight line against e's predicted position. */
-const inRange=e=>Math.hypot(e.x-T.x,TY()-24-e.y)-e.r<=TUR_RANGE+TOPX;   /* the whole field, including the extra band on tall screens */
+const inRange=e=>Math.hypot(e.x-T.x,TY()-24-e.y)-e.r<=TUR_RANGE+TOPX+360;   /* the whole field, including the extra band on tall screens */
 /* Where should the turret stand so the best-placed barrel's lane meets e? Solves each barrel's flight time against e's own motion, then takes the barrel that needs the least slewing. */
 function aimFor(e){
   const n=barrelN(), sy=TY()-24; let best=null;
@@ -5157,10 +5157,10 @@ window.__rr={profileFor:profileFor,buildWave:buildWave,DOCS:DOCS,startWave:start
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 129</div>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 130</div>
 <script>
 /* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
-(function(){ const BUILD=129; let busy=false, shown=false;
+(function(){ const BUILD=130; let busy=false, shown=false;
   const inRun=()=>{ try{ return typeof G!=='undefined'&&(G.state==='playing'||G.state==='cards'||G.state==='shop'||G.state==='paused'||G.state==='teach'||G.state==='ctl'); }catch(e){ return false; } };
   function wipeReload(){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
     if(n>=3) return;
