@@ -14,7 +14,7 @@ const loadApi=(shelf)=>{
 const ctx={console,Date,Math,Set,Object,Array,JSON,saves:0,toasts:[]};
 vm.createContext(ctx);
 vm.runInContext(`
-const LEVELS=50; const OZ_Y=439; const rollType=()=>'pow'; const CPT=[1,1,2,3];
+const LEVELS=50; const OZ_Y=439; const ozY=()=>439; const rollType=()=>'pow'; const CPT=[1,1,2,3];
 ${tables}
 ${shape}
 let P={seen:{},prog:{},st:newSt(),gems:0,ce:{pow:0,tmp:0,rch:0,cap:0,frt:0}};

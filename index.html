@@ -238,6 +238,16 @@ button:focus-visible{outline:2px solid var(--yellow); outline-offset:2px}
 .chip{font-size:11px; font-weight:600; letter-spacing:.06em; padding:3px 7px; border:1px solid color-mix(in srgb,var(--c,var(--dim)) 70%,#000); color:var(--c,var(--fg)); white-space:nowrap}
 .chip.boss{--c:var(--red)}
 .note{font-size:12px; color:var(--dim); line-height:1.4}
+.loadout{display:flex; flex-direction:column; gap:7px; margin:4px 0 10px; padding:9px 10px; border:1px solid var(--line); border-radius:12px; background:rgba(0,240,255,.04)}
+.loadout .lrow{display:flex; flex-wrap:wrap; align-items:center; gap:6px}
+.loadout .lbl{font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); margin-right:2px}
+.loadout .lbl b{color:var(--fg)}
+.lslot{display:inline-flex; align-items:center; gap:6px; padding:5px 10px; font:inherit; font-size:12px; font-weight:700; border-radius:99px; border:1px dashed rgba(255,255,255,.22); color:var(--dim); background:transparent}
+.lslot.on{border:1px solid var(--cyan); border-style:solid; color:var(--fg); background:rgba(0,240,255,.1); cursor:pointer}
+.lslot i{font-style:normal; opacity:.7}
+.loadout .leq{align-self:flex-start}
+.loadrow{display:flex; justify-content:center; align-items:center; gap:8px; margin:6px 0 0; padding:7px 12px; font:inherit; font-size:12px; color:var(--dim); background:transparent; border:1px solid var(--line); border-radius:99px}
+.loadrow b{color:var(--fg)}
 .tabs{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px}
 .tab{font-size:12px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; padding:9px 14px; color:var(--dim); background:#000; border:1px solid var(--line); cursor:pointer}
 .tab[aria-selected="true"]{color:var(--fg); border-color:var(--c); background:color-mix(in srgb,var(--c) 16%,#000); box-shadow:0 0 12px color-mix(in srgb,var(--c) 40%,transparent)}
@@ -926,7 +936,10 @@ body.menu{background:
 
 /* ================= constants ================= */
 const W=600, H=800, GROUND=732, TURRET_Y=GROUND-14, BS=640, LEVELS=50;
+const TY=()=>TURRET_Y+arc(T.x);
 const BARREL_SPREAD=0.0595, TUR_RANGE=640;   /* angle between barrels (was 0.085, 30% tighter so volleys leave fewer gaps); the auto turret only engages things this close to its muzzle */
+/* A very gentle planetary curve: the ozone line, the ground, the city skyline and the turret's glide path all follow the same arc, a little higher in the middle than at the edges. */
+const CURV=14, arc=x=>{ const u=(x-W/2)/(W/2); return -CURV*(1-u*u); }, ozY=x=>OZ_Y+arc(x);
 const OZ_Y=Math.round(GROUND*0.6);   /* the ozone layer: defense is judged here. A mob must die above this line to count as held. */
 const C={cyan:'#00f0ff',magenta:'#ff2bd6',lime:'#b6ff00',violet:'#9d4dff',orange:'#ff8a00',amber:'#ffc400',yellow:'#fff200',red:'#ff3860',blue:'#3d8bff',mint:'#6dffb0',steel:'#dfeaf2'};
 const KIND={k:{name:'Kinetic',color:C.cyan},b:{name:'Blast',color:C.orange},e:{name:'Energy',color:C.violet}};
@@ -1101,6 +1114,8 @@ const RAR=[{name:'Mk I',ab:'I',color:'#9fb2be'},{name:'Mk II',ab:'II',color:'#4f
    To bring one back, delete its id from this list (empty it to restore both); nothing else needs to change. */
 /* Tabs left out of the Arsenal screen only. Their upgrades still exist and keep working; just nothing is offered to buy there. Remove 'base' from this list to bring the Base tab back. */
 const ARSENAL_HIDE=['base'], arsenalHidden=k=>ARSENAL_HIDE.indexOf(k)>=0;
+/* Single upgrades left out of the Arsenal: chain lightning's Reach (base jumps) and the mortar's Capacity (charges). It stays at level 0 and the weapon works as before. Delete the id to bring it back. */
+const UP_HIDE=['cjmp','mortmax'], upHidden=u=>UP_HIDE.indexOf(u.id)>=0;
 const SHELVED=['mine','saw'];
 const shelved=k=>SHELVED.indexOf(k)>=0;
 const TOOLS={
@@ -1314,6 +1329,15 @@ const SEENK='nd-seen-v1';
 try{ if(!NDStore.get(SEENK)&&Object.keys(P.prog||{}).some(k=>(P.prog[k].best||0)>1)&&!(P.seenW&&Object.keys(P.seenW).length)){ P.seenW={}; ['turret','mine','field','chain','saw','mortar'].forEach(k=>P.seenW[k]=1); } } catch(e){}
 try{ const q=JSON.parse(NDStore.get(SEENK)||'{}'); P.seen=Object.assign({},q.m||{},P.seen||{}); P.seenW=Object.assign({},q.w||{},P.seenW||{}); }catch(e){}
 function persistSeen(){ try{ NDStore.set(SEENK,JSON.stringify({m:P.seen||{},w:P.seenW||{}})); }catch(e){} }
+/* Loadout: a run starts with the turret plus at most LOADMAX equipped weapons, chosen in the Arsenal beforehand. Weapons are no longer found mid-run. Kept on this device. */
+const LOADK='nd_loadout_v1', LOADMAX=2, EQW=['mine','field','chain','saw','mortar'];
+let LOAD=[]; try{ const q=JSON.parse(NDStore.get(LOADK)||'[]'); if(Array.isArray(q)) LOAD=q; }catch(e){}
+const loadout=()=>LOAD.filter((w,i)=>EQW.indexOf(w)>=0&&!shelved(w)&&LOAD.indexOf(w)===i).slice(0,LOADMAX);
+function toggleEquip(w){
+  if(EQW.indexOf(w)<0||shelved(w)) return false; const cur=loadout(), i=cur.indexOf(w);
+  if(i>=0) cur.splice(i,1); else if(cur.length<LOADMAX) cur.push(w); else return false;
+  LOAD=cur; try{ NDStore.set(LOADK,JSON.stringify(LOAD)); }catch(e){} return true;
+}
 applySkin(P.world);
 /* ================= testers + seasons (settings; the features live with the shop code) ================= */
 /* TESTERS_OPEN: while true, every account that plays is marked a tester, and keeps that mark for good.
@@ -1736,8 +1760,8 @@ function fireWeaponAt(w,x,y){
   if(w==='mortar') return fireMortar(x,y);
   if(w==='chain'){ const tg=chainSnap(x,y); if(!tg) return false; G.cpend={e:tg,t:0.3,max:0.3}; G.chainT=chainCd(); Music.place(true); return true; }
   if(w==='saw'){
-    const a=clamp(Math.atan2(x-T.x,TURRET_Y-30-y),-1.25,1.25), r=ST.ssz(L('ssz'))*(bst('sbig')?1.6:1), life=ST.slife(L('sspd'))+2*bq('sspeed');
-    G.saws.push({x:T.x,y:TURRET_Y-30,vx:Math.sin(a)*430,vy:-Math.cos(a)*430,r:r,life:life,max:life,rot:0}); G.sawCd=0.56; Music.place(false); return true;
+    const a=clamp(Math.atan2(x-T.x,TY()-30-y),-1.25,1.25), r=ST.ssz(L('ssz'))*(bst('sbig')?1.6:1), life=ST.slife(L('sspd'))+2*bq('sspeed');
+    G.saws.push({x:T.x,y:TY()-30,vx:Math.sin(a)*430,vy:-Math.cos(a)*430,r:r,life:life,max:life,rot:0}); G.sawCd=0.56; Music.place(false); return true;
   }
   return false;
 }
@@ -1889,7 +1913,7 @@ function stSpawn(e){
   const s=stOf(), w=(G.wd&&G.wd.id)||'belt';
   s.enc[e.type]=(s.enc[e.type]||0)+1; (s.world[w]||(s.world[w]={}))[e.type]=1;
   { const q=pwOf(w); q.enc[e.type]=(q.enc[e.type]||0)+1; }
-  if(e.y>=OZ_Y) e.ozx=1;   /* appeared below the ozone (warp-ins, formations): cannot be judged against it */
+  if(e.y>=ozY(e.x)) e.ozx=1;   /* appeared below the ozone (warp-ins, formations): cannot be judged against it */
   achDirty=true; achCheck();
 }
 function stHit(e,src,kind,m){
@@ -2198,16 +2222,16 @@ function fire(target){
   const base=ST.dmg(L('dmg'))*(bst('dmg')?CARD_PWR:1)*(sup?1.5:1)*cmDmg(), cc=(G.cm?G.cm.M.crit:0);
   for(let i=0;i<n;i++){
     const a=(i-(n-1)/2)*BARREL_SPREAD, dmg=Math.random()<cc?base*2.5:base;
-    G.bullets.push({x:T.x+Math.sin(a)*24,y:TURRET_Y-24,vx:Math.sin(a)*BS,vy:-Math.cos(a)*BS,dmg:dmg,pierce:pierce,hits:[],target:target});
+    G.bullets.push({x:T.x+Math.sin(a)*24,y:TY()-24,vx:Math.sin(a)*BS,vy:-Math.cos(a)*BS,dmg:dmg,pierce:pierce,hits:[],target:target});
   }
   T.cool=ST.rate(L('rate'))*(bst('rate')?1/CARD_SPD:1)*(sup?0.5:1)/cmRate(); T.recoil=1; Music.shot();
-  if(!G.blobs) G.blobs=[]; if(G.blobs.length<40) G.blobs.push({x:T.x,y:TURRET_Y-34,r:3,max:9+2.5*n+1.2*L('dmg')+2*bq('dmg'),t:0,life:0.12,color:'#00f0ff'});
+  if(!G.blobs) G.blobs=[]; if(G.blobs.length<40) G.blobs.push({x:T.x,y:TY()-34,r:3,max:9+2.5*n+1.2*L('dmg')+2*bq('dmg'),t:0,life:0.12,color:'#00f0ff'});
 }
 /* Would a shot fired from the turret's current x hit e? Checks every barrel's straight line against e's predicted position. */
-const inRange=e=>Math.hypot(e.x-T.x,TURRET_Y-24-e.y)-e.r<=TUR_RANGE;
+const inRange=e=>Math.hypot(e.x-T.x,TY()-24-e.y)-e.r<=TUR_RANGE;
 /* Where should the turret stand so the best-placed barrel's lane meets e? Solves each barrel's flight time against e's own motion, then takes the barrel that needs the least slewing. */
 function aimFor(e){
-  const n=barrelN(), sy=TURRET_Y-24; let best=null;
+  const n=barrelN(), sy=TY()-24; let best=null;
   for(let i=0;i<n;i++){
     const a=(i-(n-1)/2)*BARREL_SPREAD, sn=Math.sin(a), cs=Math.cos(a), cl=cs*BS+(e.vy||0); if(cl<=1) continue;
     let t=Math.max(0,(sy-e.y)/cl); const ex=e.x+(e.vx||0)*t, nx=ex-sn*24-sn*BS*t;
@@ -2216,7 +2240,7 @@ function aimFor(e){
   return clamp(best===null?e.x:best,24,W-24);
 }
 function hitsFrom(e,loose){
-  const n=barrelN(), sy=TURRET_Y-24, tol=(e.r*0.85+2)*(loose||1);
+  const n=barrelN(), sy=TY()-24, tol=(e.r*0.85+2)*(loose||1);
   if(e.y>=sy||e.y<-e.r*0.3) return false;
   for(let i=0;i<n;i++){
     const a=(i-(n-1)/2)*BARREL_SPREAD, sn=Math.sin(a), cs=Math.cos(a), t=(sy-e.y)/(cs*BS+(e.vy||0)); if(t<=0) continue;
@@ -2265,7 +2289,7 @@ function inLine(tg,pend){
 function updateTurret(dt){
   const slide=ST.slide(L('rate'))*(bst('slide')?CARD_SLIDE:1);
   T.cool-=dt; T.recoil=Math.max(0,T.recoil-dt*6);
-  if(bst('super')>0){ if(G.superOn>0) G.superOn-=dt; else { G.superCd-=dt; if(G.superCd<=0){ G.superOn=4; G.superCd=22-3*bst('super'); float(T.x,TURRET_Y-60,'SUPERCHARGE',C.yellow); G.rings.push({x:T.x,y:TURRET_Y-14,r:10,max:90,life:0.5,t:0,color:C.yellow}); } } }
+  if(bst('super')>0){ if(G.superOn>0) G.superOn-=dt; else { G.superCd-=dt; if(G.superCd<=0){ G.superOn=4; G.superCd=22-3*bst('super'); float(T.x,TY()-60,'SUPERCHARGE',C.yellow); G.rings.push({x:T.x,y:TY()-14,r:10,max:90,life:0.5,t:0,color:C.yellow}); } } }
   if(input.active){
     /* player is holding a finger on the field: they steer, the turret keeps firing */
     T.target=null; T.idle=0;
@@ -2497,14 +2521,14 @@ const FX={
   pierce(f,p,q){ q.pierceT=Math.max(q.pierceT||0,f.t*p); q.pierceN=f.n; }
 };
 function runFx(q,i){
-  const ab=q.c.ab[i], M=q.M, p=i===0?M.pow1:M.pow2, col=q.c.color, ty=TURRET_Y-30;
+  const ab=q.c.ab[i], M=q.M, p=i===0?M.pow1:M.pow2, col=q.c.color, ty=TY()-30;
   float(T.x,ty-30,ab.n.toUpperCase(),col); G.rings.push({x:T.x,y:ty,r:10,max:300,life:0.6,t:0,color:col}); burst(T.x,ty,col,22,260,2);
   for(const f of ab.fx) if(FX[f.k]) FX[f.k](f,p,q,M);
 }
 function useCmd(i){
   const q=G.cm; if(!q||G.state!=='playing') return false; const M=q.M, c=q.c;
   if(i===1&&!M.unlock2) return false; if((i===0?q.t1:q.t2)>0) return false;
-  const col=c.color, ty=TURRET_Y-30;
+  const col=c.color, ty=TY()-30;
   CF.cmd++;
   if(c.ab[i].fx) runFx(q,i);
   else if(c.id==='warden'){
@@ -2699,7 +2723,7 @@ const COACH={
     {sel:'.pvgo',ok:'.pvwrap [data-act="deploy"]',act:'tap',t:'Deploy',x:'Tap Battle to start level 1. Each run costs a little energy, and your energy refills on its own over time.'}
   ],
   /* each menu explains itself the first time you open it */
-  nav_arsenal:[{sel:'#content .wpns',t:'Arsenal',x:'Spend crystals here to upgrade your turret and each of your weapons. Commanders unlock at level '+CMD_LVL+'.'}],
+  nav_arsenal:[{sel:'#content .wpns',t:'Arsenal',x:'Spend crystals here to upgrade your turret and each of your weapons. You can equip up to '+LOADMAX+' weapons for a battle, and you must do it here before you start. Commanders unlock at level '+CMD_LVL+'.'}],
   nav_codex:[{t:'Codex',x:'The Codex lists every mob you have met and the damage types each one is weak to. It also tracks your achievements.'}],
   nav_shop:[{sel:'.topbar .pill[title="Gems"]',t:'Shop',x:'The shop has a daily chest, free gems, crystal crates, and the season pass. Crystals are used to upgrade your weapons and commanders.'}],
   nav_worlds:[{t:'Worlds',x:'Earn stars to open new worlds. Each world is attacked by a different enemy faction.'}],
@@ -2980,7 +3004,7 @@ function updateSaws(dt){
   const want=1+bst('scount');
   if(G.saws.length<want&&G.sawCd<=0&&!aiOff('saw')&&G.enemies.some(e=>!e.dead&&e.y>0)){
     const a=rnd(-0.55,0.55), r=ST.ssz(L('ssz'))*(bst('sbig')?1.6:1), life=ST.slife(L('sspd'))+2*bq('sspeed');
-    G.saws.push({x:T.x,y:TURRET_Y-30,vx:Math.sin(a)*430,vy:-Math.cos(a)*430,r:r,life:life,max:life,rot:0});
+    G.saws.push({x:T.x,y:TY()-30,vx:Math.sin(a)*430,vy:-Math.cos(a)*430,r:r,life:life,max:life,rot:0});
     G.sawCd=0.56;
   }
   const dmg=ST.sdmg(L('sdmg'))*Math.pow(1.4,bq('spow'))*(bst('sbig')?1.5:1);
@@ -3017,7 +3041,7 @@ function mortR(){ return ST.mortrad(L('mortrad'))*(1+0.15*bq('mortarea'))*(bst('
 function canMortar(){ return hasTool('mortar')&&G.mort>=1; }
 function fireMortar(x,y){
   if(!canMortar()) return false;
-  G.mort--; const tx=clamp(x,24,W-24), ty=clamp(y,110,GROUND-90), sx0=T.x, sy0=TURRET_Y-30, dist=Math.hypot(tx-sx0,ty-sy0);
+  G.mort--; const tx=clamp(x,24,W-24), ty=clamp(y,110,GROUND-90), sx0=T.x, sy0=TY()-30, dist=Math.hypot(tx-sx0,ty-sy0);
   G.shells.push({sx:sx0,sy:sy0,tx:tx,ty:ty,t:0,dur:0.8+0.9*dist/700,x:sx0,y:sy0});
   /* launch: muzzle blast at the turret + instant flare at the aim point */
   burst(sx0,sy0,'#ffffff',10,260); burst(sx0,sy0,C.amber,18,220); G.rings.push({x:sx0,y:sy0,r:6,max:46,life:0.3,t:0,color:C.amber}); G.shake=Math.min(1,G.shake+0.3);
@@ -3030,7 +3054,7 @@ function autoMortar(dt){
   const R=mortR(), live=G.enemies.filter(e=>!e.dead&&e.y>50&&e.y<GROUND-60);
   if(!live.length) return;
   let best=null, bs=0;
-  const sx=T.x, sy=TURRET_Y-30, lkOn=live.some(isLeaker), yCap=lkOn?GROUND-90:OZ_Y-OZ_CAP;
+  const sx=T.x, sy=TY()-30, lkOn=live.some(isLeaker), yCap=lkOn?GROUND-90:OZ_Y-OZ_CAP;
   for(const c of live){
     if(!lkOn&&c.y>OZ_Y-OZ_CAP) continue;      /* nothing is leaking: only shell mobs that are still above the line */
     let tx=c.x, ty=c.y;
@@ -3173,12 +3197,12 @@ function updateEnemies(dt){
     if(TOPX>0&&e.y<0&&e.vy&&e.type!=='invader'&&e.type!=='boss'&&!e.latched) e.y+=e.vy*d*3;   /* cross the extra band quickly so tall screens do not slow the waves */
     if(e.carry&&e.y>=250) releaseCarry(e,true);
     if(e.regen&&e.hp<e.maxhp&&G.time-e.lh>1.2) e.hp=Math.min(e.maxhp,e.hp+e.maxhp*e.regen*d);
-    if(!e.oz&&!e.ozx&&e.y>=OZ_Y&&G.sh>0&&e.type!=='boss'&&G.time>=(G.shieldUntil||0)){
+    if(!e.oz&&!e.ozx&&e.y>=ozY(e.x)&&G.sh>0&&e.type!=='boss'&&G.time>=(G.shieldUntil||0)){
       const cost=Math.max(1,e.dmg*SH_COST);
-      if(G.sh>=cost){ G.sh-=cost; G.shT=0; G.shFlash=0.6; G.rings.push({x:e.x,y:OZ_Y,r:e.r*0.6,max:e.r*2.4,life:0.35,t:0,color:C.cyan}); float(e.x,OZ_Y-18,'BLOCKED',C.cyan); killEnemy(e,true,'shield'); if(G.sh<=0.001){ G.sh=0; shBroke(); } continue; }
+      if(G.sh>=cost){ G.sh-=cost; G.shT=0; G.shFlash=0.6; G.rings.push({x:e.x,y:ozY(e.x),r:e.r*0.6,max:e.r*2.4,life:0.35,t:0,color:C.cyan}); float(e.x,ozY(e.x)-18,'BLOCKED',C.cyan); killEnemy(e,true,'shield'); if(G.sh<=0.001){ G.sh=0; shBroke(); } continue; }
       G.sh=0; shBroke();
     }
-    if(!e.oz&&!e.ozx&&e.y>=OZ_Y){ e.oz=1; G.ozFlash=0.5; G.rings.push({x:e.x,y:OZ_Y,r:e.r*0.5,max:e.r*2.2,life:0.35,t:0,color:C.red}); }
+    if(!e.oz&&!e.ozx&&e.y>=ozY(e.x)){ e.oz=1; G.ozFlash=0.5; G.rings.push({x:e.x,y:ozY(e.x),r:e.r*0.5,max:e.r*2.2,life:0.35,t:0,color:C.red}); }
     if(e.type!=='boss'&&e.y+e.r>=GROUND) leak(e);
   }
 }
@@ -3342,7 +3366,7 @@ function drawEnemy(e){
   ctx.restore();
   if(e.vet){ ctx.save(); ctx.shadowBlur=0; ctx.strokeStyle=C.yellow; ctx.lineWidth=1.6; ctx.globalAlpha=0.85; ctx.beginPath(); ctx.arc(e.x,e.y,e.r+4,0,6.2832); ctx.stroke(); ctx.globalAlpha=0.45; ctx.beginPath(); ctx.arc(e.x,e.y,e.r+8,0,6.2832); ctx.stroke(); ctx.restore(); }
   if(e.carry){ ctx.save(); ctx.shadowBlur=0; ctx.strokeStyle=C.yellow; ctx.lineWidth=1.4; ctx.setLineDash([4,5]); ctx.lineDashOffset=-G.time*20; ctx.beginPath(); ctx.arc(e.x,e.y,e.r+13,0,6.2832); ctx.stroke(); ctx.setLineDash([]); ctx.fillStyle=MOB[e.carry].color; for(let k=0;k<3;k++){ const a=G.time*2+k*2.094; ctx.beginPath(); ctx.arc(e.x+Math.cos(a)*(e.r+13),e.y+Math.sin(a)*(e.r+13),2.6,0,6.2832); ctx.fill(); } ctx.restore(); }
-  if(e.latched){ ctx.shadowBlur=0; ctx.strokeStyle='rgba(255,56,96,.7)'; ctx.lineWidth=1.4; ctx.beginPath(); ctx.moveTo(e.x,e.y); ctx.lineTo(T.x,TURRET_Y-6); ctx.stroke(); }
+  if(e.latched){ ctx.shadowBlur=0; ctx.strokeStyle='rgba(255,56,96,.7)'; ctx.lineWidth=1.4; ctx.beginPath(); ctx.moveTo(e.x,e.y); ctx.lineTo(T.x,TY()-6); ctx.stroke(); }
   if(e.slow<1){ ctx.shadowBlur=0; ctx.strokeStyle='rgba(157,77,255,.55)'; ctx.lineWidth=1.2; ctx.beginPath(); ctx.arc(e.x,e.y,e.r+5,0,6.2832); ctx.stroke(); }
   if(e.type!=='boss'&&e.maxhp>1.5&&e.hp<e.maxhp&&e.hp>0){
     if(e.tr===undefined) e.tr=e.maxhp; if(e.tr<e.hp) e.tr=e.hp;
@@ -3363,7 +3387,7 @@ function drawOzone(){
   const t=G.time, fl=G.ozFlash||0, y=OZ_Y, a=0.5+0.12*Math.sin(t*1.6);
   ctx.save(); ctx.shadowBlur=0;
   const g=ctx.createLinearGradient(0,y-26,0,y+16); g.addColorStop(0,'rgba(0,240,255,0)'); g.addColorStop(0.62,fl>0?'rgba(255,56,96,'+(0.10+0.25*fl)+')':'rgba(0,240,255,0.09)'); g.addColorStop(1,'rgba(157,77,255,0)');
-  ctx.fillStyle=g; ctx.fillRect(0,y-26,W,42);
+  ctx.fillStyle=g; for(let x=0;x<W;x+=6){ ctx.save(); ctx.translate(0,arc(x+3)); ctx.fillRect(x,y-26,6.5,42); ctx.restore(); }
   if(G.shMax){ /* the shield: a row of energy cells that dim as it is spent */
     const f=Math.max(0,G.sh/G.shMax), sf=G.shFlash||0, br=G.shBreak||0, N=20, on=Math.ceil(f*N-0.001);
     ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.lineCap='round';
@@ -3371,15 +3395,15 @@ function drawOzone(){
       const x0=i*(W/N)+3, x1=(i+1)*(W/N)-3, lit=i<on, fl2=br>0?(Math.sin(t*40+i*3)>0.2?br:0):0;
       const al=lit?(0.35+0.4*f+0.5*sf):(0.06+0.5*fl2);
       ctx.strokeStyle=br>0&&!lit?'rgba(255,90,120,'+al+')':'rgba(130,250,255,'+al+')'; ctx.lineWidth=lit?2.2:1;
-      ctx.beginPath(); ctx.moveTo(x0,y-1+Math.sin(t*2+i)*0.8); ctx.lineTo(x1,y-1+Math.sin(t*2+i+1)*0.8); ctx.stroke();
-      if(lit){ ctx.globalAlpha=0.12+0.22*sf; ctx.fillStyle='rgba(0,240,255,1)'; ctx.fillRect(x0,y-9,x1-x0,9); ctx.globalAlpha=1; }
+      ctx.beginPath(); ctx.moveTo(x0,y+arc(x0)-1+Math.sin(t*2+i)*0.8); ctx.lineTo(x1,y+arc(x1)-1+Math.sin(t*2+i+1)*0.8); ctx.stroke();
+      if(lit){ ctx.globalAlpha=0.12+0.22*sf; ctx.fillStyle='rgba(0,240,255,1)'; ctx.save(); ctx.translate(0,arc((x0+x1)/2)); ctx.fillRect(x0,y-9,x1-x0,9); ctx.restore(); ctx.globalAlpha=1; }
     }
     ctx.restore();
   }
   ctx.strokeStyle=fl>0?'rgba(255,90,120,'+(0.55+0.4*fl)+')':'rgba(125,249,255,'+a*0.55+')'; ctx.lineWidth=1.4; ctx.setLineDash([14,9]); ctx.lineDashOffset=-t*18;
-  ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); ctx.setLineDash([]);
+  ctx.beginPath(); ctx.moveTo(0,y); ctx.quadraticCurveTo(W/2,y-2*CURV,W,y); ctx.stroke(); ctx.setLineDash([]);
   ctx.fillStyle='rgba(125,249,255,.38)'; ctx.font='600 10px "Chakra Petch", monospace'; ctx.textAlign='right'; ctx.fillText('OZONE',W-8,y-6); ctx.textAlign='left';
-  if(CF.oz){ const k=0.5+0.5*Math.sin(t*6); ctx.globalCompositeOperation='lighter'; ctx.strokeStyle='rgba(125,249,255,'+(0.45+0.5*k)+')'; ctx.shadowColor='#00f0ff'; ctx.shadowBlur=(10+10*k)*sx; ctx.lineWidth=3+2*k; ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); ctx.shadowBlur=0;
+  if(CF.oz){ const k=0.5+0.5*Math.sin(t*6); ctx.globalCompositeOperation='lighter'; ctx.strokeStyle='rgba(125,249,255,'+(0.45+0.5*k)+')'; ctx.shadowColor='#00f0ff'; ctx.shadowBlur=(10+10*k)*sx; ctx.lineWidth=3+2*k; ctx.beginPath(); ctx.moveTo(0,y); ctx.quadraticCurveTo(W/2,y-2*CURV,W,y); ctx.stroke(); ctx.shadowBlur=0;
     ctx.fillStyle='rgba(125,249,255,'+(0.5+0.5*k)+')'; for(let i=0;i<5;i++){ const ax=W*(i+0.5)/5, ay=y-18-6*k; ctx.beginPath(); ctx.moveTo(ax,ay+10); ctx.lineTo(ax-7,ay); ctx.lineTo(ax+7,ay); ctx.closePath(); ctx.fill(); } ctx.globalCompositeOperation='source-over'; }
   ctx.restore();
   drawMend();
@@ -3387,7 +3411,7 @@ function drawOzone(){
 /* Commander shield regen: a twin-strand neon tether climbs from the turret to the ozone, with light pulses riding up it */
 function drawMend(){
   const q=G.cm; if(!q||!(q.mendT>0)) return;
-  const t=G.time, a=Math.min(1,q.mendT*3,(q.mendMax-q.mendT)*5), x0=T.x, y0=TURRET_Y-38, y1=OZ_Y+2, col=q.c.color, hh=y0-y1;
+  const t=G.time, a=Math.min(1,q.mendT*3,(q.mendMax-q.mendT)*5), x0=T.x, y0=TY()-38, y1=OZ_Y+2, col=q.c.color, hh=y0-y1;
   ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.lineCap='round';
   for(let s=0;s<2;s++){
     ctx.strokeStyle=s?'rgba(190,255,255,'+(0.5*a)+')':col; ctx.globalAlpha=(s?1:0.75)*a; ctx.shadowColor=col; ctx.shadowBlur=14*sx; ctx.lineWidth=s?1.2:2.2;
@@ -3434,12 +3458,12 @@ function drawGround(pulse){
   const t=G.time;
   /* distant skyline for depth */
   ctx.shadowBlur=0; ctx.fillStyle='rgba(60,30,130,.22)'; ctx.strokeStyle='rgba(110,70,220,.25)'; ctx.lineWidth=1;
-  for(let i=0;i<16;i++){ const x=i*38-6, h=22+((i*53)%34); ctx.fillRect(x,GROUND+8-h+16,28,h); ctx.strokeRect(x,GROUND+8-h+16,28,h); }
+  for(let i=0;i<16;i++){ const x=i*38-6, h=22+((i*53)%34), ya=arc(x+14); ctx.fillRect(x,GROUND+8-h+16+ya,28,h-ya); ctx.strokeRect(x,GROUND+8-h+16+ya,28,h-ya); }
   neon(C.violet,10+10*pulse,2); ctx.globalAlpha=0.55+0.45*pulse;
-  ctx.beginPath(); ctx.moveTo(0,GROUND); ctx.lineTo(W,GROUND); ctx.stroke(); ctx.globalAlpha=1;
+  ctx.beginPath(); ctx.moveTo(0,GROUND); ctx.quadraticCurveTo(W/2,GROUND-2*CURV,W,GROUND); ctx.stroke(); ctx.globalAlpha=1;
   const alive=Math.ceil(G.hp/G.maxHp*12), base=H-6, dm=1-G.hp/G.maxHp;
   for(let i=0;i<12;i++){
-    const x=i*50+7, w=36, h=BH[i]+8, y=base-h, kind=i%4;
+    const x=i*50+7, w=36, h=BH[i]+8, y=base-h+arc(x+18), kind=i%4;
     if(RANK[i]>=alive){ /* rubble */
       ctx.shadowBlur=0; ctx.fillStyle='rgba(40,20,90,.5)'; ctx.strokeStyle='rgba(122,61,255,.5)'; ctx.lineWidth=1.2;
       ctx.beginPath(); ctx.moveTo(x,base); ctx.lineTo(x+3,base-9); ctx.lineTo(x+11,base-4); ctx.lineTo(x+17,base-13); ctx.lineTo(x+25,base-6); ctx.lineTo(x+31,base-10); ctx.lineTo(x+w,base); ctx.closePath(); ctx.fill(); ctx.stroke();
@@ -3484,7 +3508,7 @@ function drawGround(pulse){
 }
 /* ---- weapon control overlay: the live aim reticle while a weapon icon is held, and pinned aims waiting for recharge ---- */
 function drawGrab(){
-  const sx=T.x, sy=TURRET_Y-30, tt=G.time;
+  const sx=T.x, sy=TY()-30, tt=G.time;
   ctx.save(); ctx.shadowBlur=0; ctx.lineCap='round';
   for(const w in G.pin){
     if(GR.live&&GR.w===w) continue;
@@ -3771,13 +3795,13 @@ setInterval(()=>{
 function drawTurret(){
   const q=G.cm;
   if(q){
-    ctx.save(); ctx.translate(T.x,TURRET_Y);
+    ctx.save(); ctx.translate(T.x,TY());
     paintTurret(ctx,{id:q.c.id,rgb:hexRgb(q.c.color),look:q.c.look,r:q.r,t:G.time,hot:T.recoil,recoil:T.recoil,over:(q.over>0||q.dmgT>0)?1:0,n:barrelN(),
       sh:G.shMax?Math.max(0,G.sh)/G.shMax:0,flash:G.shFlash,a1:q.t1<=0,a2:q.M.unlock2&&q.t2<=0,c1:1-q.t1/Math.max(1,q.c.ab[0].cd*q.M.cd1)});
     ctx.restore(); return;
   }
   const n=barrelN(), col=C.cyan, rc='0,240,255', t=G.time, hot=Math.min(1,T.recoil);
-  ctx.save(); ctx.translate(T.x,TURRET_Y);
+  ctx.save(); ctx.translate(T.x,TY());
   /* thruster glow under the hull */
   ctx.globalCompositeOperation='lighter'; const tg=ctx.createRadialGradient(0,16,0,0,16,26); tg.addColorStop(0,'rgba('+rc+','+(0.35+0.1*Math.sin(t*12)).toFixed(2)+')'); tg.addColorStop(1,'rgba('+rc+',0)'); ctx.fillStyle=tg; ctx.fillRect(-28,0,56,34); ctx.globalCompositeOperation='source-over';
   /* barrels */
@@ -3979,7 +4003,7 @@ function renderHud(){
   const k=G.n+'|'+(G.elite?1:0)+'|'+G.wave+'|'+G.NW+'|'+G.hp+'|'+Math.round(G.sh||0)+'|'+G.maxHp+'|'+wcount()+'|'+G.pickQ+'|'+G.state;
   if(k===hudKey) return; hudKey=k;
   lvlVal.textContent=G.n+'/'+LEVELS+(G.elite?' E':''); credVal.textContent=G.wave+'/'+G.NW;
-  $('bankVal').textContent=wcount()+'/4';
+  $('bankVal').textContent=wcount()+'/'+LOADMAX;
   hpFill.style.width=(G.hp/G.maxHp*100)+'%'; shFill.style.width=(G.shMax?Math.max(0,G.sh)/G.shMax*100:0)+'%'; bar.classList.toggle('low',G.hp/G.maxHp<0.3);
 }
 function flashMortar(){ const f=$('mflash'); if(!f) return; f.classList.remove('go'); void f.offsetWidth; f.classList.add('go'); }
@@ -4065,12 +4089,14 @@ function startLevel(n,world,elite){
   G.waveT=0; G.shake=0; G.armed=null; G.ghost.show=false; G.placing=false; G.autoT=0.5;
   G.stock=0; G.mineT=0; G.fieldCd=0; G.pin={}; grabEnd(false);
   T.x=W/2; T.cool=0; T.recoil=0; T.target=null; T.idle=0; input.active=false;
+  for(const w of loadout()){ G.tools[w]=true; if(w==='mortar'){ G.mort=mortMax(); G.mortT=0; } if(w==='mine'){ G.stock=mineMax(); G.mineT=0; } }
   Ads.gameplayStart(); G.state='playing'; overlay.hidden=true; $('shop').hidden=true; hudKey=''; toolKey=''; thumbKey=''; coachRun();
   $('pauseBtn').textContent='Pause';
   showView('game'); setMode(G.mode);
   Music.start(); Music.setBpm(122+Math.min(14,Math.floor(n/4)*1.2)); Music.level(G.wd.id,n,isBoss(n),G.elite);
   startWave(1);
   say((G.elite?'Elite ':'')+(n%50===0?'Mega boss level '+n:isBoss(n)?'Boss level '+n:'Level '+n),(INTRO[n]?INTRO[n]+' \u00b7 ':'')+G.NW+' waves');
+  for(const w of loadout()){ P.seenW=P.seenW||{}; if(!P.seenW[w]){ P.seenW[w]=1; persistSeen(); try{ save(); }catch(e){} queueTeach({kind:'weapon',w:w}); } }
 }
 /* what a level paid: one line per crystal type, biggest first. got = {type: crystals} */
 function dropsHtml(got){
@@ -4163,11 +4189,11 @@ const rarW=(n,e)=>{ const w=[100,n<3?0:20+1.5*n,n<10?0:8+1.6*(n-10),n<20?0:3+1.0
 function rollRar(n,e){ const w=rarW(n,e); let x=Math.random()*(w[0]+w[1]+w[2]+w[3]); for(let i=0;i<4;i++){ x-=w[i]; if(x<=0&&w[i]>0) return i; } return 0; }
 function rollType(){ let x=Math.random()*100; for(const t of CTYPES){ x-=CW[t]; if(x<=0) return t; } return 'pow'; }
 /* does anything still want this pool? (an upgrade below max, or an in-run card not yet mastered) */
-function keyNeed(k){ if(UPS.some(u=>u.k===k&&!shelved(u.tab)&&!arsenalHidden(u.tab)&&L(u.id)<u.max)) return true; return false; }
+function keyNeed(k){ if(UPS.some(u=>u.k===k&&!shelved(u.tab)&&!arsenalHidden(u.tab)&&!upHidden(u)&&L(u.id)<u.max)) return true; return false; }
 /* The specialty is rolled first (so each specialty's overall supply is unchanged), then the weapon: only weapons the player has met or levelled,
    favouring the weapons used in the run that paid out, and ignoring pools whose upgrades are all finished. */
 function rollKey(t,ctx){
-  const ks=PKEYS.filter(k=>kT(k)===t&&!shelved(kW(k))&&!arsenalHidden(kW(k))); if(!ks.length) return 'turret.pow';
+  const ks=PKEYS.filter(k=>kT(k)===t&&!shelved(kW(k))&&!arsenalHidden(kW(k))&&UPS.some(u=>u.k===k&&!upHidden(u))); if(!ks.length) return 'turret.pow';
   const used=ctx==='run'&&typeof ownedW==='function'?ownedW():[], seen=w=>w==='turret'||w==='base'||!!(P.seenW&&P.seenW[w])||UPS.some(u=>u.tab===w&&L(u.id)>0);
   let ws=ks.map(k=>{ const w=kW(k); let x=seen(w)?1:0; if(w==='turret') x*=1.4; if(used.indexOf(w)>=0) x*=2.5; if(x&&!keyNeed(k)) x*=0.15; return x; });
   let sum=ws.reduce((a,b)=>a+b,0); if(!sum){ ws=ks.map(()=>1); sum=ks.length; }
@@ -4432,6 +4458,7 @@ function battleHtml(){
     +'<div class="pvwrap"><canvas id="pv" data-act="deploy" aria-label="Preview of this level\'s enemies. Tap to start."></canvas>'+(el?'<span class="pvtag">ELITE</span>':'')+(pr.perf[n]&&!el?'<span class="pvstar" title="Perfected">'+ico('pow',20)+'</span>':'')
     +(lockElite?'<div class="pvlock">'+ico('lock',30)+'<span>Clear level '+n+' without taking any base damage to unlock Elite.</span></div>':'<button class="btn big go pvgo" data-act="deploy" type="button" data-lock="0">Battle</button>')+'</div>'
     +'<button class="chev r" data-act="next" type="button" aria-label="Next level" '+(n>=maxSel?'disabled':'')+'>'+ico('chev',30)+'</button></div>'
+    +'<button class="loadrow" type="button" data-nav="arsenal">'+(loadout().length?'<span>Weapons</span>'+loadout().map(w=>'<b>'+ico(w,14)+' '+WNAME[w]+'</b>').join('')+'<span>Change</span>':'<span>No weapons equipped. Tap to equip up to '+LOADMAX+'.</span>')+'</button>'
     +'<div class="brief">'+briefFor(wd,n,el)+'</div>'
     +(el?'':'<div class="goals">'+goalsFor(wd,n).map((t,k)=>'<span class="gl'+(((pr.stars||{})[n]|0)>>k&1?' on':'')+'">'+ico('pow',13)+t+'</span>').join('')+'</div>')
     +'<div class="facts"><span title="Waves">'+ico('wave',18)+waveCount(n)+'</span><span title="Crystals per clear">'+ico('crystal',18)+'~'+Math.round(cnt*dropVal(n,el))+'</span>'+(el?'<span style="color:var(--red)" title="Elite costs double energy">'+ico('bolt',18)+'x2</span>':'')+'</div>'
@@ -4446,12 +4473,22 @@ function accountHtml(){
     +(C0.error?'<div class="note" style="color:var(--red)">'+C0.error+'</div>':'')
     +'</section>';
 }
+function loadoutHtml(){
+  const eq=loadout(), isW=EQW.indexOf(tab)>=0&&!shelved(tab), on=eq.indexOf(tab)>=0, full=eq.length>=LOADMAX;
+  let h='<div class="loadout"><div class="lrow"><span class="lbl">Loadout <b>'+eq.length+'/'+LOADMAX+'</b></span>';
+  eq.forEach(w=>{ h+='<button class="lslot on" type="button" data-eq="'+w+'" aria-label="Unequip '+WNAME[w]+'">'+ico(w,16)+'<span>'+WNAME[w]+'</span><i aria-hidden="true">\u00d7</i></button>'; });
+  for(let i=eq.length;i<LOADMAX;i++) h+='<span class="lslot empty">Empty</span>';
+  h+='</div>';
+  if(isW) h+='<button class="btn sm leq" type="button" data-eq="'+tab+'" style="--c:var(--cyan)" '+(!on&&full?'disabled':'')+'>'+(on?'Unequip '+WNAME[tab]:full?'Loadout full. Unequip a weapon first.':'Equip '+WNAME[tab])+'</button>';
+  h+='<div class="note">The turret is always with you. Equip up to '+LOADMAX+' more weapons here before you start a battle. They cannot be changed during a run.</div></div>';
+  return h;
+}
 function arsenalHtml(){
   /* Weapons across the top (wraps to more rows), the five crystal balances, then each upgrade; tap one for its next level and Upgrade button. */
   let h='<div class="wpns" role="tablist" aria-label="Weapon">'+TABS.filter(t=>t.id!=='bestiary').map(t=>'<button class="wpn" role="tab" data-tab="'+t.id+'" style="--c:'+t.color+'" aria-selected="'+(tab===t.id)+'" type="button">'+ico(TABICO[t.id],18)+'<span>'+t.name+'</span></button>').join('')+'<button class="wpn'+(cmdUnlocked()?'':' lk')+'" role="tab" data-tab="command" style="--c:#ffc400" aria-selected="'+(tab==='command')+'" type="button">'+ico('bolt',18)+'<span>Command</span></button></div>';
   if(tab==='command') return h+commandHtml();
-  h+=cryStrip()+'<div class="note">Upgrade prices grow with the furthest level you\'ve reached.</div><div class="ucats">';
-  UPS.filter(u=>u.tab===tab).forEach(u=>{
+  h+=loadoutHtml()+cryStrip()+'<div class="note">Upgrade prices grow with the furthest level you\'ve reached.</div><div class="ucats">';
+  UPS.filter(u=>u.tab===tab&&!upHidden(u)).forEach(u=>{
     const lv=L(u.id), maxed=lv>=u.max, ct=CT[u.ty], need=maxed?0:upCost(u,lv), have=cry(u.ty), ok=!maxed&&have>=need, open=UI.uc===u.id;
     h+='<div class="ucat'+(open?' open':'')+'" style="--c:'+ct.color+'">'
       +'<button class="uh" type="button" data-uc="'+u.id+'" aria-expanded="'+open+'"><span class="un">'+ico(u.ty,16)+ct.name+' <small>'+u.name+'</small></span>'
@@ -4677,7 +4714,7 @@ armoryEl.addEventListener('contextmenu',e=>{ if(e.target.id==='pv'||e.target.clo
 armoryEl.addEventListener('click',e=>{
   if(e.target.closest('[data-orb]')){ if(orbOpen) closeOrb(); else openOrb(); return; }
   const ac=e.target.closest('[data-acct]'); if(ac&&window.RRcloud){ const a=ac.dataset.acct; if(a==='del'&&!confirm('Delete your account and cloud save? This cannot be undone.')) return; RRcloud.action(a); return; }
-  const t=e.target.closest('[data-act],[data-cmd],[data-buy],[data-pack],[data-sku],[data-claim],[data-tab],[data-uc],[data-a0],[data-ag],[data-pt],[data-nav],[data-mode],[data-world],[data-cx],[data-ac],[data-gem],[data-adgems],[data-pack],[data-welcome],[data-tier]'); if(!t) return;
+  const t=e.target.closest('[data-act],[data-cmd],[data-buy],[data-pack],[data-sku],[data-claim],[data-tab],[data-uc],[data-a0],[data-ag],[data-pt],[data-nav],[data-mode],[data-world],[data-cx],[data-ac],[data-gem],[data-adgems],[data-pack],[data-welcome],[data-tier],[data-eq]'); if(!t) return;
   if(t.dataset.cmd){ cmdAct(t.dataset.cmd); return; }
   if(t.dataset.cx){ UI.cx=t.dataset.cx; renderArmory(); const c0=$('content'); if(c0) c0.scrollTop=0; return; }
   if(t.dataset.ac){ UI.ac=t.dataset.ac; renderArmory(); const c1=$('content'); if(c1) c1.scrollTop=0; return; }
@@ -4685,6 +4722,7 @@ armoryEl.addEventListener('click',e=>{
   if(t.dataset.mode){ UI.elite=t.dataset.mode==='e'; renderArmory(); return; }
   if(t.dataset.world){ if(!worldOpen(WORLDS.findIndex(w=>w.id===t.dataset.world))) return; P.world=t.dataset.world; applySkin(P.world); UI.elite=false; UI.nav='battle'; save(); renderArmory(); return; }
   
+  if(t.dataset.eq){ toggleEquip(t.dataset.eq); renderArmory(); return; }
   if(t.dataset.tab){ tab=t.dataset.tab; UI.uc=''; renderArmory(); return; }
   if(t.dataset.a0){ UI.a0=t.dataset.a0; renderArmory(); return; }
   if(t.dataset.ag){ const q=t.dataset.ag.split(':'); UI.ag[q[0]]=q[1]; renderArmory(); return; }
@@ -4792,8 +4830,9 @@ const CARDS=[
 const CARDBY={}; CARDS.forEach(c=>CARDBY[c.id]=c);
 const reqOk=c=>!c.req||Object.keys(c.req).every(k=>bst(k)>=c.req[k]);
 const reqText=r=>Object.keys(r).map(k=>CARDBY[k].name+(CARDBY[k].max>1?' '+r[k]:'')).join(' + ');
+const CARD_HIDE=['mortcap','cjump'];   /* in-run cards that are switched off: Mortar Ammo Rack and Chain Extra Jumps */
 function eligible(c){
-  if(shelved(c.w)) return false;
+  if(shelved(c.w)||CARD_HIDE.indexOf(c.id)>=0) return false;
   if(c.id==='barrel'&&barrelN()>=MAXBARRELS) return false;
   if(bst(c.id)>=c.max||!reqOk(c)) return false;
   if(c.cond&&!c.cond()) return false;
@@ -4803,7 +4842,7 @@ function eligible(c){
   if(c.any&&!c.any.some(k=>bst(k))) return false;
   if(c.ovl&&!(G.elite||G.hp<G.maxHp*OVERLOAD_HP)) return false;
   if(c.ult&&!ownedW().some(x=>x!==c.w&&spec(x)>=3)) return false;   /* an ultimate needs a second weapon you have invested in */
-  if(c.unlock) return !hasTool(c.w)&&wcount()<4;
+  if(c.unlock) return false;   /* weapons come from the Arsenal loadout now, never from a card */
   return c.w==='turret'||c.w==='base'||hasTool(c.w);
 }
 function offerCards(){
@@ -4843,7 +4882,7 @@ const CIC={rate:'tmp',dmg:'pow',barrel:'cap',pierce:'rch',slide:'tmp',arc:'bolt'
   mortpow:'pow',mortarea:'rch',mortcap:'cap',mortspd:'tmp',mortclu:'bolt',mortnap:'bolt'};
 const WIC={turret:'turret',base:'frt',mine:'mine',field:'field',chain:'chain',saw:'saw',mortar:'mortar'};
 function renderCards(){
-  let h='<div class="wrap"><div class="ahead"><h1>Level up</h1><div class="cr"><span class="lbl">Weapons</span><b>'+wcount()+'/4</b></div></div>'
+  let h='<div class="wrap"><div class="ahead"><h1>Level up</h1><div class="cr"><span class="lbl">Weapons</span><b>'+wcount()+'/'+LOADMAX+'</b></div></div>'
     +'<div class="note" style="margin-bottom:12px">Wave '+G.wave+'/'+G.NW+(G.pickQ>0?' \u00b7 +'+G.pickQ:'')+'</div><div class="pickgrid">';
   G.offer.forEach((c,i)=>{
     const wc=WEAPN[c.w], l=bst(c.id), tcol=RAR[c.t-1].color;
@@ -4909,7 +4948,7 @@ function pickCard(i){
 function rerollCards(){ if(G.state!=='cards'||G.rerolls<=0) return; G.rerolls--; G.offer=offerCards(); renderCards(); }
 /* perks list (button / U key) */
 function renderShop(){
-  let h='<div class="wrap"><div class="ahead"><h1>Perks</h1><div class="cr"><span class="lbl">Weapons</span><b>'+wcount()+'/4</b></div></div>'
+  let h='<div class="wrap"><div class="ahead"><h1>Perks</h1><div class="cr"><span class="lbl">Weapons</span><b>'+wcount()+'/'+LOADMAX+'</b></div></div>'
     +'<div class="note" style="margin-bottom:12px">You start with just the turret. Every other weapon comes from a card, and you can carry up to four.</div>';
   Object.keys(WEAPN).forEach(w=>{
     if(w!=='turret'&&w!=='base'&&!hasTool(w)) return;
@@ -5057,10 +5096,10 @@ window.__rr={profileFor:profileFor,buildWave:buildWave,DOCS:DOCS,startWave:start
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 120</div>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 121</div>
 <script>
 /* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
-(function(){ const BUILD=120; let busy=false, shown=false;
+(function(){ const BUILD=121; let busy=false, shown=false;
   const inRun=()=>{ try{ return typeof G!=='undefined'&&(G.state==='playing'||G.state==='cards'||G.state==='shop'||G.state==='paused'||G.state==='teach'||G.state==='ctl'); }catch(e){ return false; } };
   function wipeReload(){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
     if(n>=3) return;
