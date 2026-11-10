@@ -809,7 +809,7 @@ body.menu{background:
 #banner{text-shadow:0 0 14px color-mix(in srgb,var(--cyan) 40%,transparent)}
 .ch2{text-shadow:none}
 .cr b{color:var(--fg); text-shadow:none}
-.crys{display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:4px; margin:6px 0 8px}
+.crys{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:4px; margin:6px 0 8px}
 .cy{display:flex; flex-direction:column; align-items:center; gap:1px; padding:5px 2px 4px; border:1px solid color-mix(in srgb,var(--c) 40%,#000); border-radius:10px; background:color-mix(in srgb,var(--c) 7%,#000); color:var(--c); min-width:0}
 .cy b{font-size:14px; line-height:1.1; color:var(--fg); font-variant-numeric:tabular-nums}
 .cy small{font-size:9px; letter-spacing:.06em; text-transform:uppercase; color:var(--dim); max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
@@ -1108,8 +1108,10 @@ const UPS=[
   {id:'mortrad',tab:'mortar',ty:'rch',name:'Wide Blast',   max:6, kind:'b',txt:l=>'blast reaches '+ST.mortrad(l)+' px'},
   {id:'mortmax',tab:'mortar',ty:'cap',name:'Charges',     max:3, kind:'b',txt:l=>ST.mortmax(l)+' shells'}
 ];
-const CT={pow:{name:'Power',color:'#ff3860'},tmp:{name:'Tempo',color:'#00f0ff'},rch:{name:'Reach',color:'#b6ff00'},cap:{name:'Capacity',color:'#ffc400'},frt:{name:'Fortify',color:'#6dffb0'}};
-const CTYPES=['pow','tmp','rch','cap','frt'], CW={pow:42,tmp:24,rch:13,cap:13,frt:8};
+/* Crystal elements. Ember feeds damage, Ion feeds speed, Verdant feeds range and size, Aurum feeds capacity. The internal ids (pow, tmp, rch, cap) are unchanged so saves stay compatible.
+   Fortify (frt) is retired: it stays as a dormant, always-zero key so cloud saves still pass the save rules, but it is never dropped, shown or spent. */
+const CT={pow:{name:'Ember',color:'#ff3860'},tmp:{name:'Ion',color:'#00f0ff'},rch:{name:'Verdant',color:'#b6ff00'},cap:{name:'Aurum',color:'#ffc400'},frt:{name:'Fortify',color:'#6dffb0'}};
+const CTYPES=['pow','tmp','rch','cap'], CW={pow:46,tmp:26,rch:14,cap:14};
 const RAR=[{name:'Mk I',ab:'I',color:'#9fb2be'},{name:'Mk II',ab:'II',color:'#4fa3ff'},{name:'Mk III',ab:'III',color:'#ff8a3d'},{name:'Mk IV',ab:'IV',color:'#f5d36b'}];
 /* Shelved weapons: fully coded with the same behaviour, but out of play. They are not offered as cards and have no HUD button, armory tab, control toggle, shard drops or awards.
    To bring one back, delete its id from this list (empty it to restore both); nothing else needs to change. */
@@ -1215,7 +1217,7 @@ const PKEYS=[...new Set(UPS.map(u=>u.k))], PWN={}; TABS.forEach(t=>{ PWN[t.id]=t
 const kW=k=>String(k).split('.')[0], kT=k=>String(k).split('.')[1];
 const kName=k=>(PWN[kW(k)]||'')+' '+((CT[kT(k)]||{}).name||'');
 const kOk=k=>PKEYS.indexOf(k)>=0;
-/* ---- crystals: the one upgrade currency. Five types (Power, Tempo, Reach, Capacity, Fortify), shared by every weapon and by commanders.
+/* ---- crystals: the one upgrade currency. Four types (Ember, Ion, Verdant, Aurum), shared by every weapon and by commanders.
    A ledger per type: ce = every crystal ever earned, cs = every crystal ever spent, balance = ce - cs. Both only grow, so a merge with an
    older copy (max of each) can never hand spent crystals back. ---- */
 const CVAL=[1,4,12,40];      /* crystals paid by one level drop of each luck tier (the old Common, Rare, Epic, Legendary) */
@@ -1241,7 +1243,9 @@ function cryLegacy(o){
 }
 function loadCry(o){
   P.ce=newCry(); P.cs=newCry();
-  if(o.ce&&typeof o.ce==='object'){ const cs=o.cs&&typeof o.cs==='object'?o.cs:{}; CTYPES.forEach(t=>{ P.ce[t]=Math.max(0,Math.floor(+o.ce[t]||0)); P.cs[t]=Math.min(P.ce[t],Math.max(0,Math.floor(+cs[t]||0))); }); }
+  if(o.ce&&typeof o.ce==='object'){ const cs=o.cs&&typeof o.cs==='object'?o.cs:{}; CTYPES.forEach(t=>{ P.ce[t]=Math.max(0,Math.floor(+o.ce[t]||0)); P.cs[t]=Math.min(P.ce[t],Math.max(0,Math.floor(+cs[t]||0))); });
+    /* Fortify is retired: whatever was left unspent turns into Ember, and the old pile is marked fully spent so it cannot convert twice. */
+    const fe=Math.max(0,Math.floor(+o.ce.frt||0)), fs=Math.min(fe,Math.max(0,Math.floor(+cs.frt||0))); P.ce.frt=fe; P.cs.frt=fe; P.ce.pow+=fe-fs; }
   else { const r=cryLegacy(o); CTYPES.forEach(t=>{ P.ce[t]=r[t]; }); }
 }
 const newPW=()=>({best:0,sel:1,perf:{},eclr:{},stars:{}});
@@ -2450,15 +2454,15 @@ function cmdNodeBuy(cid,nid){
   return false;
 }
 /* Which crystals a commander costs: the two types that match their buff, plus one more, split 50/30/20 by effort. Counts are scaled by how often each type
-   drops (CW, average 20), so every commander takes the same play to rank up: a Power-heavy one shows bigger numbers than a Fortify-heavy one. */
-const CSTT={dmg:'pow',blast:'pow',crit:'pow',rate:'tmp',cd1:'tmp',cd2:'tmp',sh:'frt',shRg:'frt',hp:'frt',pow1:'cap',pow2:'cap'};
+   drops (CW, average 20), so every commander takes the same play to rank up: an Ember-heavy one shows bigger numbers than a Verdant-heavy one. */
+const CSTT={dmg:'pow',blast:'pow',crit:'pow',rate:'tmp',cd1:'tmp',cd2:'tmp',sh:'cap',shRg:'tmp',hp:'cap',pow1:'cap',pow2:'cap'};
 function cmdMix(c){
   if(c._mix) return c._mix; const sc={};
   for(const k in (c.pas||{})){ const t=CSTT[k]||'pow'; sc[t]=(sc[t]||0)+Math.abs(c.pas[k]); }
   const ts=Object.keys(sc).sort((a,b)=>sc[b]-sc[a]||CTYPES.indexOf(a)-CTYPES.indexOf(b)).slice(0,2);
-  for(const t of ['cap','rch','tmp','pow','frt']) if(ts.length<3&&ts.indexOf(t)<0) ts.push(t);
+  for(const t of ['cap','rch','tmp','pow']) if(ts.length<3&&ts.indexOf(t)<0) ts.push(t);
   const sh=[0.5,0.3,0.2], m={};
-  ts.forEach((t,i)=>{ m[t]=sh[i]*CW[t]/20; }); return (c._mix=m);
+  ts.forEach((t,i)=>{ m[t]=sh[i]*CW[t]/25; }); return (c._mix=m);
 }
 /* crystals to go from rank `from` (-1 = not recruited) to rank `to` */
 function cmdPrice(c,from,to){ if(TEST_BUILD) return {};   /* testing site and local dev only: commanders and ranks are free so each one can be tried. The store app still charges. */
@@ -4329,7 +4333,7 @@ function tierRw(t,prem){
 }
 const rwText=r=>r.pack?PACKS.find(x=>x.id===r.pack).name:r.gems?r.gems+' gems':r.cry+' crystals';
 const rwIco=r=>ico(r.pack?'crate':r.gems?'gem':'crystal',14);
-/* a crate from a reward: its crystals spread across the five types, favouring the ones levels drop least */
+/* a crate from a reward: its crystals spread across the four types, favouring the ones levels drop least */
 function spreadCry(n){ const w=CTYPES.map(t=>PACK_TW[t]), q=splitN(n,w), m={}; CTYPES.forEach((t,i)=>{ if(q[i]) m[t]=q[i]; }); return m; }
 /* grants one reward; returns what it paid so the caller can show it */
 function grantRw(r){
@@ -4393,7 +4397,7 @@ const PACKS=[
   {id:'m',name:'Supply crate',cost:150,cry:38},
   {id:'l',name:'Heavy crate',cost:450,cry:125}
 ];
-const PACK_TW={pow:31,tmp:22,rch:16.5,cap:16.5,frt:14};   /* crates from rewards spread like this: flatter than level drops (CW), so they fill the gaps levels leave */
+const PACK_TW={pow:36,tmp:25,rch:19.5,cap:19.5};   /* crates from rewards spread like this: flatter than level drops (CW), so they fill the gaps levels leave */
 function openPack(id){
   const pk=PACKS.find(x=>x.id===id); if(!pk) return; P.pk=P.pk||{s:0,m:0,l:0,f:0};
   const t=CT[UI.pt]?UI.pt:'pow', free=id==='s'&&!P.pk.f, cost=free?0:pk.cost;
@@ -4444,8 +4448,8 @@ function awardCards(count,n,bonus,el){
   const got={}, add=(t,v)=>{ got[t]=(got[t]||0)+v; };
   for(let i=0;i<count;i++) add(rollType(),CVAL[rollRar(n,el)]);
   for(let i=0;i<bonus;i++) add(rollType(),CVAL[topRar(n,el)]);
-  /* starter support: the first five levels always drop extra crystals of the types the turret upgrades with (damage, rate, pierce, barrels) */
-  if(n<=5&&!el){ const tw=[['pow',4],['tmp',3],['rch',1],['cap',1]]; for(let i=0;i<2;i++){ let x=Math.random()*9, t='pow'; for(const q of tw){ x-=q[1]; if(x<=0){ t=q[0]; break; } } add(t,1); } }
+  /* starter support: the first five levels always drop extra crystals of the types the turret upgrades with (damage, fire rate, barrels) */
+  if(n<=5&&!el){ const tw=[['pow',4],['tmp',3],['cap',2]]; for(let i=0;i<2;i++){ let x=Math.random()*9, t='pow'; for(const q of tw){ x-=q[1]; if(x<=0){ t=q[0]; break; } } add(t,1); } }
   cryAddMap(got); return got;
 }
 const bandOf=(lv,max)=>Math.min(3,Math.floor(4*lv/max));
@@ -4466,7 +4470,7 @@ const worldOpen=i=>{ if(i===0) return true; if((((P.prog[WORLDS[i].id])||{}).bes
 const curWorld=()=>WORLDS.find(w=>w.id===P.world)||WORLDS[0];
 const uwFor=wd=>(wd&&wd.uw)||UW;
 function levelMobs(n){ return profileFor(curWorld(),n,UI.elite).roster; }
-/* the five crystal balances, shown on the screens that spend them */
+/* the four crystal balances, shown on the screens that spend them */
 const cryStrip=()=>'<div class="crys" aria-label="Crystals">'+CTYPES.map(t=>'<span class="cy" style="--c:'+CT[t].color+'" title="'+CT[t].name+' crystals">'+ico('crystal',15)+'<b>'+cry(t)+'</b><small>'+CT[t].name+'</small></span>').join('')+'</div>';
 const TABICO={command:'bolt',turret:'turret',base:'frt',mine:'mine',field:'field',chain:'chain',saw:'saw',mortar:'mortar'};
 const NAVS=[['arsenal','Arsenal','pow'],['codex','Codex','eye'],['battle','Battle','aim'],['shop','Shop','gem'],['worlds','Worlds','world']];
@@ -4515,7 +4519,7 @@ function loadoutHtml(){
   return h;
 }
 function arsenalHtml(){
-  /* Weapons across the top (wraps to more rows), the five crystal balances, then each upgrade; tap one for its next level and Upgrade button. */
+  /* Weapons across the top (wraps to more rows), the four crystal balances, then each upgrade; tap one for its next level and Upgrade button. */
   let h='<div class="wpns" role="tablist" aria-label="Weapon">'+TABS.filter(t=>t.id!=='bestiary').map(t=>'<button class="wpn" role="tab" data-tab="'+t.id+'" style="--c:'+t.color+'" aria-selected="'+(tab===t.id)+'" type="button">'+ico(TABICO[t.id],18)+'<span>'+t.name+'</span></button>').join('')+'<button class="wpn'+(cmdUnlocked()?'':' lk')+'" role="tab" data-tab="command" style="--c:#ffc400" aria-selected="'+(tab==='command')+'" type="button">'+ico('bolt',18)+'<span>Command</span></button></div>';
   if(tab==='command') return h+commandHtml();
   h+=loadoutHtml()+cryStrip()+'<div class="note">Upgrade prices grow with the furthest level you\'ve reached.</div><div class="ucats">';
@@ -5127,10 +5131,10 @@ window.__rr={profileFor:profileFor,buildWave:buildWave,DOCS:DOCS,startWave:start
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 126</div>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 127</div>
 <script>
 /* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
-(function(){ const BUILD=126; let busy=false, shown=false;
+(function(){ const BUILD=127; let busy=false, shown=false;
   const inRun=()=>{ try{ return typeof G!=='undefined'&&(G.state==='playing'||G.state==='cards'||G.state==='shop'||G.state==='paused'||G.state==='teach'||G.state==='ctl'); }catch(e){ return false; } };
   function wipeReload(){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
     if(n>=3) return;
