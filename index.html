@@ -1355,6 +1355,8 @@ const GLOW={on:(()=>{ try{ return localStorage.getItem('nd-glow')!=='0'; }catch(
 function glowSet(on,keep){ GLOW.on=!!on&&!!bctx; GLOW.k=GLOW.on?0.7:1; if(bloomCv) bloomCv.classList.toggle('off',!GLOW.on); if(keep) try{ localStorage.setItem('nd-glow',on?'1':'0'); }catch(e){} }
 glowSet(GLOW.on);
 let sx=1, sy=1;
+/* Tall phones: the field grows upward. TOPX is how many extra world units sit above y=0 (0 on screens that are not taller than the 3:4 field). */
+const TOPMAX=420; let TOPX=0;
 const isBoss=n=>n%10===0;
 function mulberry(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
 
@@ -1779,7 +1781,7 @@ function openCtl(){
 }
 function closeCtl(){ const ov=document.getElementById('ctlov'); if(ov) ov.remove(); if(G.state==='ctl'){ G.state='playing'; toolKey=''; hudKey=''; } }
 const keys={left:false,right:false};
-const stars=[]; for(let i=0;i<90;i++) stars.push({x:Math.random()*W,y:Math.random()*H,r:rnd(0.5,1.5),ph:Math.random()*6.28});
+const stars=[]; for(let i=0;i<130;i++) stars.push({x:Math.random()*W,y:Math.random()*(H+TOPMAX)-TOPMAX,r:rnd(0.5,1.5),ph:Math.random()*6.28});
 
 /* ================= level and wave generation ================= */
 const waveCount=n=>n%50===0?40:n%10===0?30:20;
@@ -2083,6 +2085,7 @@ function mutRes(r){ const m=MUTRES[G.prof&&G.prof.mut]; if(!m) return r; return 
 function scaleRes(r,n){ const x=1+0.009*Math.max(0,n-1), k=r.k+'|'+r.b+'|'+r.e+'|'+x.toFixed(3); if(_rsc[k]) return _rsc[k]; const f=v=>Math.max(0.15,Math.min(2.6,Math.pow(v,x))); return _rsc[k]={k:f(r.k),b:f(r.b),e:f(r.e)}; }
 function spawn(type,x,y,o){
   const d=MOB[type], n=G.n;
+  if(TOPX>0&&y<=-10) y-=TOPX;   /* enter from the top of the taller field */
   let hp=Math.max(1,Math.round(d.hp*G.hpS*(G.wFac||1)*HPK/mobn(n)*(G.mutHp||1)*earlyHp(n)));
   { const sk=skinKey(type); if(!P.seen[sk]){ P.seen[sk]=1; persistSeen(); if(d.spawn||type==='boss') queueTeach({kind:'mob',type:type}); } }
   if(type==='boss'){ const tier=n/10; hp=Math.round(140*G.hpS*(1+n/25)*(o&&o.mega?2.5:1)); o=Object.assign({bt:tier,bd:3,bo:5},o); }
@@ -3165,6 +3168,7 @@ function updateEnemies(dt){
       e.x+=e.vx*d; e.y+=e.vy*d;
       if(e.x<e.r){ e.x=e.r; e.vx=Math.abs(e.vx); } else if(e.x>W-e.r){ e.x=W-e.r; e.vx=-Math.abs(e.vx); }
     }
+    if(TOPX>0&&e.y<0&&e.vy&&e.type!=='invader'&&e.type!=='boss'&&!e.latched) e.y+=e.vy*d*3;   /* cross the extra band quickly so tall screens do not slow the waves */
     if(e.carry&&e.y>=250) releaseCarry(e,true);
     if(e.regen&&e.hp<e.maxhp&&G.time-e.lh>1.2) e.hp=Math.min(e.maxhp,e.hp+e.maxhp*e.regen*d);
     if(!e.oz&&!e.ozx&&e.y>=OZ_Y&&G.sh>0&&e.type!=='boss'&&G.time>=(G.shieldUntil||0)){
@@ -3330,6 +3334,7 @@ function shape(g,type,r,o){
 }
 function drawEnemy(e){
   ctx.save(); ctx.translate(e.x,e.y);
+  if(TOPX>0&&e.type==='invader'&&e.y<30) ctx.globalAlpha=clamp((e.y+100)/130,0.12,1);   /* a formation fades in instead of popping into the taller field */
   if(ROCKY[e.type]){ const tg=0.55+0.45*Math.max(0,Math.min(1,e.hp/e.maxhp)); e.sc=e.sc===undefined?1:e.sc+(tg-e.sc)*0.25; ctx.scale(e.sc,e.sc); }
   shape(ctx,e.type,e.r,{color:e.color,flash:e.flash,t:G.time,rot:e.rot,vx:e.vx,vy:e.vy,bs:sx,lw:2.2,col:e.col||0,seed:e.ph});
   ctx.restore();
@@ -3852,10 +3857,10 @@ function render(dt){
   const pulse=Music.pulse();
   ctx.setTransform(1,0,0,1,0,0); ctx.globalCompositeOperation='source-over'; ctx.shadowBlur=0; ctx.globalAlpha=1;
   ctx.fillStyle='rgba(0,0,0,0.42)'; ctx.fillRect(0,0,canvas.width,canvas.height);
-  ctx.setTransform(sx,0,0,sy,0,0); ctx.lineJoin='round';
+  ctx.setTransform(sx,0,0,sy,0,TOPX*sy); ctx.lineJoin='round';
   if(G.shake>0.01){ ctx.translate((Math.random()-0.5)*G.shake*14,(Math.random()-0.5)*G.shake*14); G.shake*=Math.pow(0.02,dt); }
   for(const s of stars){
-    s.y+=s.r*7*dt; if(s.y>H) s.y=0;
+    s.y+=s.r*7*dt; if(s.y>H) s.y=-TOPX;
     ctx.fillStyle='rgba(170,215,255,'+(0.18+0.22*Math.sin(G.time*1.5+s.ph)+0.25*pulse)+')';
     ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,6.2832); ctx.fill();
   }
@@ -3873,7 +3878,7 @@ function render(dt){
   for(const sh of G.shells) drawShell(sh);
   for(const b of G.bolts) drawBolt(b);
   drawChainPending();
-  if(G.flashA>0.01){ ctx.fillStyle='rgba(255,226,170,'+(G.flashA*0.4).toFixed(3)+')'; ctx.fillRect(-60,-60,W+120,H+120); G.flashA*=0.9; }
+  if(G.flashA>0.01){ ctx.fillStyle='rgba(255,226,170,'+(G.flashA*0.4).toFixed(3)+')'; ctx.fillRect(-60,-TOPX-60,W+120,H+TOPX+120); G.flashA*=0.9; }
   ctx.shadowBlur=0; ctx.globalCompositeOperation='lighter';
   /* blaster bolts: white-hot core inside a neon halo (commander colour, else cyan), with a fading tail */
   const bcol=boltColor();
@@ -4930,7 +4935,7 @@ shopEl.addEventListener('click',e=>{
 $('shopBtn').addEventListener('click',()=>{ if(G.state==='shop') closeShop(); else openShop(); });
 
 /* ================= input ================= */
-function toWorld(e){ const r=canvas.getBoundingClientRect(); return {x:clamp((e.clientX-r.left)/r.width*W,0,W), y:(e.clientY-r.top)/r.height*H}; }
+function toWorld(e){ const r=canvas.getBoundingClientRect(); return {x:clamp((e.clientX-r.left)/r.width*W,0,W), y:(e.clientY-r.top)/r.height*(H+TOPX)-TOPX}; }
 let lp=null, lastTap=null;
 function lpClear(){ if(lp){ clearTimeout(lp.t); lp=null; } }
 canvas.addEventListener('pointerdown',e=>{
@@ -5013,14 +5018,15 @@ $('muteBtn').addEventListener('click',()=>{ const c=Music.get(), all=!(c.mOn||c.
 /* ================= sizing and loop ================= */
 function fit(){
   const r=stage.getBoundingClientRect(); if(r.width<10||r.height<10) return;
-  const s=Math.min(r.width/W,r.height/H);
-  const w=Math.max(120,Math.floor(W*s)), h=Math.max(160,Math.floor(H*s)), d=Math.min(window.devicePixelRatio||1,2);
+  let s=Math.min(r.width/W,r.height/H);
+  TOPX=r.height/s>H+1?Math.min(TOPMAX,Math.floor(r.height/s-H)):0;
+  const Hv=H+TOPX, w=Math.max(120,Math.floor(W*s)), h=Math.max(160,Math.floor(Hv*s)), d=Math.min(window.devicePixelRatio||1,2);
   play.style.width=w+'px'; play.style.height=h+'px';
   /* tall phones: the field sits on the controls at the bottom (thumb reach) and the HUD slides down onto the field, so any spare height is one band at the very top */
-  const hd=$('hud'); if(hd) hd.style.transform=r.height>h+1?'translateY('+(r.height-h)+'px)':'';
+  const hd=$('hud'); if(hd) hd.style.transform=r.height>h+1&&!TOPX?'translateY('+(r.height-h)+'px)':'';
   canvas.width=Math.round(w*d); canvas.height=Math.round(h*d);
   if(bloomCv){ bloomCv.width=Math.max(1,Math.round(w/4)); bloomCv.height=Math.max(1,Math.round(h/4)); }
-  sx=canvas.width/W; sy=canvas.height/H;
+  sx=canvas.width/W; sy=canvas.height/Hv;
 }
 if(window.ResizeObserver) new ResizeObserver(fit).observe(stage);
 window.addEventListener('resize',fit);
@@ -5049,10 +5055,10 @@ window.__rr={profileFor:profileFor,buildWave:buildWave,DOCS:DOCS,startWave:start
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 117</div>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 118</div>
 <script>
 /* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
-(function(){ const BUILD=117; let busy=false, shown=false;
+(function(){ const BUILD=118; let busy=false, shown=false;
   const inRun=()=>{ try{ return typeof G!=='undefined'&&(G.state==='playing'||G.state==='cards'||G.state==='shop'||G.state==='paused'||G.state==='teach'||G.state==='ctl'); }catch(e){ return false; } };
   function wipeReload(){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
     if(n>=3) return;
