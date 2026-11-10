@@ -1099,6 +1099,8 @@ const CTYPES=['pow','tmp','rch','cap','frt'], CW={pow:42,tmp:24,rch:13,cap:13,fr
 const RAR=[{name:'Mk I',ab:'I',color:'#9fb2be'},{name:'Mk II',ab:'II',color:'#4fa3ff'},{name:'Mk III',ab:'III',color:'#ff8a3d'},{name:'Mk IV',ab:'IV',color:'#f5d36b'}];
 /* Shelved weapons: fully coded with the same behaviour, but out of play. They are not offered as cards and have no HUD button, armory tab, control toggle, shard drops or awards.
    To bring one back, delete its id from this list (empty it to restore both); nothing else needs to change. */
+/* Tabs left out of the Arsenal screen only. Their upgrades still exist and keep working; just nothing is offered to buy there. Remove 'base' from this list to bring the Base tab back. */
+const ARSENAL_HIDE=['base'], arsenalHidden=k=>ARSENAL_HIDE.indexOf(k)>=0;
 const SHELVED=['mine','saw'];
 const shelved=k=>SHELVED.indexOf(k)>=0;
 const TOOLS={
@@ -1186,7 +1188,7 @@ function profileFor(wd,n,elite){
   const p={roster:roster,feat:feat,mut:mut,mut2:mut2,doc:doc,cargo:cargoT||null,carrier:carrierT||null,debut:debut,name:isBoss(n)?(n%50===0?'Mega boss':skinName(wd.id,'boss')):(themeFor(wd.id,feat)||'Skirmish')+(mut?' \u00b7 '+MUTS[mut].name:'')+(doc.length?' \u00b7 '+doc.map(k=>DOCS[k].name).join(' + '):'')};
   return PROF[key]=p;
 }
-const TABS=[{id:'turret',name:'Turret',color:C.cyan},{id:'base',name:'Base',color:C.mint},{id:'mine',name:'Mines',color:C.orange},{id:'field',name:'Field',color:C.violet},{id:'chain',name:'Chain',color:C.yellow},{id:'saw',name:'Saw',color:C.lime},{id:'mortar',name:'Mortar',color:C.amber},{id:'bestiary',name:'Bestiary',color:C.lime}].filter(t=>!shelved(t.id));
+const TABS=[{id:'turret',name:'Turret',color:C.cyan},{id:'base',name:'Base',color:C.mint},{id:'mine',name:'Mines',color:C.orange},{id:'field',name:'Field',color:C.violet},{id:'chain',name:'Chain',color:C.yellow},{id:'saw',name:'Saw',color:C.lime},{id:'mortar',name:'Mortar',color:C.amber},{id:'bestiary',name:'Bestiary',color:C.lime}].filter(t=>!shelved(t.id)&&!arsenalHidden(t.id));
 
 /* ================= save ================= */
 const SKEY='rave-rampart-v5';
@@ -4161,11 +4163,11 @@ const rarW=(n,e)=>{ const w=[100,n<3?0:20+1.5*n,n<10?0:8+1.6*(n-10),n<20?0:3+1.0
 function rollRar(n,e){ const w=rarW(n,e); let x=Math.random()*(w[0]+w[1]+w[2]+w[3]); for(let i=0;i<4;i++){ x-=w[i]; if(x<=0&&w[i]>0) return i; } return 0; }
 function rollType(){ let x=Math.random()*100; for(const t of CTYPES){ x-=CW[t]; if(x<=0) return t; } return 'pow'; }
 /* does anything still want this pool? (an upgrade below max, or an in-run card not yet mastered) */
-function keyNeed(k){ if(UPS.some(u=>u.k===k&&!shelved(u.tab)&&L(u.id)<u.max)) return true; return false; }
+function keyNeed(k){ if(UPS.some(u=>u.k===k&&!shelved(u.tab)&&!arsenalHidden(u.tab)&&L(u.id)<u.max)) return true; return false; }
 /* The specialty is rolled first (so each specialty's overall supply is unchanged), then the weapon: only weapons the player has met or levelled,
    favouring the weapons used in the run that paid out, and ignoring pools whose upgrades are all finished. */
 function rollKey(t,ctx){
-  const ks=PKEYS.filter(k=>kT(k)===t&&!shelved(kW(k))); if(!ks.length) return 'turret.pow';
+  const ks=PKEYS.filter(k=>kT(k)===t&&!shelved(kW(k))&&!arsenalHidden(kW(k))); if(!ks.length) return 'turret.pow';
   const used=ctx==='run'&&typeof ownedW==='function'?ownedW():[], seen=w=>w==='turret'||w==='base'||!!(P.seenW&&P.seenW[w])||UPS.some(u=>u.tab===w&&L(u.id)>0);
   let ws=ks.map(k=>{ const w=kW(k); let x=seen(w)?1:0; if(w==='turret') x*=1.4; if(used.indexOf(w)>=0) x*=2.5; if(x&&!keyNeed(k)) x*=0.15; return x; });
   let sum=ws.reduce((a,b)=>a+b,0); if(!sum){ ws=ks.map(()=>1); sum=ks.length; }
@@ -5055,10 +5057,10 @@ window.__rr={profileFor:profileFor,buildWave:buildWave,DOCS:DOCS,startWave:start
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 118</div>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 119</div>
 <script>
 /* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
-(function(){ const BUILD=118; let busy=false, shown=false;
+(function(){ const BUILD=119; let busy=false, shown=false;
   const inRun=()=>{ try{ return typeof G!=='undefined'&&(G.state==='playing'||G.state==='cards'||G.state==='shop'||G.state==='paused'||G.state==='teach'||G.state==='ctl'); }catch(e){ return false; } };
   function wipeReload(){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
     if(n>=3) return;
