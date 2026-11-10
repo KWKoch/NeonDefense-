@@ -1082,30 +1082,30 @@ const ST={
 const fslowLv=l=>Math.min(6,Math.floor(l/4));
 /* Universal card types: every weapon has one upgrade line per type (ty). Rarity gates how deep a line can go. */
 const UPS=[
-  {id:'dmg',    tab:'turret',ty:'pow',name:'Damage',      max:25,kind:'k',txt:l=>n1(ST.dmg(l))+' per shot'},
-  {id:'rate',   tab:'turret',ty:'tmp',name:'Fire rate',   max:12,kind:'k',txt:l=>(1/ST.rate(l)).toFixed(1)+'/s, slew '+ST.slide(l)},
+  {id:'dmg',    tab:'turret',ty:'pow',name:'Hard Hitter',  max:25,kind:'k',txt:l=>n1(ST.dmg(l))+' per shot'},
+  {id:'rate',   tab:'turret',ty:'tmp',name:'Rapid Fire',   max:12,kind:'k',txt:l=>(1/ST.rate(l)).toFixed(1)+' shots a second, swivel '+ST.slide(l)},
   {id:'pierce', tab:'turret',ty:'rch',name:'Pierce',      max:4, kind:'k',txt:l=>l?'passes through '+l:'stops on hit'},
-  {id:'barrels',tab:'turret',ty:'cap',name:'Barrels',     max:4, kind:'k',txt:l=>(1+l)+(l?' barrels':' barrel')},
+  {id:'barrels',tab:'turret',ty:'cap',name:'Extra Barrels',max:4, kind:'k',txt:l=>(1+l)+(l?' barrels':' barrel')},
   {id:'armor',  tab:'base',  ty:'frt',name:'Ozone shield',max:10,txt:l=>ST.shield(l)+' shield, '+ST.shreg(l).toFixed(1)+'/s recharge'},
-  {id:'mdmg',   tab:'mine',  ty:'pow',name:'Blast damage',max:25,kind:'b',txt:l=>n1(ST.mdmg(l))+' damage'},
-  {id:'mrech',  tab:'mine',  ty:'tmp',name:'Recharge',    max:8, kind:'b',txt:l=>ST.mrech(l).toFixed(1)+' s each'},
-  {id:'mrad',   tab:'mine',  ty:'rch',name:'Blast radius',max:6, kind:'b',txt:l=>ST.mrad(l)+' px'},
-  {id:'mstock', tab:'mine',  ty:'cap',name:'Mine stock',  max:6, kind:'b',txt:l=>ST.mstock(l)+' mines'},
-  {id:'fdps',   tab:'field', ty:'pow',name:'Energy damage',max:25,kind:'e',txt:l=>n1(ST.fdps(l))+'/s, '+Math.round((1-ST.fslow(fslowLv(l)))*100)+'% slow'},
-  {id:'frech',  tab:'field', ty:'tmp',name:'Recharge',    max:8, kind:'e',txt:l=>ST.frech(l).toFixed(1)+' s'},
+  {id:'mdmg',   tab:'mine',  ty:'pow',name:'Big Bang',    max:25,kind:'b',txt:l=>n1(ST.mdmg(l))+' damage'},
+  {id:'mrech',  tab:'mine',  ty:'tmp',name:'Quick Layer',  max:8, kind:'b',txt:l=>'a new mine every '+ST.mrech(l).toFixed(1)+' s'},
+  {id:'mrad',   tab:'mine',  ty:'rch',name:'Wide Blast',   max:6, kind:'b',txt:l=>'blast reaches '+ST.mrad(l)+' px'},
+  {id:'mstock', tab:'mine',  ty:'cap',name:'Deep Pockets', max:6, kind:'b',txt:l=>ST.mstock(l)+' mines'},
+  {id:'fdps',   tab:'field', ty:'pow',name:'Warp Burn',    max:25,kind:'e',txt:l=>n1(ST.fdps(l))+' burn a second, '+Math.round((1-ST.fslow(fslowLv(l)))*100)+'% slow'},
+  {id:'frech',  tab:'field', ty:'tmp',name:'Fast Rift',    max:8, kind:'e',txt:l=>'ready every '+ST.frech(l).toFixed(1)+' s'},
   {id:'fwid',   tab:'field', ty:'rch',name:'Bar width',   max:6, kind:'e',txt:l=>(ST.fwid(l)*2)+' px'},
-  {id:'fdur',   tab:'field', ty:'cap',name:'Duration',    max:8, kind:'e',txt:l=>ST.fdur(l).toFixed(0)+' s'},
-  {id:'cdmg',   tab:'chain', ty:'pow',name:'Lightning damage',max:25,kind:'e',txt:l=>n1(ST.cdmg(l)*CHAIN_DMG)+' per bolt'},
-  {id:'ccool',  tab:'chain', ty:'tmp',name:'Cooldown',    max:8, kind:'e',txt:l=>(ST.ccool(l)/CHAIN_SPD).toFixed(2)+' s'},
+  {id:'fdur',   tab:'field', ty:'cap',name:'Lingering Rift',max:8, kind:'e',txt:l=>'stays open '+ST.fdur(l).toFixed(0)+' s'},
+  {id:'cdmg',   tab:'chain', ty:'pow',name:'Live Wire',    max:25,kind:'e',txt:l=>n1(ST.cdmg(l)*CHAIN_DMG)+' per bolt'},
+  {id:'ccool',  tab:'chain', ty:'tmp',name:'Quick Charge', max:8, kind:'e',txt:l=>'recharges in '+(ST.ccool(l)/CHAIN_SPD).toFixed(2)+' s'},
   {id:'cjmp',   tab:'chain', ty:'rch',name:'Base jumps',  max:5, kind:'e',txt:l=>ST.cj(l)+' jumps'},
-  {id:'cfk',    tab:'chain', ty:'cap',name:'Forks',       max:2, kind:'e',txt:l=>ST.cfk(l)+(l?' branches':' branch')+' per jump'},
-  {id:'sdmg',   tab:'saw',   ty:'pow',name:'Saw damage',  max:25,kind:'k',txt:l=>n1(ST.sdmg(l))+' per hit'},
-  {id:'scool',  tab:'saw',   ty:'tmp',name:'Hit rate',    max:8, kind:'k',txt:l=>'every '+ST.scool(l).toFixed(2)+' s per mob'},
-  {id:'ssz',    tab:'saw',   ty:'rch',name:'Blade size',  max:6, kind:'k',txt:l=>ST.ssz(l).toFixed(1)+' px'},
-  {id:'sspd',   tab:'saw',   ty:'cap',name:'Lifetime',    max:6, kind:'k',txt:l=>ST.slife(l)+' s per launch'},
-  {id:'mortdmg',tab:'mortar',ty:'pow',name:'Shell damage',max:25,kind:'b',txt:l=>n1(ST.mortdmg(l))+' damage'},
-  {id:'mortrech',tab:'mortar',ty:'tmp',name:'Reload',     max:8, kind:'b',txt:l=>ST.mortrech(l).toFixed(1)+' s per shell'},
-  {id:'mortrad',tab:'mortar',ty:'rch',name:'Blast radius',max:6, kind:'b',txt:l=>ST.mortrad(l)+' px'},
+  {id:'cfk',    tab:'chain', ty:'cap',name:'Fork Lightning',max:2, kind:'e',txt:l=>ST.cfk(l)+(l?' branches':' branch')+' per jump'},
+  {id:'sdmg',   tab:'saw',   ty:'pow',name:'Razor Edge',    max:25,kind:'k',txt:l=>n1(ST.sdmg(l))+' per hit'},
+  {id:'scool',  tab:'saw',   ty:'tmp',name:'Frenzy',        max:8, kind:'k',txt:l=>'hits each mob every '+ST.scool(l).toFixed(2)+' s'},
+  {id:'ssz',    tab:'saw',   ty:'rch',name:'Big Blade',      max:6, kind:'k',txt:l=>ST.ssz(l).toFixed(1)+' px'},
+  {id:'sspd',   tab:'saw',   ty:'cap',name:'Long Run',       max:6, kind:'k',txt:l=>'spins for '+ST.slife(l)+' s per launch'},
+  {id:'mortdmg',tab:'mortar',ty:'pow',name:'Heavy Shell',   max:25,kind:'b',txt:l=>n1(ST.mortdmg(l))+' damage'},
+  {id:'mortrech',tab:'mortar',ty:'tmp',name:'Fast Reload',   max:8, kind:'b',txt:l=>'a new shell every '+ST.mortrech(l).toFixed(1)+' s'},
+  {id:'mortrad',tab:'mortar',ty:'rch',name:'Wide Blast',   max:6, kind:'b',txt:l=>'blast reaches '+ST.mortrad(l)+' px'},
   {id:'mortmax',tab:'mortar',ty:'cap',name:'Charges',     max:3, kind:'b',txt:l=>ST.mortmax(l)+' shells'}
 ];
 const CT={pow:{name:'Power',color:'#ff3860'},tmp:{name:'Tempo',color:'#00f0ff'},rch:{name:'Reach',color:'#b6ff00'},cap:{name:'Capacity',color:'#ffc400'},frt:{name:'Fortify',color:'#6dffb0'}};
@@ -1115,8 +1115,8 @@ const RAR=[{name:'Mk I',ab:'I',color:'#9fb2be'},{name:'Mk II',ab:'II',color:'#4f
    To bring one back, delete its id from this list (empty it to restore both); nothing else needs to change. */
 /* Tabs left out of the Arsenal screen only. Their upgrades still exist and keep working; just nothing is offered to buy there. Remove 'base' from this list to bring the Base tab back. */
 const ARSENAL_HIDE=['base'], arsenalHidden=k=>ARSENAL_HIDE.indexOf(k)>=0;
-/* Single upgrades left out of the Arsenal: chain lightning's Reach (base jumps) the mortar's Capacity (charges) and the turret's Reach (pierce). It stays at level 0 and the weapon works as before. Delete the id to bring it back. */
-const UP_HIDE=['cjmp','mortmax','pierce'], upHidden=u=>UP_HIDE.indexOf(u.id)>=0;
+/* Single upgrades left out of the Arsenal: chain lightning's Reach (base jumps) the mortar's Capacity (charges) the turret's Reach (pierce) and the dimensional field's Reach (bar width). It stays at level 0 and the weapon works as before. Delete the id to bring it back. */
+const UP_HIDE=['cjmp','mortmax','pierce','fwid'], upHidden=u=>UP_HIDE.indexOf(u.id)>=0;
 const SHELVED=['mine','saw'];
 const shelved=k=>SHELVED.indexOf(k)>=0;
 const TOOLS={
@@ -4522,7 +4522,7 @@ function arsenalHtml(){
   UPS.filter(u=>u.tab===tab&&!upHidden(u)).forEach(u=>{
     const lv=L(u.id), maxed=lv>=u.max, ct=CT[u.ty], need=maxed?0:upCost(u,lv), have=cry(u.ty), ok=!maxed&&have>=need, open=UI.uc===u.id;
     h+='<div class="ucat'+(open?' open':'')+'" style="--c:'+ct.color+'">'
-      +'<button class="uh" type="button" data-uc="'+u.id+'" aria-expanded="'+open+'"><span class="un">'+ico(u.ty,16)+ct.name+' <small>'+u.name+'</small></span>'
+      +'<button class="uh" type="button" data-uc="'+u.id+'" aria-expanded="'+open+'"><span class="un">'+ico(u.ty,16)+u.name+'</span>'
       +'<span class="ur">'+(ok?'<i class="rdy" title="You can upgrade this now"></i>':'')+'<span class="ul">'+(maxed?'MAX':lv+'/'+u.max)+'</span><span class="chv">'+(open?'▴':'▾')+'</span></span></button>'
       +'<div class="ulv" aria-hidden="true"><i style="width:'+Math.round(100*lv/u.max)+'%"></i></div>';
     if(open){
@@ -4861,7 +4861,7 @@ const CARDS=[
 const CARDBY={}; CARDS.forEach(c=>CARDBY[c.id]=c);
 const reqOk=c=>!c.req||Object.keys(c.req).every(k=>bst(k)>=c.req[k]);
 const reqText=r=>Object.keys(r).map(k=>CARDBY[k].name+(CARDBY[k].max>1?' '+r[k]:'')).join(' + ');
-const CARD_HIDE=['mortcap','cjump','pierce','deep'];   /* in-run cards that are switched off: Mortar Ammo Rack, Chain Extra Jumps and the turret's Piercing Rounds and Deep Pierce */
+const CARD_HIDE=['mortcap','cjump','pierce','deep','fwidb'];   /* in-run cards that are switched off: Mortar Ammo Rack, Chain Extra Jumps the turret's Piercing Rounds and Deep Pierce, and the field's Field Width */
 function eligible(c){
   if(shelved(c.w)||CARD_HIDE.indexOf(c.id)>=0) return false;
   if(c.id==='barrel'&&barrelN()>=MAXBARRELS) return false;
@@ -5127,10 +5127,10 @@ window.__rr={profileFor:profileFor,buildWave:buildWave,DOCS:DOCS,startWave:start
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 125</div>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 126</div>
 <script>
 /* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
-(function(){ const BUILD=125; let busy=false, shown=false;
+(function(){ const BUILD=126; let busy=false, shown=false;
   const inRun=()=>{ try{ return typeof G!=='undefined'&&(G.state==='playing'||G.state==='cards'||G.state==='shop'||G.state==='paused'||G.state==='teach'||G.state==='ctl'); }catch(e){ return false; } };
   function wipeReload(){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
     if(n>=3) return;
