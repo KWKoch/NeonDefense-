@@ -1114,8 +1114,8 @@ const RAR=[{name:'Mk I',ab:'I',color:'#9fb2be'},{name:'Mk II',ab:'II',color:'#4f
    To bring one back, delete its id from this list (empty it to restore both); nothing else needs to change. */
 /* Tabs left out of the Arsenal screen only. Their upgrades still exist and keep working; just nothing is offered to buy there. Remove 'base' from this list to bring the Base tab back. */
 const ARSENAL_HIDE=['base'], arsenalHidden=k=>ARSENAL_HIDE.indexOf(k)>=0;
-/* Single upgrades left out of the Arsenal: chain lightning's Reach (base jumps) and the mortar's Capacity (charges). It stays at level 0 and the weapon works as before. Delete the id to bring it back. */
-const UP_HIDE=['cjmp','mortmax'], upHidden=u=>UP_HIDE.indexOf(u.id)>=0;
+/* Single upgrades left out of the Arsenal: chain lightning's Reach (base jumps) the mortar's Capacity (charges) and the turret's Reach (pierce). It stays at level 0 and the weapon works as before. Delete the id to bring it back. */
+const UP_HIDE=['cjmp','mortmax','pierce'], upHidden=u=>UP_HIDE.indexOf(u.id)>=0;
 const SHELVED=['mine','saw'];
 const shelved=k=>SHELVED.indexOf(k)>=0;
 const TOOLS={
@@ -4830,7 +4830,7 @@ const CARDS=[
 const CARDBY={}; CARDS.forEach(c=>CARDBY[c.id]=c);
 const reqOk=c=>!c.req||Object.keys(c.req).every(k=>bst(k)>=c.req[k]);
 const reqText=r=>Object.keys(r).map(k=>CARDBY[k].name+(CARDBY[k].max>1?' '+r[k]:'')).join(' + ');
-const CARD_HIDE=['mortcap','cjump'];   /* in-run cards that are switched off: Mortar Ammo Rack and Chain Extra Jumps */
+const CARD_HIDE=['mortcap','cjump','pierce','deep'];   /* in-run cards that are switched off: Mortar Ammo Rack, Chain Extra Jumps and the turret's Piercing Rounds and Deep Pierce */
 function eligible(c){
   if(shelved(c.w)||CARD_HIDE.indexOf(c.id)>=0) return false;
   if(c.id==='barrel'&&barrelN()>=MAXBARRELS) return false;
@@ -5096,10 +5096,10 @@ window.__rr={profileFor:profileFor,buildWave:buildWave,DOCS:DOCS,startWave:start
 </script>
 
 <script type="module" src="cloud.js"></script>
-<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 121</div>
+<div id="buildtag" style="position:fixed;right:6px;bottom:2px;font:10px/1 monospace;color:#5a6b75;z-index:5;pointer-events:none">build 122</div>
 <script>
 /* Freshness check: compare this page's build number to the server's; if they differ, wipe caches + service workers and reload (once). */
-(function(){ const BUILD=121; let busy=false, shown=false;
+(function(){ const BUILD=122; let busy=false, shown=false;
   const inRun=()=>{ try{ return typeof G!=='undefined'&&(G.state==='playing'||G.state==='cards'||G.state==='shop'||G.state==='paused'||G.state==='teach'||G.state==='ctl'); }catch(e){ return false; } };
   function wipeReload(){ let n=0; try{ n=+sessionStorage.getItem('ndReload')||0; sessionStorage.setItem('ndReload',n+1); }catch(e){}
     if(n>=3) return;
